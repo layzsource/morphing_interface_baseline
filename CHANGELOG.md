@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.5.0] - 2025-09-28
+### Added
+- Implemented telemetry overlay (bottom-left corner)
+- Displays:
+  - FPS (frames per second) with color-coded performance indicators
+  - Connected MIDI devices
+  - HUD idle-spin state
+- Lightweight, real-time updates without performance hit
+
 ## [0.4.0] - 2025-09-28
 ### Added
 - Implemented HUD overlay with interactive controls:

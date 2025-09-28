@@ -34,6 +34,11 @@ export function onCC(callback) {
   ccCallbacks.push(callback);
 }
 
+export function getMIDIDeviceCount() {
+  if (!midiAccess) return 0;
+  return Array.from(midiAccess.inputs.values()).length;
+}
+
 function setupMIDIDevices() {
   if (!midiAccess) return;
 
