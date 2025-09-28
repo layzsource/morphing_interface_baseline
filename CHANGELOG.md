@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.2.0] - 2025-09-28
+### Added
+- Audio-reactive morphing system using Web Audio API and FFT analysis:
+  - Real-time microphone input with 1024-point FFT spectrum analysis
+  - Bass (20-250Hz) → Cube weight mapping
+  - Mid (250-2000Hz) → Sphere weight mapping
+  - Treble (2000-8000Hz) → Pyramid weight mapping
+  - Torus remains unaffected (reserved for future visual enhancements)
+- HUD: Added audio-reactive controls section:
+  - Toggle checkbox for enabling/disabling audio-reactive morphing
+  - Sensitivity slider (0.5-2.0) for adjusting audio influence intensity
+  - Orange-themed styling to distinguish from other control sections
+- Telemetry: Real-time audio frequency display showing Bass/Mid/Treble percentages
+- Presets: Audio reactivity state and sensitivity now saved/loaded with presets
+- Additive blending: Audio weights combine with existing MIDI/HUD/preset weights
+- Graceful fallback: Console warning if microphone access denied, system continues normally
+- Safe integration: Audio system does not interfere with existing morph controls
+
 ## [1.1.0] - 2025-09-28
 ### Added
 - Preset system with save/load/delete/list functionality:

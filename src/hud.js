@@ -168,6 +168,28 @@ function createHUDPanel() {
   // Store references for updating preset list
   panel.presetSelect = presetSelect;
 
+  // Add separator for Phase 6 audio controls
+  const audioSeparator = document.createElement('hr');
+  audioSeparator.style.cssText = 'border: 1px solid #555; margin: 15px 0;';
+  panel.appendChild(audioSeparator);
+
+  const audioTitle = document.createElement('h4');
+  audioTitle.textContent = '🎶 Audio-Reactive';
+  audioTitle.style.cssText = 'margin: 0 0 10px 0; color: #ff9900; font-size: 12px;';
+  panel.appendChild(audioTitle);
+
+  // Audio enable toggle
+  const audioEnableControl = createToggleControl('Audio-Reactive Morphing', false, (value) => {
+    notifyHUDUpdate({ audioEnabled: value });
+  });
+  panel.appendChild(audioEnableControl);
+
+  // Audio sensitivity slider
+  const audioSensitivityControl = createSliderControl('Audio Sensitivity', 1.0, 0.5, 2.0, 0.1, (value) => {
+    notifyHUDUpdate({ audioSensitivity: value });
+  });
+  panel.appendChild(audioSensitivityControl);
+
   return panel;
 }
 

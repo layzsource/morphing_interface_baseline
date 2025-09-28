@@ -3,6 +3,7 @@ import { onCC } from './midi.js';
 import { onHUDUpdate, updatePresetList } from './hud.js';
 import { onMorphUpdate, setMorphTarget, setMorphBlend, setTargetWeight, setMorphWeights, getMorphWeights } from './periaktos.js';
 import { savePreset, loadPreset, deletePreset, listPresets } from './presets.js';
+import { onAudioUpdate, enableAudio, disableAudio, setAudioSensitivity, getAudioValues, getAudioState, setAudioState } from './audio.js';
 
 console.log("🔺 geometry.js loaded");
 
@@ -16,6 +17,10 @@ let hudRotX = 0;
 let hudRotY = 0;
 let hudScale = 1.0;
 let hudIdleSpin = true;
+
+// Audio influence variables
+let audioMorphWeights = { cube: 0.0, sphere: 0.0, pyramid: 0.0, torus: 0.0 };
+let currentAudioData = null;
 
 export function getHUDIdleSpin() {
   return hudIdleSpin;
@@ -129,11 +134,43 @@ onHUDUpdate((update) => {
   if (update.presetAction !== undefined) {
     handlePresetAction(update.presetAction, update.presetName);
   }
+  if (update.audioEnabled !== undefined) {
+    if (update.audioEnabled) {
+      enableAudio();
+    } else {
+      disableAudio();
+    }
+  }
+  if (update.audioSensitivity !== undefined) {
+    setAudioSensitivity(update.audioSensitivity);
+  }
 });
 
 onMorphUpdate((morphData) => {
   currentMorphState = morphData;
   updateMorphVisibility();
+});
+
+onAudioUpdate((audioData) => {
+  currentAudioData = audioData;
+
+  if (audioData.isEnabled) {
+    // Map audio frequencies to morph targets
+    // Bass → Cube weight
+    // Mid → Sphere weight
+    // Treble → Pyramid weight
+    // Torus unaffected for Phase 6
+    audioMorphWeights.cube = audioData.bass;
+    audioMorphWeights.sphere = audioData.mid;
+    audioMorphWeights.pyramid = audioData.treble;
+    audioMorphWeights.torus = 0.0;
+
+    // Apply audio-reactive morphing by combining with existing weights
+    applyAudioReactiveMorphing();
+  } else {
+    // Reset audio weights when disabled
+    audioMorphWeights = { cube: 0.0, sphere: 0.0, pyramid: 0.0, torus: 0.0 };
+  }
 });
 
 function updateMorphVisibility() {
@@ -188,7 +225,8 @@ function handlePresetAction(action, presetName) {
         hudIdleSpin: hudIdleSpin,
         hudRotX: hudRotX,
         hudRotY: hudRotY,
-        hudScale: hudScale
+        hudScale: hudScale,
+        audioSettings: getAudioState()
       };
 
       if (savePreset(presetName, currentState)) {
@@ -225,6 +263,11 @@ function handlePresetAction(action, presetName) {
           if (settings.rotY !== undefined) hudRotY = settings.rotY;
           if (settings.scale !== undefined) hudScale = settings.scale;
         }
+
+        // Apply audio settings
+        if (preset.state.audioSettings) {
+          setAudioState(preset.state.audioSettings);
+        }
       }
       break;
 
@@ -238,6 +281,22 @@ function handlePresetAction(action, presetName) {
     default:
       console.warn(`💾 Unknown preset action: ${action}`);
   }
+}
+
+function applyAudioReactiveMorphing() {
+  if (!currentAudioData || !currentAudioData.isEnabled) return;
+
+  // Combine audio weights with existing morph weights additively
+  const currentWeights = getMorphWeights();
+  const combinedWeights = {};
+
+  // Apply audio influence additively to existing weights
+  Object.keys(currentWeights).forEach(target => {
+    combinedWeights[target] = currentWeights[target] + (audioMorphWeights[target] || 0);
+  });
+
+  // Set the combined weights (this will auto-normalize in periaktos.js)
+  setMorphWeights(combinedWeights);
 }
 
 function animate() {

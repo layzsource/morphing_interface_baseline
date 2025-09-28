@@ -6,6 +6,7 @@ let midiDisplay = null;
 let hudDisplay = null;
 let morphDisplay = null;
 let presetDisplay = null;
+let audioDisplay = null;
 
 let lastTime = performance.now();
 let frameCount = 0;
@@ -60,6 +61,10 @@ function createTelemetryOverlay() {
   presetDisplay = document.createElement('div');
   presetDisplay.textContent = 'Preset: --';
   telemetryOverlay.appendChild(presetDisplay);
+
+  audioDisplay = document.createElement('div');
+  audioDisplay.textContent = 'Audio: OFF';
+  telemetryOverlay.appendChild(audioDisplay);
 
   document.body.appendChild(telemetryOverlay);
 }
@@ -136,6 +141,19 @@ function updateDisplays(state) {
     } else {
       presetDisplay.textContent = '💾 None';
       presetDisplay.style.color = '#888888';
+    }
+  }
+
+  if (audioDisplay && state.audioData !== undefined) {
+    if (state.audioData.isEnabled) {
+      const bass = (state.audioData.bass * 100).toFixed(0);
+      const mid = (state.audioData.mid * 100).toFixed(0);
+      const treble = (state.audioData.treble * 100).toFixed(0);
+      audioDisplay.textContent = `🎶 B${bass}% M${mid}% T${treble}%`;
+      audioDisplay.style.color = '#ff9900';
+    } else {
+      audioDisplay.textContent = '🎶 OFF';
+      audioDisplay.style.color = '#888888';
     }
   }
 }
