@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.4.0] - 2025-09-28
+### Added
+- Implemented HUD overlay with interactive controls:
+  - Toggle idle spin
+  - X rotation slider
+  - Y rotation slider
+  - Scale slider
+- HUD values combine with MIDI inputs for geometry control
+
 ## [0.3.0] - 2025-09-28
 ### Added
 - Linked MIDI CC values to geometry:

@@ -1,8 +1,10 @@
-import './hud.js';
+import { initHUD } from './hud.js';
 import { initMIDI, onCC } from './midi.js';
 import './geometry.js';
 import './periaktos.js';
 import './telemetry.js';
+
+initHUD();
 
 initMIDI(() => {
   console.log("🎹 MIDI ready");

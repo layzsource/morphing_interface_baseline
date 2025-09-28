@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { onCC } from './midi.js';
+import { onHUDUpdate } from './hud.js';
 
 console.log("🔺 geometry.js loaded");
 
@@ -7,6 +8,12 @@ console.log("🔺 geometry.js loaded");
 let midiRotX = 0;
 let midiRotY = 0;
 let midiScale = 1;
+
+// HUD influence variables
+let hudRotX = 0.01;
+let hudRotY = 0.01;
+let hudScale = 1.0;
+let hudIdleSpin = true;
 
 const canvas = document.querySelector('#app');
 const scene = new THREE.Scene();
@@ -33,11 +40,26 @@ onCC(({ cc, value }) => {
   }
 });
 
+onHUDUpdate((update) => {
+  if (update.idleSpin !== undefined) {
+    hudIdleSpin = update.idleSpin;
+  }
+  if (update.rotX !== undefined) {
+    hudRotX = update.rotX;
+  }
+  if (update.rotY !== undefined) {
+    hudRotY = update.rotY;
+  }
+  if (update.scale !== undefined) {
+    hudScale = update.scale;
+  }
+});
+
 function animate() {
   requestAnimationFrame(animate);
-  cube.rotation.x += 0.01 + midiRotX;
-  cube.rotation.y += 0.01 + midiRotY;
-  cube.scale.set(midiScale, midiScale, midiScale);
+  cube.rotation.x += (hudIdleSpin ? 0.01 : 0) + midiRotX + hudRotX;
+  cube.rotation.y += (hudIdleSpin ? 0.01 : 0) + midiRotY + hudRotY;
+  cube.scale.set(midiScale * hudScale, midiScale * hudScale, midiScale * hudScale);
   renderer.render(scene, camera);
 }
 animate();
