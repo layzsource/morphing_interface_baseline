@@ -54,6 +54,12 @@ function createHUDPanel() {
   });
   panel.appendChild(scaleControl);
 
+  const morphControl = createDropdownControl('Morph Target', 'cube',
+    ['cube', 'sphere', 'pyramid', 'torus'], (value) => {
+    notifyHUDUpdate({ morphTarget: value });
+  });
+  panel.appendChild(morphControl);
+
   return panel;
 }
 
@@ -119,6 +125,37 @@ function createSliderControl(label, defaultValue, min, max, step, onChange) {
   container.appendChild(labelEl);
   container.appendChild(slider);
   container.appendChild(valueDisplay);
+
+  return container;
+}
+
+function createDropdownControl(label, defaultValue, options, onChange) {
+  const container = document.createElement('div');
+  container.style.cssText = 'margin-bottom: 15px;';
+
+  const labelEl = document.createElement('label');
+  labelEl.textContent = label + ': ';
+  labelEl.style.cssText = 'display: block; margin-bottom: 5px;';
+
+  const select = document.createElement('select');
+  select.style.cssText = 'width: 100%; padding: 4px; background: #333; color: white; border: 1px solid #555;';
+
+  options.forEach(option => {
+    const optionEl = document.createElement('option');
+    optionEl.value = option;
+    optionEl.textContent = option.charAt(0).toUpperCase() + option.slice(1);
+    if (option === defaultValue) {
+      optionEl.selected = true;
+    }
+    select.appendChild(optionEl);
+  });
+
+  select.addEventListener('change', () => {
+    onChange(select.value);
+  });
+
+  container.appendChild(labelEl);
+  container.appendChild(select);
 
   return container;
 }

@@ -1,22 +1,39 @@
 console.log("🌀 periaktos.js loaded");
 
-let morphState = "cube";
+const MORPH_TARGETS = ["cube", "sphere", "pyramid", "torus"];
+let currentTarget = "cube";
+let previousTarget = "cube";
 let morphProgress = 0;
 let morphCallbacks = [];
 let isTransitioning = false;
 
 export function initPeriaktos() {
-  console.log("🌀 Periaktos initialized, state:", morphState);
+  console.log("🌀 Periaktos initialized, state:", currentTarget);
 }
 
 export function toggleMorph() {
   if (isTransitioning) return;
 
-  const newState = morphState === "cube" ? "sphere" : "cube";
-  console.log(`🌀 Morphing from ${morphState} to ${newState}`);
+  const currentIndex = MORPH_TARGETS.indexOf(currentTarget);
+  const nextIndex = (currentIndex + 1) % MORPH_TARGETS.length;
+  const newTarget = MORPH_TARGETS[nextIndex];
 
+  setMorphTarget(newTarget);
+}
+
+export function setMorphTarget(target) {
+  if (isTransitioning) return;
+  if (!MORPH_TARGETS.includes(target)) {
+    console.warn(`🌀 Invalid morph target: ${target}`);
+    return;
+  }
+  if (target === currentTarget) return;
+
+  console.log(`🌀 Morphing from ${currentTarget} to ${target}`);
+
+  previousTarget = currentTarget;
+  currentTarget = target;
   isTransitioning = true;
-  morphState = newState;
 
   startMorphTransition();
 }
@@ -27,17 +44,17 @@ export function onMorphUpdate(callback) {
 
 export function getMorphState() {
   return {
-    state: morphState,
+    current: currentTarget,
+    previous: previousTarget,
     progress: morphProgress,
-    isTransitioning: isTransitioning
+    isTransitioning: isTransitioning,
+    targets: MORPH_TARGETS
   };
 }
 
 function startMorphTransition() {
   const duration = 1000;
   const startTime = performance.now();
-  const startProgress = morphProgress;
-  const targetProgress = morphState === "sphere" ? 1 : 0;
 
   function animate(currentTime) {
     const elapsed = currentTime - startTime;
@@ -45,7 +62,7 @@ function startMorphTransition() {
 
     const easeInOut = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 
-    morphProgress = startProgress + (targetProgress - startProgress) * easeInOut;
+    morphProgress = easeInOut;
 
     notifyMorphUpdate();
 
@@ -53,7 +70,9 @@ function startMorphTransition() {
       requestAnimationFrame(animate);
     } else {
       isTransitioning = false;
-      console.log(`🌀 Morph to ${morphState} complete`);
+      morphProgress = 0;
+      previousTarget = currentTarget;
+      console.log(`🌀 Morph to ${currentTarget} complete`);
     }
   }
 
@@ -62,9 +81,11 @@ function startMorphTransition() {
 
 function notifyMorphUpdate() {
   const morphData = {
-    state: morphState,
+    current: currentTarget,
+    previous: previousTarget,
     progress: morphProgress,
-    isTransitioning: isTransitioning
+    isTransitioning: isTransitioning,
+    targets: MORPH_TARGETS
   };
 
   morphCallbacks.forEach(callback => {

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { onCC } from './midi.js';
 import { onHUDUpdate } from './hud.js';
-import { onMorphUpdate } from './periaktos.js';
+import { onMorphUpdate, setMorphTarget } from './periaktos.js';
 
 console.log("🔺 geometry.js loaded");
 
@@ -30,20 +30,30 @@ document.body.appendChild(renderer.domElement);
 
 const cubeGeometry = new THREE.BoxGeometry();
 const sphereGeometry = new THREE.SphereGeometry(0.8, 32, 32);
+const pyramidGeometry = new THREE.ConeGeometry(0.8, 1.5, 8);
+const torusGeometry = new THREE.TorusGeometry(0.7, 0.3, 16, 100);
 const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
 
-const cube = new THREE.Mesh(cubeGeometry, material);
-const sphere = new THREE.Mesh(sphereGeometry, material);
+const morphObjects = {
+  cube: new THREE.Mesh(cubeGeometry, material.clone()),
+  sphere: new THREE.Mesh(sphereGeometry, material.clone()),
+  pyramid: new THREE.Mesh(pyramidGeometry, material.clone()),
+  torus: new THREE.Mesh(torusGeometry, material.clone())
+};
 
-// Ensure geometry is centered at origin
-cube.position.set(0, 0, 0);
-sphere.position.set(0, 0, 0);
+// Ensure all geometries are centered at origin
+Object.values(morphObjects).forEach(obj => {
+  obj.position.set(0, 0, 0);
+  obj.material.transparent = true;
+  obj.visible = false;
+  scene.add(obj);
+});
 
-scene.add(cube);
-scene.add(sphere);
+// Start with cube visible
+morphObjects.cube.visible = true;
+morphObjects.cube.material.opacity = 1;
 
-sphere.visible = false;
-let currentMorphProgress = 0;
+let currentMorphState = null;
 
 // Position camera for centered view
 camera.position.set(0, 0, 5);
@@ -59,8 +69,18 @@ window.addEventListener('resize', () => {
 onCC(({ cc, value }) => {
   if (cc === 1) {
     midiRotX = (value / 127) * 0.1;   // map to rotation speed
-  } else if (cc === 2 || cc === 3) {
+  } else if (cc === 2) {
     console.log(`⚠️ CC${cc} received but not mapped (reserved for future use)`);
+  } else if (cc === 3) {
+    // Map CC3 to morph target selection
+    const targets = ["cube", "sphere", "pyramid", "torus"];
+    let targetIndex;
+    if (value < 32) targetIndex = 0;      // 0-31 → Cube
+    else if (value < 64) targetIndex = 1; // 32-63 → Sphere
+    else if (value < 96) targetIndex = 2; // 64-95 → Pyramid
+    else targetIndex = 3;                 // 96-127 → Torus
+
+    setMorphTarget(targets[targetIndex]);
   } else if (cc === 4) {
     midiRotY = (value / 127) * 0.1;   // map to rotation speed
   } else if (cc === 22) {
@@ -81,22 +101,44 @@ onHUDUpdate((update) => {
   if (update.scale !== undefined) {
     hudScale = update.scale;
   }
+  if (update.morphTarget !== undefined) {
+    setMorphTarget(update.morphTarget);
+  }
 });
 
 onMorphUpdate((morphData) => {
-  currentMorphProgress = morphData.progress;
+  currentMorphState = morphData;
   updateMorphVisibility();
 });
 
 function updateMorphVisibility() {
-  cube.material.opacity = 1 - currentMorphProgress;
-  sphere.material.opacity = currentMorphProgress;
+  if (!currentMorphState) return;
 
-  cube.visible = cube.material.opacity > 0.01;
-  sphere.visible = sphere.material.opacity > 0.01;
+  const { current, previous, progress } = currentMorphState;
 
-  cube.material.transparent = true;
-  sphere.material.transparent = true;
+  // Hide all objects first
+  Object.values(morphObjects).forEach(obj => {
+    obj.visible = false;
+    obj.material.opacity = 0;
+  });
+
+  if (!currentMorphState.isTransitioning) {
+    // No transition - show current target only
+    if (morphObjects[current]) {
+      morphObjects[current].visible = true;
+      morphObjects[current].material.opacity = 1;
+    }
+  } else {
+    // Transitioning - crossfade between previous and current
+    if (morphObjects[previous]) {
+      morphObjects[previous].visible = true;
+      morphObjects[previous].material.opacity = 1 - progress;
+    }
+    if (morphObjects[current]) {
+      morphObjects[current].visible = true;
+      morphObjects[current].material.opacity = progress;
+    }
+  }
 }
 
 function animate() {
@@ -106,13 +148,12 @@ function animate() {
   const rotY = (hudIdleSpin ? 0.01 : 0) + midiRotY + hudRotY;
   const scale = midiScale * hudScale;
 
-  cube.rotation.x += rotX;
-  cube.rotation.y += rotY;
-  cube.scale.set(scale, scale, scale);
-
-  sphere.rotation.x += rotX;
-  sphere.rotation.y += rotY;
-  sphere.scale.set(scale, scale, scale);
+  // Apply transformations to all morph objects
+  Object.values(morphObjects).forEach(obj => {
+    obj.rotation.x += rotX;
+    obj.rotation.y += rotY;
+    obj.scale.set(scale, scale, scale);
+  });
 
   renderer.render(scene, camera);
 }

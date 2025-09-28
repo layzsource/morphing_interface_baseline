@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.8.0] - 2025-09-28
+### Added
+- Expanded Periaktos system with multiple morph targets:
+  - Cube, Sphere, Pyramid, Torus
+- Added `setMorphTarget`, `getMorphState`, and enhanced `onMorphUpdate` API
+- HUD: added morph selection dropdown control
+- MIDI: CC3 mapped to morph state selection (Cube/Sphere/Pyramid/Torus)
+- Geometry: smooth morph transitions between all targets
+
 ## [0.6.2] - 2025-09-28
 ### Fixed
 - Corrected cube alignment — now consistently centered in viewport
