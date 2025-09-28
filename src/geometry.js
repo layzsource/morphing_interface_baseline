@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { onCC } from './midi.js';
 import { onHUDUpdate } from './hud.js';
-import { onMorphUpdate, setMorphTarget } from './periaktos.js';
+import { onMorphUpdate, setMorphTarget, setMorphBlend, setTargetWeight } from './periaktos.js';
 
 console.log("🔺 geometry.js loaded");
 
@@ -70,7 +70,9 @@ onCC(({ cc, value }) => {
   if (cc === 1) {
     midiRotX = (value / 127) * 0.1;   // map to rotation speed
   } else if (cc === 2) {
-    console.log(`⚠️ CC${cc} received but not mapped (reserved for future use)`);
+    // Map CC2 to morph intensity (0.0-1.0)
+    const morphIntensity = value / 127; // Scale 0-127 to 0.0-1.0
+    setMorphBlend(morphIntensity);
   } else if (cc === 3) {
     // Map CC3 to morph target selection
     const targets = ["cube", "sphere", "pyramid", "torus"];
@@ -83,8 +85,20 @@ onCC(({ cc, value }) => {
     setMorphTarget(targets[targetIndex]);
   } else if (cc === 4) {
     midiRotY = (value / 127) * 0.1;   // map to rotation speed
+  } else if (cc === 21) {
+    // Map CC21 to Sphere weight (0.0-1.0)
+    const sphereWeight = value / 127; // Scale 0-127 to 0.0-1.0
+    setTargetWeight('sphere', sphereWeight);
   } else if (cc === 22) {
-    midiScale = 0.5 + (value / 127) * 1.5; // clamp between 0.5–2.0
+    // Map CC22 to Pyramid weight (0.0-1.0)
+    const pyramidWeight = value / 127; // Scale 0-127 to 0.0-1.0
+    setTargetWeight('pyramid', pyramidWeight);
+  } else if (cc === 23) {
+    // Map CC23 to Torus weight (0.0-1.0)
+    const torusWeight = value / 127; // Scale 0-127 to 0.0-1.0
+    setTargetWeight('torus', torusWeight);
+  } else if (cc === 24) {
+    midiScale = 0.5 + (value / 127) * 1.5; // clamp between 0.5–2.0 (moved from CC22)
   }
 });
 
@@ -104,6 +118,13 @@ onHUDUpdate((update) => {
   if (update.morphTarget !== undefined) {
     setMorphTarget(update.morphTarget);
   }
+  if (update.morphBlend !== undefined) {
+    setMorphBlend(update.morphBlend);
+  }
+  if (update.targetWeight !== undefined) {
+    const { target, weight } = update.targetWeight;
+    setTargetWeight(target, weight);
+  }
 });
 
 onMorphUpdate((morphData) => {
@@ -114,7 +135,7 @@ onMorphUpdate((morphData) => {
 function updateMorphVisibility() {
   if (!currentMorphState) return;
 
-  const { current, previous, progress } = currentMorphState;
+  const { current, previous, progress, weights } = currentMorphState;
 
   // Hide all objects first
   Object.values(morphObjects).forEach(obj => {
@@ -123,10 +144,20 @@ function updateMorphVisibility() {
   });
 
   if (!currentMorphState.isTransitioning) {
-    // No transition - show current target only
-    if (morphObjects[current]) {
-      morphObjects[current].visible = true;
-      morphObjects[current].material.opacity = 1;
+    // Phase 4: Use multi-target weighted blending
+    if (weights) {
+      Object.entries(weights).forEach(([target, weight]) => {
+        if (weight > 0 && morphObjects[target]) {
+          morphObjects[target].visible = true;
+          morphObjects[target].material.opacity = weight;
+        }
+      });
+    } else {
+      // Fallback: show current target only
+      if (morphObjects[current]) {
+        morphObjects[current].visible = true;
+        morphObjects[current].material.opacity = 1;
+      }
     }
   } else {
     // Transitioning - crossfade between previous and current

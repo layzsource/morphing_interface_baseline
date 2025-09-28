@@ -1,7 +1,7 @@
 import { initHUD } from './hud.js';
 import { initMIDI, onCC, getMIDIDeviceCount } from './midi.js';
 import { getHUDIdleSpin } from './geometry.js';
-import { initPeriaktos, toggleMorph } from './periaktos.js';
+import { initPeriaktos, toggleMorph, getMorphState } from './periaktos.js';
 import { initTelemetry } from './telemetry.js';
 
 console.log("🔄 Build timestamp:", new Date().toISOString());
@@ -20,7 +20,8 @@ initPeriaktos();
 
 initTelemetry(() => ({
   midiDevices: getMIDIDeviceCount(),
-  hudIdle: getHUDIdleSpin()
+  hudIdle: getHUDIdleSpin(),
+  morphState: getMorphState()
 }));
 
 window.addEventListener('keydown', (e) => {

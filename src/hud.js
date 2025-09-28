@@ -60,6 +60,42 @@ function createHUDPanel() {
   });
   panel.appendChild(morphControl);
 
+  const morphIntensityControl = createSliderControl('Morph Intensity', 0.0, 0.0, 1.0, 0.01, (value) => {
+    notifyHUDUpdate({ morphBlend: value });
+  });
+  panel.appendChild(morphIntensityControl);
+
+  // Add separator for Phase 4 controls
+  const separator = document.createElement('hr');
+  separator.style.cssText = 'border: 1px solid #555; margin: 15px 0;';
+  panel.appendChild(separator);
+
+  const phase4Title = document.createElement('h4');
+  phase4Title.textContent = '🌀 Multi-Target Blends';
+  phase4Title.style.cssText = 'margin: 0 0 10px 0; color: #ffff00; font-size: 12px;';
+  panel.appendChild(phase4Title);
+
+  // Per-target weight sliders
+  const cubeWeightControl = createSliderControl('Cube Weight', 1.0, 0.0, 1.0, 0.01, (value) => {
+    notifyHUDUpdate({ targetWeight: { target: 'cube', weight: value } });
+  });
+  panel.appendChild(cubeWeightControl);
+
+  const sphereWeightControl = createSliderControl('Sphere Weight', 0.0, 0.0, 1.0, 0.01, (value) => {
+    notifyHUDUpdate({ targetWeight: { target: 'sphere', weight: value } });
+  });
+  panel.appendChild(sphereWeightControl);
+
+  const pyramidWeightControl = createSliderControl('Pyramid Weight', 0.0, 0.0, 1.0, 0.01, (value) => {
+    notifyHUDUpdate({ targetWeight: { target: 'pyramid', weight: value } });
+  });
+  panel.appendChild(pyramidWeightControl);
+
+  const torusWeightControl = createSliderControl('Torus Weight', 0.0, 0.0, 1.0, 0.01, (value) => {
+    notifyHUDUpdate({ targetWeight: { target: 'torus', weight: value } });
+  });
+  panel.appendChild(torusWeightControl);
+
   return panel;
 }
 

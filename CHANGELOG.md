@@ -1,5 +1,32 @@
 # Changelog
 
+## [1.0.0] - 2025-09-28
+### Added
+- Periaktos Phase 4: Multi-target morph blending system:
+  - `setMorphWeights` and `getMorphWeights` API for weighted blending across all targets
+  - `setTargetWeight` and `getTargetWeight` for individual target control
+  - HUD: Added per-target blend sliders (Cube/Sphere/Pyramid/Torus) with auto-normalization
+  - MIDI: Added CC21 (Sphere), CC22 (Pyramid), CC23 (Torus) for per-target morph blending
+  - MIDI: Moved scale control from CC22 to CC24 to accommodate new morphing CCs
+  - Geometry: Weighted blending across multiple shapes simultaneously (e.g., Cube 30% + Sphere 20% + Torus 50%)
+  - Telemetry: Displays all active morph target percentages in real-time (e.g., "C30% | S20% | T50%")
+- Enhanced normalization system ensures total blend weights = 100%
+- Full backwards compatibility with Phase 3 `setMorphBlend`/`getMorphBlend` API
+### Milestone
+- First major release (v1.0.0) of the morphing interface baseline
+- Complete multi-target morphing system with HUD + MIDI integration
+
+## [0.9.0] - 2025-09-28
+### Added
+- Periaktos Phase 3: Morph blending intensity system:
+  - `setMorphBlend` and `getMorphBlend` API for blend control (0.0-1.0)
+  - HUD: added "Morph Intensity" slider for real-time blend control
+  - MIDI: CC2 mapped to morph intensity (0-127 → 0.0-1.0)
+  - Geometry: partial morph states between current and next targets
+  - Telemetry: displays current morph target and blend value with status icons
+- Enhanced morphing system supports smooth transitions between any geometry pair
+- Independent morph blending from morph transitions
+
 ## [0.8.0] - 2025-09-28
 ### Added
 - Expanded Periaktos system with multiple morph targets:

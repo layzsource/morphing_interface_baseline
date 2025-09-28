@@ -4,6 +4,7 @@ let telemetryOverlay = null;
 let fpsDisplay = null;
 let midiDisplay = null;
 let hudDisplay = null;
+let morphDisplay = null;
 
 let lastTime = performance.now();
 let frameCount = 0;
@@ -51,6 +52,10 @@ function createTelemetryOverlay() {
   hudDisplay.textContent = 'Idle: --';
   telemetryOverlay.appendChild(hudDisplay);
 
+  morphDisplay = document.createElement('div');
+  morphDisplay.textContent = 'Morph: -- (0.0)';
+  telemetryOverlay.appendChild(morphDisplay);
+
   document.body.appendChild(telemetryOverlay);
 }
 
@@ -97,5 +102,25 @@ function updateDisplays(state) {
   if (hudDisplay && state.hudIdle !== undefined) {
     hudDisplay.textContent = `Idle: ${state.hudIdle ? 'ON' : 'OFF'}`;
     hudDisplay.style.color = state.hudIdle ? '#00ff00' : '#ff6666';
+  }
+
+  if (morphDisplay && state.morphState !== undefined) {
+    const { weights, isTransitioning } = state.morphState;
+    const statusIcon = isTransitioning ? '⚡' : '🌀';
+
+    if (weights) {
+      // Phase 4: Show all active weights as percentages
+      const activeWeights = Object.entries(weights)
+        .filter(([_, weight]) => weight > 0.01) // Only show weights > 1%
+        .map(([target, weight]) => `${target.charAt(0).toUpperCase()}${(weight * 100).toFixed(0)}%`)
+        .join(' | ');
+
+      morphDisplay.textContent = `${statusIcon} ${activeWeights || 'None'}`;
+      morphDisplay.style.color = activeWeights ? '#ffff00' : '#888888';
+    } else {
+      // Fallback display
+      morphDisplay.textContent = `${statusIcon} Legacy mode`;
+      morphDisplay.style.color = '#888888';
+    }
   }
 }
