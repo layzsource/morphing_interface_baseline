@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { onCC } from './midi.js';
 import { onHUDUpdate } from './hud.js';
+import { onMorphUpdate } from './periaktos.js';
 
 console.log("🔺 geometry.js loaded");
 
@@ -27,10 +28,18 @@ const renderer = new THREE.WebGLRenderer({ canvas });
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-const geometry = new THREE.BoxGeometry();
+const cubeGeometry = new THREE.BoxGeometry();
+const sphereGeometry = new THREE.SphereGeometry(0.8, 32, 32);
 const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
-const cube = new THREE.Mesh(geometry, material);
+
+const cube = new THREE.Mesh(cubeGeometry, material);
+const sphere = new THREE.Mesh(sphereGeometry, material);
+
 scene.add(cube);
+scene.add(sphere);
+
+sphere.visible = false;
+let currentMorphProgress = 0;
 
 camera.position.z = 5;
 
@@ -59,11 +68,37 @@ onHUDUpdate((update) => {
   }
 });
 
+onMorphUpdate((morphData) => {
+  currentMorphProgress = morphData.progress;
+  updateMorphVisibility();
+});
+
+function updateMorphVisibility() {
+  cube.material.opacity = 1 - currentMorphProgress;
+  sphere.material.opacity = currentMorphProgress;
+
+  cube.visible = cube.material.opacity > 0.01;
+  sphere.visible = sphere.material.opacity > 0.01;
+
+  cube.material.transparent = true;
+  sphere.material.transparent = true;
+}
+
 function animate() {
   requestAnimationFrame(animate);
-  cube.rotation.x += (hudIdleSpin ? 0.01 : 0) + midiRotX + hudRotX;
-  cube.rotation.y += (hudIdleSpin ? 0.01 : 0) + midiRotY + hudRotY;
-  cube.scale.set(midiScale * hudScale, midiScale * hudScale, midiScale * hudScale);
+
+  const rotX = (hudIdleSpin ? 0.01 : 0) + midiRotX + hudRotX;
+  const rotY = (hudIdleSpin ? 0.01 : 0) + midiRotY + hudRotY;
+  const scale = midiScale * hudScale;
+
+  cube.rotation.x += rotX;
+  cube.rotation.y += rotY;
+  cube.scale.set(scale, scale, scale);
+
+  sphere.rotation.x += rotX;
+  sphere.rotation.y += rotY;
+  sphere.scale.set(scale, scale, scale);
+
   renderer.render(scene, camera);
 }
 animate();

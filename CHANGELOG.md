@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.0] - 2025-09-28
+### Added
+- Implemented Periaktos morphing system (Phase 1)
+- Cube ↔ Sphere morph with smooth transition
+- Added `initPeriaktos`, `toggleMorph`, and `onMorphUpdate` API
+- Bound "P" key to trigger morph toggle
+- Geometry retains MIDI + HUD influences during morphs
+
 ## [0.5.0] - 2025-09-28
 ### Added
 - Implemented telemetry overlay (bottom-left corner)
