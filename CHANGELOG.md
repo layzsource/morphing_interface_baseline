@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.6.2] - 2025-09-28
+### Fixed
+- Corrected cube alignment — now consistently centered in viewport
+- Added window resize handler to maintain proper aspect ratio and centering
+### Noted
+- CC2 and CC3 (mod wheels) detected but not yet mapped
+- Added console warnings when CC2/CC3 events are received
+
+## [0.6.1] - 2025-09-28
+### Fixed
+- Corrected MIDI CC mapping for MPK mini:
+  - CC1 → X rotation
+  - CC4 → Y rotation
+  - CC22 → scale (0.5–2.0)
+- Idle Spin toggle now fully stops baseline spin when OFF
+- HUD rotation sliders now start at 0 instead of 0.01
+- Preserved MIDI + HUD additive system
+- Locked Vite dev server to port 3000 with `strictPort: true`
+- Added build timestamp log in `main.js` to verify fresh builds in browser
+
 ## [0.6.0] - 2025-09-28
 ### Added
 - Implemented Periaktos morphing system (Phase 1)

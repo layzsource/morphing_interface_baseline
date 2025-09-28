@@ -11,8 +11,8 @@ let midiRotY = 0;
 let midiScale = 1;
 
 // HUD influence variables
-let hudRotX = 0.01;
-let hudRotY = 0.01;
+let hudRotX = 0;
+let hudRotY = 0;
 let hudScale = 1.0;
 let hudIdleSpin = true;
 
@@ -35,18 +35,33 @@ const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true 
 const cube = new THREE.Mesh(cubeGeometry, material);
 const sphere = new THREE.Mesh(sphereGeometry, material);
 
+// Ensure geometry is centered at origin
+cube.position.set(0, 0, 0);
+sphere.position.set(0, 0, 0);
+
 scene.add(cube);
 scene.add(sphere);
 
 sphere.visible = false;
 let currentMorphProgress = 0;
 
-camera.position.z = 5;
+// Position camera for centered view
+camera.position.set(0, 0, 5);
+camera.lookAt(0, 0, 0);
+
+// Handle window resize to maintain centering
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
 
 onCC(({ cc, value }) => {
   if (cc === 1) {
     midiRotX = (value / 127) * 0.1;   // map to rotation speed
-  } else if (cc === 21) {
+  } else if (cc === 2 || cc === 3) {
+    console.log(`⚠️ CC${cc} received but not mapped (reserved for future use)`);
+  } else if (cc === 4) {
     midiRotY = (value / 127) * 0.1;   // map to rotation speed
   } else if (cc === 22) {
     midiScale = 0.5 + (value / 127) * 1.5; // clamp between 0.5–2.0

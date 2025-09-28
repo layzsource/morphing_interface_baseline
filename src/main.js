@@ -4,6 +4,8 @@ import { getHUDIdleSpin } from './geometry.js';
 import { initPeriaktos, toggleMorph } from './periaktos.js';
 import { initTelemetry } from './telemetry.js';
 
+console.log("🔄 Build timestamp:", new Date().toISOString());
+
 initHUD();
 
 initMIDI(() => {

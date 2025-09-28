@@ -39,12 +39,12 @@ function createHUDPanel() {
   });
   panel.appendChild(idleSpinControl);
 
-  const xRotControl = createSliderControl('X Rotation', 0.01, 0, 0.2, 0.001, (value) => {
+  const xRotControl = createSliderControl('X Rotation', 0, 0, 0.2, 0.001, (value) => {
     notifyHUDUpdate({ rotX: value });
   });
   panel.appendChild(xRotControl);
 
-  const yRotControl = createSliderControl('Y Rotation', 0.01, 0, 0.2, 0.001, (value) => {
+  const yRotControl = createSliderControl('Y Rotation', 0, 0, 0.2, 0.001, (value) => {
     notifyHUDUpdate({ rotY: value });
   });
   panel.appendChild(yRotControl);
