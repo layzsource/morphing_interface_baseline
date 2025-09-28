@@ -50,6 +50,15 @@ onHUDUpdate((update) => {
   }
   if (update.audioEnabled !== undefined) {
     state.audio.enabled = update.audioEnabled;
+    state.audioReactive = update.audioEnabled;
+    console.log(`🎵 Audio Reactive: ${update.audioEnabled}`);
+
+    // Initialize microphone when first enabled
+    if (update.audioEnabled) {
+      import('./audio.js').then(({ enableAudio }) => {
+        enableAudio();
+      });
+    }
   }
   if (update.audioSensitivity !== undefined) {
     state.audio.sensitivity = update.audioSensitivity;

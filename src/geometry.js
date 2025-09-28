@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { state } from './state.js';
 import { updateShadows } from './shadows.js';
+import { updateSprites } from './sprites.js';
+import { updateAudio } from './audio.js';
 
 console.log("🔺 geometry.js loaded");
 
@@ -57,16 +59,61 @@ function createMorphGeometry() {
     }
   }
 
-  function toTorus(v) {
-    // Convert spherical coordinates to torus with full 360° arc
-    const R = 0.7, r = 0.3;
-    const theta = Math.atan2(v.z, v.x);
-    // Use atan2 for full range instead of acos for complete torus
-    const phi = Math.atan2(Math.sqrt(v.x * v.x + v.z * v.z), v.y);
+  // Re-bake function for true parametric torus generation
+  const TAU = Math.PI * 2;
 
-    const cx = (R + r * Math.cos(phi)) * Math.cos(theta);
-    const cy = r * Math.sin(phi);
-    const cz = (R + r * Math.cos(phi)) * Math.sin(theta);
+  function wrapTau(a) {
+    return ((a % TAU) + TAU) % TAU;
+  }
+
+  function buildTorusTarget(basePositions) {
+    const out = new Float32Array(basePositions.length);
+    const N = basePositions.length / 3;
+
+    // Approximate a grid from base vertex count
+    const segments = Math.floor(Math.sqrt(N));
+
+    const R = 1.0;   // major radius
+    const r = 0.3;   // tube thickness
+
+    let idx = 0;
+    for (let i = 0; i <= segments; i++) {  // <= ensures wrap
+      const u = wrapTau((i / segments) * TAU);
+      for (let j = 0; j <= segments; j++) {  // <= ensures wrap
+        const vMinor = wrapTau((j / segments) * TAU);
+
+        const cx = (R + r * Math.cos(vMinor)) * Math.cos(u);
+        const cy = r * Math.sin(vMinor);
+        const cz = (R + r * Math.cos(vMinor)) * Math.sin(u);
+
+        out[idx++] = cx;
+        out[idx++] = cy;
+        out[idx++] = cz;
+
+        if (idx >= out.length) break;
+      }
+      if (idx >= out.length) break;
+    }
+    return out;
+  }
+
+  function toTorus(v) {
+    // True parametric torus mapping - eliminates missing-edge artifacts
+
+    // Map spherical coordinates to torus parameters
+    const u = (Math.atan2(v.z, v.x) + TAU) % TAU;
+
+    // Minor tube angle: ensure full 0..2π coverage
+    const vMinor = (Math.atan2(v.y, Math.hypot(v.x, v.z)) + Math.PI / 2) * (TAU / Math.PI);
+
+    // Radii — tuned for clarity
+    const R = 1.0;   // major radius (distance from center to tube center)
+    const r = 0.3;   // minor radius (tube thickness)
+
+    const cx = (R + r * Math.cos(vMinor)) * Math.cos(u);
+    const cy = r * Math.sin(vMinor);
+    const cz = (R + r * Math.cos(vMinor)) * Math.sin(u);
+
     return new THREE.Vector3(cx, cy, cz);
   }
 
@@ -87,7 +134,7 @@ function createMorphGeometry() {
   const spherePositions = buildTargetPositions(toSphere);
   const cubePositions = buildTargetPositions(toCube);
   const pyramidPositions = buildTargetPositions(toPyramid);
-  const torusPositions = buildTargetPositions(toTorus);
+  const torusPositions = buildTorusTarget(basePositions);
 
   // Set up geometry with morph targets
   const geometry = baseGeometry.clone();
@@ -144,6 +191,13 @@ function updateGeometryFromState() {
   morphMesh.morphTargetInfluences[1] = state.morphWeights.cube;    // cube
   morphMesh.morphTargetInfluences[2] = state.morphWeights.pyramid; // pyramid
   morphMesh.morphTargetInfluences[3] = state.morphWeights.torus;   // torus
+
+  // Audio-reactive morph influence (only when audio reactive enabled)
+  if (state.audioReactive) {
+    morphMesh.morphTargetInfluences[0] = state.audio.bass;    // sphere
+    morphMesh.morphTargetInfluences[1] = state.audio.mid;     // cube
+    morphMesh.morphTargetInfluences[2] = state.audio.treble;  // pyramid
+  }
 
   // Update material color from state
   material.color.set(state.color);
@@ -220,11 +274,17 @@ function animate() {
   morphMesh.rotation.y += rotY;
   morphMesh.scale.set(scale, scale, scale);
 
+  // Update audio if reactive
+  if (state.audioReactive) updateAudio();
+
   // Update geometry from current state
   updateGeometryFromState();
 
   // Update shadows
   updateShadows();
+
+  // Update sprites
+  updateSprites();
 
   renderer.render(scene, camera);
 }

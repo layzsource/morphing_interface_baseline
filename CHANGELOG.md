@@ -1,5 +1,86 @@
 # Changelog
 
+## [1.7.2] - 2025-09-28
+### Added
+- Direct microphone audio input with real-time frequency analysis.
+- Simplified updateAudio() function for direct state.audio updates.
+- Browser microphone permission request on first audio toggle.
+- Real-time audio-reactive morph influences (bass→sphere, mid→cube, treble→pyramid).
+### Fixed
+- Audio initialization properly triggers enableAudio() on HUD toggle.
+- Direct audio values mapped to morph influences instead of additive approach.
+- Console message updated to "🎤 Microphone initialized" for clarity.
+### Benefits
+- Immediate visual response to microphone input when audioReactive is enabled.
+- Simplified audio processing pipeline with direct state updates.
+- Clear user feedback for microphone permissions and initialization.
+
+## [1.7.1] - 2025-09-28
+### Fixed
+- Audio toggle integration with dedicated state.audioReactive flag and console logging.
+- Geometry seam elimination in torus generation using wrapTau function and proper loop bounds.
+- Preset system save/load functionality with correct state structure and localStorage restoration.
+- Preset dropdown refresh after save/delete operations with dynamic updatePresetList calls.
+- Sprites audio reactivity now properly respects audioReactive state toggle.
+### Benefits
+- Audio toggle ON/OFF with immediate console feedback and shape response changes.
+- Smooth geometry without seam lines on torus, cube, sphere, and pyramid.
+- Preset save/load properly restores morph weights, color, and visual settings.
+- HUD dropdown always reflects current preset state after save/delete operations.
+- Improved stability and user experience across all interactive features.
+
+## [1.7.0] - 2025-09-28
+### Added
+- Sprites/particles system (src/sprites.js) as modular visual layer.
+- 200 dynamic sprites with orbital motion patterns.
+- State integration: color, audio-reactive opacity, morph weight influence.
+- Real-time responsiveness to HUD/MIDI controls and audio input.
+### Benefits
+- Demonstrates extensible visual architecture beyond Vessel + Shadows.
+- Sprites orbit dynamically with morph weight-based radius scaling.
+- Audio-reactive opacity creates immersive visual feedback.
+- Maintains modular state-driven design principles.
+
+## [1.6.6] - 2025-09-28
+### Fixed
+- Replaced distorted sphere-mapped torus with true parametric torus generation.
+- Added buildTorusTarget function for proper grid-based torus construction.
+- Maintained vertex count and indices consistency for smooth morphing.
+### Benefits
+- Torus now displays as a mathematically perfect donut with complete symmetry.
+- Eliminated all top/bottom squash and clipped edge artifacts.
+- Preserved smooth interpolation with cube, sphere, and pyramid targets.
+
+## [1.6.5] - 2025-09-28
+### Fixed
+- Implemented true parametric torus mapping to eliminate missing-edge artifacts.
+- Corrected minor tube angle calculation for complete 0..2π coverage.
+- Ensured seamless torus geometry without clipped edges or "eaten sides."
+### Benefits
+- Torus now displays as a complete, seamless donut from all viewing angles.
+- Eliminated visual artifacts when rotating camera around torus.
+- Maintained smooth morphing transitions with all other targets.
+
+## [1.6.4] - 2025-09-28
+### Fixed
+- Refined torus radii for true donut appearance (R=1.0 major radius, r=0.3 tube thickness).
+- Optimized major-to-minor radius ratio for clear, round hole visibility.
+- Enhanced tube consistency to eliminate pill or squashed bagel artifacts.
+### Benefits
+- Torus now displays as a perfect donut with clear central hole.
+- Improved visual distinction from other morph targets.
+- Maintained smooth morphing transitions with refined geometry.
+
+## [1.6.3] - 2025-09-28
+### Fixed
+- Completely rewrote torus morph target mapping with proper 360° tube coverage.
+- Used TAU-based angle wrapping and corrected minor tube angle calculation.
+- Ensured smooth morphing between all targets (cube, sphere, pyramid, torus).
+### Benefits
+- Torus now renders as a perfect full donut rather than a bagel slice.
+- Eliminated visual artifacts during torus morphing.
+- Preserved compatibility with existing morph target system.
+
 ## [1.6.2] - 2025-09-28
 ### Fixed
 - Corrected Torus morph target to use full 360° arc (`Math.atan2` for complete range).

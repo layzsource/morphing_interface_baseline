@@ -17,19 +17,13 @@ export function savePreset(name, state) {
   const presets = getPresetsFromStorage();
 
   const presetData = {
-    name: name,
+    name,
     timestamp: new Date().toISOString(),
-    state: {
-      morphWeights: state.morphWeights || { cube: 1.0, sphere: 0.0, pyramid: 0.0, torus: 0.0 },
-      morphBlend: state.morphBlend || 0.0,
-      currentTarget: state.currentTarget || 'cube',
-      hudSettings: {
-        idleSpin: state.hudIdleSpin !== undefined ? state.hudIdleSpin : true,
-        rotX: state.hudRotX || 0,
-        rotY: state.hudRotY || 0,
-        scale: state.hudScale || 1.0
-      }
-    }
+    visualSettings: { ...state.lighting },
+    morphWeights: { ...state.morphWeights },
+    color: state.color,
+    idleSpin: state.idleSpin,
+    scale: state.scale
   };
 
   presets[name] = presetData;
@@ -54,6 +48,23 @@ export function loadPreset(name) {
   if (!preset) {
     console.warn(`💾 Preset not found: ${name}`);
     return null;
+  }
+
+  // Restore state from preset
+  if (preset.visualSettings) {
+    Object.assign(state.lighting, preset.visualSettings);
+  }
+  if (preset.morphWeights) {
+    Object.assign(state.morphWeights, preset.morphWeights);
+  }
+  if (preset.color) {
+    state.color = preset.color;
+  }
+  if (preset.idleSpin !== undefined) {
+    state.idleSpin = preset.idleSpin;
+  }
+  if (preset.scale !== undefined) {
+    state.scale = preset.scale;
   }
 
   currentPresetName = name;

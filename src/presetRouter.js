@@ -39,7 +39,12 @@ function handlePresetAction(action, presetName) {
       if (savePreset(presetName, currentState)) {
         console.log(`💾 Saved preset: ${presetName}`);
         state.presets.currentPresetName = presetName;
-        // Note: updatePresetList will be called by the HUD system
+        // Refresh the preset dropdown
+        import('./hud.js').then(({ updatePresetList }) => {
+          import('./presets.js').then(({ listPresets }) => {
+            updatePresetList(listPresets());
+          });
+        });
       }
       break;
 
@@ -98,7 +103,12 @@ function handlePresetAction(action, presetName) {
         if (state.presets.currentPresetName === presetName) {
           state.presets.currentPresetName = null;
         }
-        // Note: updatePresetList will be called by the HUD system
+        // Refresh the preset dropdown
+        import('./hud.js').then(({ updatePresetList }) => {
+          import('./presets.js').then(({ listPresets }) => {
+            updatePresetList(listPresets());
+          });
+        });
       }
       break;
 

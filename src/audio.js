@@ -1,3 +1,5 @@
+import { state } from './state.js';
+
 console.log("🎶 audio.js loaded");
 
 let audioContext = null;
@@ -39,7 +41,7 @@ export function enableAudio() {
 
   return navigator.mediaDevices.getUserMedia({ audio: true })
     .then(stream => {
-      console.log("🎶 Microphone access granted");
+      console.log("🎤 Microphone initialized");
 
       // Create audio context
       audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -202,4 +204,25 @@ export function setAudioState(state) {
   } else if (!state.enabled && isAudioEnabled) {
     disableAudio();
   }
+}
+
+// Simple update function for direct state updates
+export function updateAudio() {
+  if (!analyser || !frequencyData) return;
+
+  analyser.getByteFrequencyData(frequencyData);
+
+  // Simple frequency band averaging
+  const bass = avg(frequencyData.slice(0, 10)) / 255;
+  const mid = avg(frequencyData.slice(10, 40)) / 255;
+  const treble = avg(frequencyData.slice(40, 80)) / 255;
+
+  // Update state directly
+  state.audio.bass = bass;
+  state.audio.mid = mid;
+  state.audio.treble = treble;
+}
+
+function avg(arr) {
+  return arr.reduce((a, b) => a + b, 0) / arr.length;
 }

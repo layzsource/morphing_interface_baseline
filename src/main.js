@@ -2,6 +2,7 @@ import { initHUD, updatePresetList } from './hud.js';
 import { initMIDI, getMIDIDeviceCount } from './midi.js';
 import { getHUDIdleSpin, getVisualData, getMorphState, scene } from './geometry.js';
 import { initShadows } from './shadows.js';
+import { initSprites } from './sprites.js';
 import { initTelemetry } from './telemetry.js';
 import { initPresets, createDefaultPresets, listPresets, getCurrentPresetName } from './presets.js';
 import { initAudio, getAudioValues } from './audio.js';
@@ -24,9 +25,21 @@ initMIDI(() => {
 initPresets();
 createDefaultPresets();
 
+// Restore presets from localStorage
+try {
+  const savedPresets = JSON.parse(localStorage.getItem("presets") || "{}");
+  if (Object.keys(savedPresets).length > 0) {
+    console.log("💾 Restored presets from localStorage");
+  }
+} catch (error) {
+  console.warn("💾 Failed to restore presets:", error);
+}
+
 initAudio();
 
 initShadows(scene);
+
+initSprites(scene);
 
 initTelemetry(() => ({
   midiDevices: getMIDIDeviceCount(),

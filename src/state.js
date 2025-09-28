@@ -29,6 +29,9 @@ export const state = {
     sensitivity: 1.0, // Audio sensitivity multiplier
   },
 
+  // Audio reactivity toggle
+  audioReactive: false,
+
   // Lighting system
   lighting: {
     ambientIntensity: 0.4,
@@ -38,9 +41,7 @@ export const state = {
   },
 
   // Preset system
-  presets: {
-    currentPresetName: null,
-  },
+  presets: [],
 
   // Morph state (for transitions and blending)
   morphState: {
