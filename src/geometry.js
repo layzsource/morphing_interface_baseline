@@ -281,7 +281,7 @@ function animate() {
   updateGeometryFromState();
 
   // Update shadows
-  updateShadows();
+  updateShadows(state.audioReactive);
 
   // Update sprites
   updateSprites();

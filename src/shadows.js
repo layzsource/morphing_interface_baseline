@@ -5,37 +5,36 @@ import { state } from './state.js';
 let shadowMesh;
 
 export function initShadows(scene) {
-  const shadowMaterial = new THREE.MeshBasicMaterial({
-    color: 0x000000,
+  console.log("🌑 Shadows initialized (v1.8.5)");
+
+  const geom = new THREE.CircleGeometry(2.5, 64);
+  const mat = new THREE.MeshBasicMaterial({
+    color: 0x000000,    // true black
     transparent: true,
-    opacity: 0.3,
-    side: THREE.DoubleSide,
+    opacity: 0.25,      // subtle default
+    depthWrite: false
   });
 
-  // Flat plane behind vessel
-  const shadowGeometry = new THREE.PlaneGeometry(4, 4);
-  shadowMesh = new THREE.Mesh(shadowGeometry, shadowMaterial);
-  shadowMesh.position.z = -20;
-  scene.add(shadowMesh);
+  shadowMesh = new THREE.Mesh(geom, mat);
 
-  console.log("🌑 Shadows initialized");
+  // Flat disk directly under vessel
+  shadowMesh.rotation.x = -Math.PI / 2;
+  shadowMesh.position.set(0, -1.2, 0);
+
+  scene.add(shadowMesh);
 }
 
-export function updateShadows() {
+export function updateShadows(audioReactive) {
   if (!shadowMesh) return;
 
-  // Tie shadow scale to Vessel state (2x multiplier for visibility)
+  // Scale relative to vessel
   shadowMesh.scale.set(state.scale * 2, state.scale * 2, 1);
 
-  // Force shadow color to black for proper projection
-  shadowMesh.material.color.set(0x000000);
-
-  // Subtle opacity with audio reactivity
-  if (state.audio.enabled) {
-    const avg =
-      (state.audio.bass + state.audio.mid + state.audio.treble) / 3;
-    shadowMesh.material.opacity = 0.1 + avg * 0.2;
+  // Audio-reactive opacity
+  if (audioReactive && state.audio) {
+    const avg = (state.audio.bass + state.audio.mid + state.audio.treble) / 3;
+    shadowMesh.material.opacity = 0.1 + avg * 0.4; // 0.1 – 0.5 range
   } else {
-    shadowMesh.material.opacity = 0.1;
+    shadowMesh.material.opacity = 0.25;
   }
 }

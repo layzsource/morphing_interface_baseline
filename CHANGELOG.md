@@ -1,5 +1,48 @@
 # Changelog
 
+## [1.8.3] - 2025-09-28
+### Fixed
+- Restored proper shadow appearance with black color (0x000000) and subtle opacity (0.25).
+- Corrected shadow positioning to y = -1.2 beneath vessel center.
+- Reduced shadow radius from debug size 5 to production size 2.
+- Fixed updateShadows to accept audioReactive parameter for proper state-driven behavior.
+- Enhanced audio-reactive opacity range (0.1-0.5) with static fallback (0.25).
+### Benefits
+- Shadow appears as flat black disk beneath vessel (not vertical panel).
+- Shadow scales proportionally with vessel size (state.scale * 2).
+- Audio-reactive mode provides gentle opacity pulsing with music.
+- Static mode maintains consistent subtle shadow when audio is disabled.
+- Console message updated for v1.8.3 bugfix identification.
+
+## [1.8.2] - 2025-09-28
+### Changed (Debug)
+- Increased CircleGeometry radius from 3 to 5 for visibility testing.
+- Changed shadow color from black (0x000000) to bright red (0xff0000) for debug visibility.
+- Increased opacity from 0.15 to 0.8 for clear visual confirmation.
+- Positioned shadow closer to vessel (y = -0.1) for immediate visibility.
+- Locked rotation to -Math.PI / 2 for consistent upward-facing orientation.
+### Benefits
+- Large red disk shadow provides clear visual confirmation of shadow system functionality.
+- Debug configuration allows verification of positioning and rendering pipeline.
+- State-driven architecture remains intact with no module interference.
+- Temporary debug state - ready for reversion to subtle appearance in v1.8.3.
+
+## [1.8.1] - 2025-09-28
+### Added
+- Circular shadow plane beneath vessel using CircleGeometry(3, 64).
+- Subtle shadow with depthWrite: false to prevent z-fighting.
+- Dynamic shadow scaling tied to state.scale with 2x multiplier.
+- Audio-reactive shadow opacity (0.1-0.5 range) responding to bass/mid/treble.
+### Changed
+- Repositioned shadow from behind vessel (z=-20) to beneath vessel (y=-1.5).
+- Updated shadow geometry from PlaneGeometry to CircleGeometry for softer appearance.
+- Improved shadow rotation (x=-Math.PI/2) for proper ground projection.
+### Benefits
+- Subtle visual grounding effect beneath the morphing vessel.
+- Audio-reactive shadow provides additional visual feedback layer.
+- Unobtrusive design maintains focus on primary vessel geometry.
+- No interference with existing sprites, presets, or geometry systems.
+
 ## [1.7.2] - 2025-09-28
 ### Added
 - Direct microphone audio input with real-time frequency analysis.
