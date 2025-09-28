@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { state } from './state.js';
+import { updateShadows } from './shadows.js';
 
 console.log("🔺 geometry.js loaded");
 
@@ -12,7 +13,7 @@ export function getHUDIdleSpin() {
 }
 
 const canvas = document.querySelector('#app');
-const scene = new THREE.Scene();
+export const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ canvas });
 
@@ -57,10 +58,11 @@ function createMorphGeometry() {
   }
 
   function toTorus(v) {
-    // Convert spherical coordinates to torus
+    // Convert spherical coordinates to torus with full 360° arc
     const R = 0.7, r = 0.3;
     const theta = Math.atan2(v.z, v.x);
-    const phi = Math.acos(THREE.MathUtils.clamp(v.y, -1, 1));
+    // Use atan2 for full range instead of acos for complete torus
+    const phi = Math.atan2(Math.sqrt(v.x * v.x + v.z * v.z), v.y);
 
     const cx = (R + r * Math.cos(phi)) * Math.cos(theta);
     const cy = r * Math.sin(phi);
@@ -220,6 +222,9 @@ function animate() {
 
   // Update geometry from current state
   updateGeometryFromState();
+
+  // Update shadows
+  updateShadows();
 
   renderer.render(scene, camera);
 }

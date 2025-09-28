@@ -1,5 +1,32 @@
 # Changelog
 
+## [1.6.2] - 2025-09-28
+### Fixed
+- Corrected Torus morph target to use full 360° arc (`Math.atan2` for complete range).
+### Benefits
+- Torus now renders as a complete ring rather than a sliced bagel.
+- Smooth interpolation with other morph targets preserved.
+
+## [1.6.1] - 2025-09-28
+### Fixed
+- Scaled shadow plane relative to vessel size (2× state.scale).
+- Reduced base opacity to 0.1, audio-reactivity modulates up to ~0.3.
+- Repositioned shadow plane farther back (z = -20).
+- Forced shadow color to black for proper projection (no green overlays).
+### Benefits
+- Shadows now appear as subtle background projections.
+- Visual regression (large green block) fully resolved.
+
+## [1.6.0] - 2025-09-28
+### Added
+- Shadows module (src/shadows.js) as first consumer of state.js.
+- Shadows scale + color linked to Vessel state.
+- Shadows opacity modulated by audio bands when audio enabled.
+### Benefits
+- Demonstrates state.js modular expansion.
+- Adds second visual layer to engine (Vessel + Shadows).
+- Validates extensibility for future Sprites/Particles.
+
 ## [1.5.0] - 2025-09-28
 ### Added
 - New `src/state.js` for centralized modular state management.

@@ -1,6 +1,7 @@
 import { initHUD, updatePresetList } from './hud.js';
 import { initMIDI, getMIDIDeviceCount } from './midi.js';
-import { getHUDIdleSpin, getVisualData, getMorphState } from './geometry.js';
+import { getHUDIdleSpin, getVisualData, getMorphState, scene } from './geometry.js';
+import { initShadows } from './shadows.js';
 import { initTelemetry } from './telemetry.js';
 import { initPresets, createDefaultPresets, listPresets, getCurrentPresetName } from './presets.js';
 import { initAudio, getAudioValues } from './audio.js';
@@ -24,6 +25,8 @@ initPresets();
 createDefaultPresets();
 
 initAudio();
+
+initShadows(scene);
 
 initTelemetry(() => ({
   midiDevices: getMIDIDeviceCount(),
