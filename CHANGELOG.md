@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.1.0] - 2025-09-28
+### Added
+- Preset system with save/load/delete/list functionality:
+  - `savePreset(name, state)` - Save current morph state to named preset
+  - `loadPreset(name)` - Load preset and apply all morph settings
+  - `deletePreset(name)` - Remove preset from storage
+  - `listPresets()` - Get array of all saved preset names
+- HUD: Added preset controls section with save/load/delete interface:
+  - Text input field for preset names
+  - Save button to store current state
+  - Dropdown to select existing presets
+  - Load button to apply selected preset
+  - Delete button to remove selected preset
+- LocalStorage persistence for presets across browser reloads
+- Telemetry: Shows currently loaded preset name with 💾 icon
+- Default presets: "Cube Default", "Sphere Focus", "Mixed Blend" created automatically
+- Full state capture including morph weights, blend values, HUD settings
+- Auto-updating preset dropdown when presets are added/removed
+
 ## [1.0.0] - 2025-09-28
 ### Added
 - Periaktos Phase 4: Multi-target morph blending system:

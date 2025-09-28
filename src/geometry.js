@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { onCC } from './midi.js';
-import { onHUDUpdate } from './hud.js';
-import { onMorphUpdate, setMorphTarget, setMorphBlend, setTargetWeight } from './periaktos.js';
+import { onHUDUpdate, updatePresetList } from './hud.js';
+import { onMorphUpdate, setMorphTarget, setMorphBlend, setTargetWeight, setMorphWeights, getMorphWeights } from './periaktos.js';
+import { savePreset, loadPreset, deletePreset, listPresets } from './presets.js';
 
 console.log("🔺 geometry.js loaded");
 
@@ -125,6 +126,9 @@ onHUDUpdate((update) => {
     const { target, weight } = update.targetWeight;
     setTargetWeight(target, weight);
   }
+  if (update.presetAction !== undefined) {
+    handlePresetAction(update.presetAction, update.presetName);
+  }
 });
 
 onMorphUpdate((morphData) => {
@@ -169,6 +173,70 @@ function updateMorphVisibility() {
       morphObjects[current].visible = true;
       morphObjects[current].material.opacity = progress;
     }
+  }
+}
+
+function handlePresetAction(action, presetName) {
+  if (!presetName) return;
+
+  switch (action) {
+    case 'save':
+      const currentState = {
+        morphWeights: getMorphWeights(),
+        morphBlend: currentMorphState?.blend || 0.0,
+        currentTarget: currentMorphState?.current || 'cube',
+        hudIdleSpin: hudIdleSpin,
+        hudRotX: hudRotX,
+        hudRotY: hudRotY,
+        hudScale: hudScale
+      };
+
+      if (savePreset(presetName, currentState)) {
+        console.log(`💾 Saved preset: ${presetName}`);
+        updatePresetList(listPresets());
+      }
+      break;
+
+    case 'load':
+      const preset = loadPreset(presetName);
+      if (preset && preset.state) {
+        console.log(`💾 Loading preset: ${presetName}`);
+
+        // Apply morph weights
+        if (preset.state.morphWeights) {
+          setMorphWeights(preset.state.morphWeights);
+        }
+
+        // Apply morph blend
+        if (preset.state.morphBlend !== undefined) {
+          setMorphBlend(preset.state.morphBlend);
+        }
+
+        // Apply current target
+        if (preset.state.currentTarget) {
+          setMorphTarget(preset.state.currentTarget);
+        }
+
+        // Apply HUD settings (note: these will be overridden by HUD controls immediately)
+        if (preset.state.hudSettings) {
+          const settings = preset.state.hudSettings;
+          if (settings.idleSpin !== undefined) hudIdleSpin = settings.idleSpin;
+          if (settings.rotX !== undefined) hudRotX = settings.rotX;
+          if (settings.rotY !== undefined) hudRotY = settings.rotY;
+          if (settings.scale !== undefined) hudScale = settings.scale;
+        }
+      }
+      break;
+
+    case 'delete':
+      if (deletePreset(presetName)) {
+        console.log(`💾 Deleted preset: ${presetName}`);
+        updatePresetList(listPresets());
+      }
+      break;
+
+    default:
+      console.warn(`💾 Unknown preset action: ${action}`);
   }
 }
 

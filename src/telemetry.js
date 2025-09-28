@@ -5,6 +5,7 @@ let fpsDisplay = null;
 let midiDisplay = null;
 let hudDisplay = null;
 let morphDisplay = null;
+let presetDisplay = null;
 
 let lastTime = performance.now();
 let frameCount = 0;
@@ -55,6 +56,10 @@ function createTelemetryOverlay() {
   morphDisplay = document.createElement('div');
   morphDisplay.textContent = 'Morph: -- (0.0)';
   telemetryOverlay.appendChild(morphDisplay);
+
+  presetDisplay = document.createElement('div');
+  presetDisplay.textContent = 'Preset: --';
+  telemetryOverlay.appendChild(presetDisplay);
 
   document.body.appendChild(telemetryOverlay);
 }
@@ -121,6 +126,16 @@ function updateDisplays(state) {
       // Fallback display
       morphDisplay.textContent = `${statusIcon} Legacy mode`;
       morphDisplay.style.color = '#888888';
+    }
+  }
+
+  if (presetDisplay && state.currentPreset !== undefined) {
+    if (state.currentPreset) {
+      presetDisplay.textContent = `💾 ${state.currentPreset}`;
+      presetDisplay.style.color = '#00ffff';
+    } else {
+      presetDisplay.textContent = '💾 None';
+      presetDisplay.style.color = '#888888';
     }
   }
 }

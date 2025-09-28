@@ -96,6 +96,78 @@ function createHUDPanel() {
   });
   panel.appendChild(torusWeightControl);
 
+  // Add separator for Phase 5 preset controls
+  const presetSeparator = document.createElement('hr');
+  presetSeparator.style.cssText = 'border: 1px solid #555; margin: 15px 0;';
+  panel.appendChild(presetSeparator);
+
+  const presetTitle = document.createElement('h4');
+  presetTitle.textContent = '💾 Presets';
+  presetTitle.style.cssText = 'margin: 0 0 10px 0; color: #00ffff; font-size: 12px;';
+  panel.appendChild(presetTitle);
+
+  // Preset save controls
+  const saveContainer = document.createElement('div');
+  saveContainer.style.cssText = 'margin-bottom: 10px;';
+
+  const saveInput = document.createElement('input');
+  saveInput.type = 'text';
+  saveInput.placeholder = 'Preset name...';
+  saveInput.style.cssText = 'width: 60%; padding: 4px; background: #333; color: white; border: 1px solid #555; margin-right: 5px;';
+
+  const saveButton = document.createElement('button');
+  saveButton.textContent = 'Save';
+  saveButton.style.cssText = 'width: 35%; padding: 4px; background: #00ff00; color: black; border: none; cursor: pointer;';
+
+  saveButton.addEventListener('click', () => {
+    const presetName = saveInput.value.trim();
+    if (presetName) {
+      notifyHUDUpdate({ presetAction: 'save', presetName: presetName });
+      saveInput.value = '';
+    }
+  });
+
+  saveContainer.appendChild(saveInput);
+  saveContainer.appendChild(saveButton);
+  panel.appendChild(saveContainer);
+
+  // Preset load/delete controls
+  const loadContainer = document.createElement('div');
+  loadContainer.style.cssText = 'margin-bottom: 10px;';
+
+  const presetSelect = document.createElement('select');
+  presetSelect.style.cssText = 'width: 60%; padding: 4px; background: #333; color: white; border: 1px solid #555; margin-right: 5px;';
+
+  const loadButton = document.createElement('button');
+  loadButton.textContent = 'Load';
+  loadButton.style.cssText = 'width: 18%; padding: 4px; background: #0088ff; color: white; border: none; cursor: pointer; margin-right: 2%;';
+
+  const deleteButton = document.createElement('button');
+  deleteButton.textContent = 'Del';
+  deleteButton.style.cssText = 'width: 15%; padding: 4px; background: #ff4444; color: white; border: none; cursor: pointer;';
+
+  loadButton.addEventListener('click', () => {
+    const selectedPreset = presetSelect.value;
+    if (selectedPreset) {
+      notifyHUDUpdate({ presetAction: 'load', presetName: selectedPreset });
+    }
+  });
+
+  deleteButton.addEventListener('click', () => {
+    const selectedPreset = presetSelect.value;
+    if (selectedPreset && confirm(`Delete preset "${selectedPreset}"?`)) {
+      notifyHUDUpdate({ presetAction: 'delete', presetName: selectedPreset });
+    }
+  });
+
+  loadContainer.appendChild(presetSelect);
+  loadContainer.appendChild(loadButton);
+  loadContainer.appendChild(deleteButton);
+  panel.appendChild(loadContainer);
+
+  // Store references for updating preset list
+  panel.presetSelect = presetSelect;
+
   return panel;
 }
 
@@ -194,6 +266,30 @@ function createDropdownControl(label, defaultValue, options, onChange) {
   container.appendChild(select);
 
   return container;
+}
+
+export function updatePresetList(presets) {
+  const hudPanel = document.getElementById('hud-panel');
+  if (hudPanel && hudPanel.presetSelect) {
+    const presetSelect = hudPanel.presetSelect;
+
+    // Clear current options
+    presetSelect.innerHTML = '';
+
+    // Add empty option
+    const emptyOption = document.createElement('option');
+    emptyOption.value = '';
+    emptyOption.textContent = 'Select preset...';
+    presetSelect.appendChild(emptyOption);
+
+    // Add preset options
+    presets.forEach(presetName => {
+      const option = document.createElement('option');
+      option.value = presetName;
+      option.textContent = presetName;
+      presetSelect.appendChild(option);
+    });
+  }
 }
 
 function notifyHUDUpdate(update) {
