@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.3.0] - 2025-09-28
+### Added
+- Visual polish system with advanced lighting and color control:
+  - Ambient lighting with adjustable intensity (0-2.0) for soft overall illumination
+  - Directional lighting with adjustable intensity (0-2.0) and angle controls (X/Y rotation)
+  - MeshStandardMaterial with wireframe rendering for professional lighting response
+  - Material properties: 70% roughness, 30% metalness for optimal visual appeal
+- HUD: Added visual polish controls section:
+  - Ambient intensity slider for soft lighting control
+  - Directional intensity slider for primary light source
+  - Light angle X/Y sliders (-90° to +90°) for precise lighting direction
+  - Color picker for real-time geometry color adjustment with hex display
+  - Magenta-themed styling (🎨) to distinguish visual controls
+- MIDI: CC10 mapped to hue shift for real-time color modulation (0-127 → 0-360°)
+- Telemetry: Visual status display showing ambient/directional intensities and current color
+- Presets: Visual settings now saved/loaded with lighting and color parameters
+- HSL color system integration for smooth hue transitions via MIDI control
+- Automatic material updates across all morph targets when colors change
+
 ## [1.2.0] - 2025-09-28
 ### Added
 - Audio-reactive morphing system using Web Audio API and FFT analysis:

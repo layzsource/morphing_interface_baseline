@@ -1,6 +1,6 @@
 import { initHUD, updatePresetList } from './hud.js';
 import { initMIDI, onCC, getMIDIDeviceCount } from './midi.js';
-import { getHUDIdleSpin } from './geometry.js';
+import { getHUDIdleSpin, getVisualData } from './geometry.js';
 import { initPeriaktos, toggleMorph, getMorphState } from './periaktos.js';
 import { initTelemetry } from './telemetry.js';
 import { initPresets, createDefaultPresets, listPresets, getCurrentPresetName } from './presets.js';
@@ -30,7 +30,8 @@ initTelemetry(() => ({
   hudIdle: getHUDIdleSpin(),
   morphState: getMorphState(),
   currentPreset: getCurrentPresetName(),
-  audioData: getAudioValues()
+  audioData: getAudioValues(),
+  visualData: getVisualData()
 }));
 
 // Update preset list in HUD after initialization

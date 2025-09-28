@@ -7,6 +7,7 @@ let hudDisplay = null;
 let morphDisplay = null;
 let presetDisplay = null;
 let audioDisplay = null;
+let visualDisplay = null;
 
 let lastTime = performance.now();
 let frameCount = 0;
@@ -65,6 +66,10 @@ function createTelemetryOverlay() {
   audioDisplay = document.createElement('div');
   audioDisplay.textContent = 'Audio: OFF';
   telemetryOverlay.appendChild(audioDisplay);
+
+  visualDisplay = document.createElement('div');
+  visualDisplay.textContent = 'Visual: --';
+  telemetryOverlay.appendChild(visualDisplay);
 
   document.body.appendChild(telemetryOverlay);
 }
@@ -155,5 +160,13 @@ function updateDisplays(state) {
       audioDisplay.textContent = '🎶 OFF';
       audioDisplay.style.color = '#888888';
     }
+  }
+
+  if (visualDisplay && state.visualData !== undefined) {
+    const ambient = state.visualData.ambientIntensity.toFixed(1);
+    const directional = state.visualData.directionalIntensity.toFixed(1);
+    const color = state.visualData.color;
+    visualDisplay.textContent = `🎨 A${ambient} D${directional} ${color}`;
+    visualDisplay.style.color = '#ff66ff';
   }
 }

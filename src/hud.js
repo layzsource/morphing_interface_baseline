@@ -190,6 +190,46 @@ function createHUDPanel() {
   });
   panel.appendChild(audioSensitivityControl);
 
+  // Add separator for Phase 7 visual controls
+  const visualSeparator = document.createElement('hr');
+  visualSeparator.style.cssText = 'border: 1px solid #555; margin: 15px 0;';
+  panel.appendChild(visualSeparator);
+
+  const visualTitle = document.createElement('h4');
+  visualTitle.textContent = '🎨 Visual Polish';
+  visualTitle.style.cssText = 'margin: 0 0 10px 0; color: #ff66ff; font-size: 12px;';
+  panel.appendChild(visualTitle);
+
+  // Ambient light intensity
+  const ambientLightControl = createSliderControl('Ambient Intensity', 0.4, 0.0, 2.0, 0.1, (value) => {
+    notifyHUDUpdate({ ambientIntensity: value });
+  });
+  panel.appendChild(ambientLightControl);
+
+  // Directional light intensity
+  const directionalLightControl = createSliderControl('Directional Intensity', 1.0, 0.0, 2.0, 0.1, (value) => {
+    notifyHUDUpdate({ directionalIntensity: value });
+  });
+  panel.appendChild(directionalLightControl);
+
+  // Directional light angle X
+  const directionalAngleXControl = createSliderControl('Light Angle X', -45, -90, 90, 5, (value) => {
+    notifyHUDUpdate({ directionalAngleX: value });
+  });
+  panel.appendChild(directionalAngleXControl);
+
+  // Directional light angle Y
+  const directionalAngleYControl = createSliderControl('Light Angle Y', 45, -90, 90, 5, (value) => {
+    notifyHUDUpdate({ directionalAngleY: value });
+  });
+  panel.appendChild(directionalAngleYControl);
+
+  // Color picker
+  const colorPickerControl = createColorPickerControl('Geometry Color', '#00ff00', (value) => {
+    notifyHUDUpdate({ color: value });
+  });
+  panel.appendChild(colorPickerControl);
+
   return panel;
 }
 
@@ -286,6 +326,36 @@ function createDropdownControl(label, defaultValue, options, onChange) {
 
   container.appendChild(labelEl);
   container.appendChild(select);
+
+  return container;
+}
+
+function createColorPickerControl(label, defaultValue, onChange) {
+  const container = document.createElement('div');
+  container.style.cssText = 'margin-bottom: 15px;';
+
+  const labelEl = document.createElement('label');
+  labelEl.textContent = label + ': ';
+  labelEl.style.cssText = 'display: block; margin-bottom: 5px;';
+
+  const colorPicker = document.createElement('input');
+  colorPicker.type = 'color';
+  colorPicker.value = defaultValue;
+  colorPicker.style.cssText = 'width: 60%; height: 32px; padding: 2px; background: #333; border: 1px solid #555; cursor: pointer; margin-right: 10px;';
+
+  const colorDisplay = document.createElement('span');
+  colorDisplay.textContent = defaultValue.toUpperCase();
+  colorDisplay.style.cssText = 'color: #00ff00; font-size: 12px; font-family: monospace;';
+
+  colorPicker.addEventListener('change', () => {
+    const value = colorPicker.value;
+    colorDisplay.textContent = value.toUpperCase();
+    onChange(value);
+  });
+
+  container.appendChild(labelEl);
+  container.appendChild(colorPicker);
+  container.appendChild(colorDisplay);
 
   return container;
 }
