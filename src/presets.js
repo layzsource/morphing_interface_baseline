@@ -149,7 +149,11 @@ export function createDefaultPresets() {
       hudIdleSpin: true,
       hudRotX: 0,
       hudRotY: 0,
-      hudScale: 1.0
+      hudScale: 1.0,
+      visualSettings: {
+        color: '#ff0000',
+        hue: 0
+      }
     });
 
     // Sphere Focus
@@ -160,7 +164,11 @@ export function createDefaultPresets() {
       hudIdleSpin: true,
       hudRotX: 0,
       hudRotY: 0,
-      hudScale: 1.0
+      hudScale: 1.0,
+      visualSettings: {
+        color: '#00ff00',
+        hue: 120
+      }
     });
 
     // Mixed Blend
@@ -171,7 +179,11 @@ export function createDefaultPresets() {
       hudIdleSpin: true,
       hudRotX: 0,
       hudRotY: 0,
-      hudScale: 1.0
+      hudScale: 1.0,
+      visualSettings: {
+        color: '#0000ff',
+        hue: 240
+      }
     });
   }
 }

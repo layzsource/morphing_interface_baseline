@@ -1,39 +1,14 @@
 import * as THREE from 'three';
-import { onCC } from './midi.js';
-import { onHUDUpdate, updatePresetList } from './hud.js';
-import { onMorphUpdate, setMorphTarget, setMorphBlend, setTargetWeight, setMorphWeights, getMorphWeights } from './periaktos.js';
-import { savePreset, loadPreset, deletePreset, listPresets } from './presets.js';
-import { onAudioUpdate, enableAudio, disableAudio, setAudioSensitivity, getAudioValues, getAudioState, setAudioState } from './audio.js';
+import { state } from './state.js';
 
 console.log("🔺 geometry.js loaded");
 
-// MIDI influence variables
-let midiRotX = 0;
-let midiRotY = 0;
-let midiScale = 1;
-
-// HUD influence variables
-let hudRotX = 0;
-let hudRotY = 0;
-let hudScale = 1.0;
-let hudIdleSpin = true;
-
-// Audio influence variables
-let audioMorphWeights = { cube: 0.0, sphere: 0.0, pyramid: 0.0, torus: 0.0 };
-let currentAudioData = null;
-
-// Visual polish variables
+// Scene lighting references
 let ambientLight = null;
 let directionalLight = null;
-let ambientIntensity = 0.4;
-let directionalIntensity = 1.0;
-let directionalAngleX = -45; // degrees
-let directionalAngleY = 45; // degrees
-let currentColor = '#00ff00'; // Default green
-let currentHue = 120; // Green hue in degrees
 
 export function getHUDIdleSpin() {
-  return hudIdleSpin;
+  return state.idleSpin;
 }
 
 const canvas = document.querySelector('#app');
@@ -44,42 +19,110 @@ const renderer = new THREE.WebGLRenderer({ canvas });
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-const cubeGeometry = new THREE.BoxGeometry();
-const sphereGeometry = new THREE.SphereGeometry(0.8, 32, 32);
-const pyramidGeometry = new THREE.ConeGeometry(0.8, 1.5, 8);
-const torusGeometry = new THREE.TorusGeometry(0.7, 0.3, 16, 100);
+// Create consistent vertex correspondence system for morph targets
+function createMorphGeometry() {
+  // Use icosahedron as base for consistent vertex distribution
+  const detail = 4; // Balance between quality and performance
+  const baseGeometry = new THREE.IcosahedronGeometry(1, detail).toNonIndexed();
+  const basePositions = baseGeometry.attributes.position.array;
+
+  // Helper functions to map unit vectors to target shapes
+  function toSphere(v) {
+    return v.clone().normalize().multiplyScalar(0.8);
+  }
+
+  function toCube(v) {
+    const x = v.x, y = v.y, z = v.z;
+    const maxComponent = Math.max(Math.abs(x), Math.abs(y), Math.abs(z)) || 1e-6;
+    return new THREE.Vector3(x / maxComponent, y / maxComponent, z / maxComponent).multiplyScalar(0.8);
+  }
+
+  function toPyramid(v) {
+    // Square pyramid with apex at (0, 1, 0)
+    const absY = Math.abs(v.y);
+    const height = 0.75;
+
+    if (absY > 0.7) {
+      // Near the apex
+      const signY = Math.sign(v.y) || 1;
+      return new THREE.Vector3(0, signY * height, 0);
+    } else {
+      // Project to pyramid faces
+      const baseScale = (1 - absY) * 0.8;
+      const px = THREE.MathUtils.clamp(v.x, -1, 1) * baseScale;
+      const pz = THREE.MathUtils.clamp(v.z, -1, 1) * baseScale;
+      const py = v.y * height;
+      return new THREE.Vector3(px, py, pz);
+    }
+  }
+
+  function toTorus(v) {
+    // Convert spherical coordinates to torus
+    const R = 0.7, r = 0.3;
+    const theta = Math.atan2(v.z, v.x);
+    const phi = Math.acos(THREE.MathUtils.clamp(v.y, -1, 1));
+
+    const cx = (R + r * Math.cos(phi)) * Math.cos(theta);
+    const cy = r * Math.sin(phi);
+    const cz = (R + r * Math.cos(phi)) * Math.sin(theta);
+    return new THREE.Vector3(cx, cy, cz);
+  }
+
+  // Build morph target position arrays
+  function buildTargetPositions(mapper) {
+    const positions = new Float32Array(basePositions.length);
+    for (let i = 0; i < basePositions.length; i += 3) {
+      const v = new THREE.Vector3(basePositions[i], basePositions[i + 1], basePositions[i + 2]).normalize();
+      const mapped = mapper(v);
+      positions[i] = mapped.x;
+      positions[i + 1] = mapped.y;
+      positions[i + 2] = mapped.z;
+    }
+    return positions;
+  }
+
+  // Create morph targets
+  const spherePositions = buildTargetPositions(toSphere);
+  const cubePositions = buildTargetPositions(toCube);
+  const pyramidPositions = buildTargetPositions(toPyramid);
+  const torusPositions = buildTargetPositions(toTorus);
+
+  // Set up geometry with morph targets
+  const geometry = baseGeometry.clone();
+  geometry.morphAttributes.position = [
+    new THREE.Float32BufferAttribute(spherePositions, 3),   // Index 0: sphere
+    new THREE.Float32BufferAttribute(cubePositions, 3),     // Index 1: cube
+    new THREE.Float32BufferAttribute(pyramidPositions, 3),  // Index 2: pyramid
+    new THREE.Float32BufferAttribute(torusPositions, 3)     // Index 3: torus
+  ];
+
+  return geometry;
+}
 
 // Use MeshStandardMaterial for better lighting
 const material = new THREE.MeshStandardMaterial({
-  color: currentColor,
+  color: state.color,
   wireframe: true,
   roughness: 0.7,
   metalness: 0.3
 });
 
+// Create single mesh with morph targets
+const morphGeometry = createMorphGeometry();
+const morphMesh = new THREE.Mesh(morphGeometry, material);
+morphMesh.position.set(0, 0, 0);
+scene.add(morphMesh);
+
+// Initialize morph target influences (start with cube)
+morphMesh.morphTargetInfluences = [0, 1, 0, 0]; // [sphere, cube, pyramid, torus]
+
+// Keep reference for backward compatibility
 const morphObjects = {
-  cube: new THREE.Mesh(cubeGeometry, material.clone()),
-  sphere: new THREE.Mesh(sphereGeometry, material.clone()),
-  pyramid: new THREE.Mesh(pyramidGeometry, material.clone()),
-  torus: new THREE.Mesh(torusGeometry, material.clone())
+  mesh: morphMesh // Single mesh reference
 };
-
-// Ensure all geometries are centered at origin
-Object.values(morphObjects).forEach(obj => {
-  obj.position.set(0, 0, 0);
-  obj.material.transparent = true;
-  obj.visible = false;
-  scene.add(obj);
-});
-
-// Start with cube visible
-morphObjects.cube.visible = true;
-morphObjects.cube.material.opacity = 1;
 
 // Setup lighting
 setupLighting();
-
-let currentMorphState = null;
 
 // Position camera for centered view
 camera.position.set(0, 0, 5);
@@ -92,265 +135,34 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-onCC(({ cc, value }) => {
-  if (cc === 1) {
-    midiRotX = (value / 127) * 0.1;   // map to rotation speed
-  } else if (cc === 2) {
-    // Map CC2 to morph intensity (0.0-1.0)
-    const morphIntensity = value / 127; // Scale 0-127 to 0.0-1.0
-    setMorphBlend(morphIntensity);
-  } else if (cc === 3) {
-    // Map CC3 to morph target selection
-    const targets = ["cube", "sphere", "pyramid", "torus"];
-    let targetIndex;
-    if (value < 32) targetIndex = 0;      // 0-31 → Cube
-    else if (value < 64) targetIndex = 1; // 32-63 → Sphere
-    else if (value < 96) targetIndex = 2; // 64-95 → Pyramid
-    else targetIndex = 3;                 // 96-127 → Torus
+// Function to update geometry from state
+function updateGeometryFromState() {
+  // Update morph target influences from state
+  morphMesh.morphTargetInfluences[0] = state.morphWeights.sphere;  // sphere
+  morphMesh.morphTargetInfluences[1] = state.morphWeights.cube;    // cube
+  morphMesh.morphTargetInfluences[2] = state.morphWeights.pyramid; // pyramid
+  morphMesh.morphTargetInfluences[3] = state.morphWeights.torus;   // torus
 
-    setMorphTarget(targets[targetIndex]);
-  } else if (cc === 4) {
-    midiRotY = (value / 127) * 0.1;   // map to rotation speed
-  } else if (cc === 10) {
-    // Map CC10 to hue shift (0-127 → 0-360°)
-    const newHue = (value / 127) * 360;
-    setHue(newHue);
-  } else if (cc === 21) {
-    // Map CC21 to Sphere weight (0.0-1.0)
-    const sphereWeight = value / 127; // Scale 0-127 to 0.0-1.0
-    setTargetWeight('sphere', sphereWeight);
-  } else if (cc === 22) {
-    // Map CC22 to Pyramid weight (0.0-1.0)
-    const pyramidWeight = value / 127; // Scale 0-127 to 0.0-1.0
-    setTargetWeight('pyramid', pyramidWeight);
-  } else if (cc === 23) {
-    // Map CC23 to Torus weight (0.0-1.0)
-    const torusWeight = value / 127; // Scale 0-127 to 0.0-1.0
-    setTargetWeight('torus', torusWeight);
-  } else if (cc === 24) {
-    midiScale = 0.5 + (value / 127) * 1.5; // clamp between 0.5–2.0 (moved from CC22)
+  // Update material color from state
+  material.color.set(state.color);
+
+  // Update lighting from state
+  if (ambientLight) {
+    ambientLight.intensity = state.lighting.ambientIntensity;
   }
-});
-
-onHUDUpdate((update) => {
-  if (update.idleSpin !== undefined) {
-    hudIdleSpin = update.idleSpin;
+  if (directionalLight) {
+    directionalLight.intensity = state.lighting.directionalIntensity;
+    updateDirectionalLightPosition();
   }
-  if (update.rotX !== undefined) {
-    hudRotX = update.rotX;
-  }
-  if (update.rotY !== undefined) {
-    hudRotY = update.rotY;
-  }
-  if (update.scale !== undefined) {
-    hudScale = update.scale;
-  }
-  if (update.morphTarget !== undefined) {
-    setMorphTarget(update.morphTarget);
-  }
-  if (update.morphBlend !== undefined) {
-    setMorphBlend(update.morphBlend);
-  }
-  if (update.targetWeight !== undefined) {
-    const { target, weight } = update.targetWeight;
-    setTargetWeight(target, weight);
-  }
-  if (update.presetAction !== undefined) {
-    handlePresetAction(update.presetAction, update.presetName);
-  }
-  if (update.audioEnabled !== undefined) {
-    if (update.audioEnabled) {
-      enableAudio();
-    } else {
-      disableAudio();
-    }
-  }
-  if (update.audioSensitivity !== undefined) {
-    setAudioSensitivity(update.audioSensitivity);
-  }
-  if (update.ambientIntensity !== undefined) {
-    setAmbientIntensity(update.ambientIntensity);
-  }
-  if (update.directionalIntensity !== undefined) {
-    setDirectionalIntensity(update.directionalIntensity);
-  }
-  if (update.directionalAngleX !== undefined) {
-    setDirectionalAngleX(update.directionalAngleX);
-  }
-  if (update.directionalAngleY !== undefined) {
-    setDirectionalAngleY(update.directionalAngleY);
-  }
-  if (update.color !== undefined) {
-    setColor(update.color);
-  }
-});
-
-onMorphUpdate((morphData) => {
-  currentMorphState = morphData;
-  updateMorphVisibility();
-});
-
-onAudioUpdate((audioData) => {
-  currentAudioData = audioData;
-
-  if (audioData.isEnabled) {
-    // Map audio frequencies to morph targets
-    // Bass → Cube weight
-    // Mid → Sphere weight
-    // Treble → Pyramid weight
-    // Torus unaffected for Phase 6
-    audioMorphWeights.cube = audioData.bass;
-    audioMorphWeights.sphere = audioData.mid;
-    audioMorphWeights.pyramid = audioData.treble;
-    audioMorphWeights.torus = 0.0;
-
-    // Apply audio-reactive morphing by combining with existing weights
-    applyAudioReactiveMorphing();
-  } else {
-    // Reset audio weights when disabled
-    audioMorphWeights = { cube: 0.0, sphere: 0.0, pyramid: 0.0, torus: 0.0 };
-  }
-});
-
-function updateMorphVisibility() {
-  if (!currentMorphState) return;
-
-  const { current, previous, progress, weights } = currentMorphState;
-
-  // Hide all objects first
-  Object.values(morphObjects).forEach(obj => {
-    obj.visible = false;
-    obj.material.opacity = 0;
-  });
-
-  if (!currentMorphState.isTransitioning) {
-    // Phase 4: Use multi-target weighted blending
-    if (weights) {
-      Object.entries(weights).forEach(([target, weight]) => {
-        if (weight > 0 && morphObjects[target]) {
-          morphObjects[target].visible = true;
-          morphObjects[target].material.opacity = weight;
-        }
-      });
-    } else {
-      // Fallback: show current target only
-      if (morphObjects[current]) {
-        morphObjects[current].visible = true;
-        morphObjects[current].material.opacity = 1;
-      }
-    }
-  } else {
-    // Transitioning - crossfade between previous and current
-    if (morphObjects[previous]) {
-      morphObjects[previous].visible = true;
-      morphObjects[previous].material.opacity = 1 - progress;
-    }
-    if (morphObjects[current]) {
-      morphObjects[current].visible = true;
-      morphObjects[current].material.opacity = progress;
-    }
-  }
-}
-
-function handlePresetAction(action, presetName) {
-  if (!presetName) return;
-
-  switch (action) {
-    case 'save':
-      const currentState = {
-        morphWeights: getMorphWeights(),
-        morphBlend: currentMorphState?.blend || 0.0,
-        currentTarget: currentMorphState?.current || 'cube',
-        hudIdleSpin: hudIdleSpin,
-        hudRotX: hudRotX,
-        hudRotY: hudRotY,
-        hudScale: hudScale,
-        audioSettings: getAudioState(),
-        visualSettings: getVisualState()
-      };
-
-      if (savePreset(presetName, currentState)) {
-        console.log(`💾 Saved preset: ${presetName}`);
-        updatePresetList(listPresets());
-      }
-      break;
-
-    case 'load':
-      const preset = loadPreset(presetName);
-      if (preset && preset.state) {
-        console.log(`💾 Loading preset: ${presetName}`);
-
-        // Apply morph weights
-        if (preset.state.morphWeights) {
-          setMorphWeights(preset.state.morphWeights);
-        }
-
-        // Apply morph blend
-        if (preset.state.morphBlend !== undefined) {
-          setMorphBlend(preset.state.morphBlend);
-        }
-
-        // Apply current target
-        if (preset.state.currentTarget) {
-          setMorphTarget(preset.state.currentTarget);
-        }
-
-        // Apply HUD settings (note: these will be overridden by HUD controls immediately)
-        if (preset.state.hudSettings) {
-          const settings = preset.state.hudSettings;
-          if (settings.idleSpin !== undefined) hudIdleSpin = settings.idleSpin;
-          if (settings.rotX !== undefined) hudRotX = settings.rotX;
-          if (settings.rotY !== undefined) hudRotY = settings.rotY;
-          if (settings.scale !== undefined) hudScale = settings.scale;
-        }
-
-        // Apply audio settings
-        if (preset.state.audioSettings) {
-          setAudioState(preset.state.audioSettings);
-        }
-
-        // Apply visual settings
-        if (preset.state.visualSettings) {
-          setVisualState(preset.state.visualSettings);
-        }
-      }
-      break;
-
-    case 'delete':
-      if (deletePreset(presetName)) {
-        console.log(`💾 Deleted preset: ${presetName}`);
-        updatePresetList(listPresets());
-      }
-      break;
-
-    default:
-      console.warn(`💾 Unknown preset action: ${action}`);
-  }
-}
-
-function applyAudioReactiveMorphing() {
-  if (!currentAudioData || !currentAudioData.isEnabled) return;
-
-  // Combine audio weights with existing morph weights additively
-  const currentWeights = getMorphWeights();
-  const combinedWeights = {};
-
-  // Apply audio influence additively to existing weights
-  Object.keys(currentWeights).forEach(target => {
-    combinedWeights[target] = currentWeights[target] + (audioMorphWeights[target] || 0);
-  });
-
-  // Set the combined weights (this will auto-normalize in periaktos.js)
-  setMorphWeights(combinedWeights);
 }
 
 function setupLighting() {
   // Add ambient light
-  ambientLight = new THREE.AmbientLight(0xffffff, ambientIntensity);
+  ambientLight = new THREE.AmbientLight(0xffffff, state.lighting.ambientIntensity);
   scene.add(ambientLight);
 
   // Add directional light
-  directionalLight = new THREE.DirectionalLight(0xffffff, directionalIntensity);
+  directionalLight = new THREE.DirectionalLight(0xffffff, state.lighting.directionalIntensity);
   updateDirectionalLightPosition();
   scene.add(directionalLight);
 
@@ -361,8 +173,8 @@ function updateDirectionalLightPosition() {
   if (!directionalLight) return;
 
   // Convert angles to radians and position the light
-  const radX = (directionalAngleX * Math.PI) / 180;
-  const radY = (directionalAngleY * Math.PI) / 180;
+  const radX = (state.lighting.directionalAngleX * Math.PI) / 180;
+  const radY = (state.lighting.directionalAngleY * Math.PI) / 180;
 
   directionalLight.position.set(
     Math.sin(radY) * Math.cos(radX) * 10,
@@ -371,115 +183,47 @@ function updateDirectionalLightPosition() {
   );
 }
 
-function setAmbientIntensity(intensity) {
-  ambientIntensity = Math.max(0, Math.min(2, intensity));
-  if (ambientLight) {
-    ambientLight.intensity = ambientIntensity;
-  }
-  console.log(`🎨 Ambient intensity: ${ambientIntensity.toFixed(2)}`);
-}
-
-function setDirectionalIntensity(intensity) {
-  directionalIntensity = Math.max(0, Math.min(2, intensity));
-  if (directionalLight) {
-    directionalLight.intensity = directionalIntensity;
-  }
-  console.log(`🎨 Directional intensity: ${directionalIntensity.toFixed(2)}`);
-}
-
-function setDirectionalAngleX(angle) {
-  directionalAngleX = angle;
-  updateDirectionalLightPosition();
-  console.log(`🎨 Directional angle X: ${directionalAngleX}°`);
-}
-
-function setDirectionalAngleY(angle) {
-  directionalAngleY = angle;
-  updateDirectionalLightPosition();
-  console.log(`🎨 Directional angle Y: ${directionalAngleY}°`);
-}
-
-function setColor(color) {
-  currentColor = color;
-
-  // Update all morph object materials
-  Object.values(morphObjects).forEach(obj => {
-    obj.material.color.setHex(color.replace('#', '0x'));
-  });
-
-  console.log(`🎨 Color set to: ${color}`);
-}
-
-function setHue(hue) {
-  currentHue = hue % 360;
-
-  // Convert HSL to hex (saturation 100%, lightness 50%)
-  const hslColor = new THREE.Color().setHSL(currentHue / 360, 1.0, 0.5);
-  currentColor = '#' + hslColor.getHexString();
-
-  // Update all morph object materials
-  Object.values(morphObjects).forEach(obj => {
-    obj.material.color.copy(hslColor);
-  });
-
-  console.log(`🎨 Hue set to: ${currentHue}° (${currentColor})`);
-}
-
-function getVisualState() {
-  return {
-    ambientIntensity: ambientIntensity,
-    directionalIntensity: directionalIntensity,
-    directionalAngleX: directionalAngleX,
-    directionalAngleY: directionalAngleY,
-    color: currentColor,
-    hue: currentHue
-  };
-}
-
-function setVisualState(state) {
-  if (state.ambientIntensity !== undefined) {
-    setAmbientIntensity(state.ambientIntensity);
-  }
-  if (state.directionalIntensity !== undefined) {
-    setDirectionalIntensity(state.directionalIntensity);
-  }
-  if (state.directionalAngleX !== undefined) {
-    setDirectionalAngleX(state.directionalAngleX);
-  }
-  if (state.directionalAngleY !== undefined) {
-    setDirectionalAngleY(state.directionalAngleY);
-  }
-  if (state.color !== undefined) {
-    setColor(state.color);
-  }
-  if (state.hue !== undefined) {
-    setHue(state.hue);
-  }
-}
-
+// Export functions for telemetry and other modules
 export function getVisualData() {
   return {
-    ambientIntensity: ambientIntensity,
-    directionalIntensity: directionalIntensity,
-    color: currentColor,
-    hue: currentHue
+    ambientIntensity: state.lighting.ambientIntensity,
+    directionalIntensity: state.lighting.directionalIntensity,
+    color: state.color,
+    hue: state.hue
   };
 }
 
+export function getMorphState() {
+  return {
+    current: state.morphState.current,
+    previous: state.morphState.previous,
+    progress: state.morphState.progress,
+    weights: { ...state.morphWeights },
+    isTransitioning: state.morphState.isTransitioning,
+    targets: state.morphState.targets
+  };
+}
+
+// Main animation loop
 function animate() {
   requestAnimationFrame(animate);
 
-  const rotX = (hudIdleSpin ? 0.01 : 0) + midiRotX + hudRotX;
-  const rotY = (hudIdleSpin ? 0.01 : 0) + midiRotY + hudRotY;
-  const scale = midiScale * hudScale;
+  // Calculate rotation speeds from state
+  const rotX = (state.idleSpin ? 0.01 : 0) + state.rotationX;
+  const rotY = (state.idleSpin ? 0.01 : 0) + state.rotationY;
+  const scale = state.scale;
 
-  // Apply transformations to all morph objects
-  Object.values(morphObjects).forEach(obj => {
-    obj.rotation.x += rotX;
-    obj.rotation.y += rotY;
-    obj.scale.set(scale, scale, scale);
-  });
+  // Apply transformations to single morph mesh
+  morphMesh.rotation.x += rotX;
+  morphMesh.rotation.y += rotY;
+  morphMesh.scale.set(scale, scale, scale);
+
+  // Update geometry from current state
+  updateGeometryFromState();
 
   renderer.render(scene, camera);
 }
+
 animate();
+
+console.log("🔺 Geometry module initialized with state-based architecture");

@@ -1,5 +1,51 @@
 # Changelog
 
+## [1.5.0] - 2025-09-28
+### Added
+- New `src/state.js` for centralized modular state management.
+- Signal routing modules: `midiRouter.js`, `hudRouter.js`, `audioRouter.js`, `presetRouter.js`.
+- True modular signal-to-form pipeline architecture.
+### Changed
+- MIDI, HUD, and Audio modules now update centralized state instead of geometry directly.
+- Geometry module reads from state each frame (rotation, scale, morph weights, color, lighting).
+- Telemetry updated to reflect values directly from centralized state.
+- Preset system redesigned to save/load complete application state.
+### Benefits
+- Decoupled architecture prevents regressions when adding new features.
+- Clean separation between signal input (MIDI/HUD/Audio) and form output (Geometry).
+- Foundation for adding new consumers like Vessel, Shadows, or Sprites.
+- Restored Signal-to-Form Engine vision with centralized state management.
+
+## [1.4.0] - 2025-09-28
+### Added
+- Restored **true vertex morphing** using BufferGeometry morph targets (single mesh).
+- Consistent vertex correspondence across Cube/Sphere/Pyramid/Torus targets.
+- Icosahedron-based geometry with detail level 4 for optimal performance/quality balance.
+- Smooth interpolation between all morph targets using morphTargetInfluences.
+### Fixed
+- Eliminated mesh-jump behavior; removed any overlapping-geometry artifacts.
+- Single mesh approach eliminates all ghosting and rendering artifacts.
+- Improved performance with unified geometry system.
+### Preserved
+- Existing HUD, MIDI, Audio, Telemetry, and Preset integrations.
+- Color and lighting system continues to work with shared material.
+- All weight-based blending and transition logic maintained.
+
+## [1.3.2] - 2025-09-28
+### Fixed
+- Hue shift remapped from CC10 → CC21 for MPK Mini compatibility.
+- Morph blending corrected: only one geometry is rendered during transitions.
+- Removed ghosting/opacity artifacts caused by overlapping meshes.
+- Shared material consistently applied to active geometry only.
+- Preset system updated for new hue mapping (CC21).
+
+## [1.3.1] - 2025-09-28
+### Fixed
+- All morph targets now share a single MeshStandardMaterial for consistent color updates.
+- HUD color picker and MIDI hue shift apply color changes across Cube, Sphere, Pyramid, and Torus.
+- Presets reliably store and reload color values.
+- Telemetry overlay shows the correct active color hex.
+
 ## [1.3.0] - 2025-09-28
 ### Added
 - Visual polish system with advanced lighting and color control:
