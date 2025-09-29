@@ -50,6 +50,9 @@ export const state = {
   // Particle system
   particlesEnabled: true,
   particlesCount: 1000,
+  particles: {
+    layout: 'cube'  // 'cube' | 'sphere' | 'torus'
+  },
 
   // Lighting system
   lighting: {

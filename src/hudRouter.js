@@ -104,6 +104,16 @@ onHUDUpdate((update) => {
       console.log(`✨ Particles recreated with count: ${state.particlesCount}`);
     }
   }
+  if (update.particlesLayout !== undefined) {
+    state.particles.layout = update.particlesLayout;
+    console.log(`✨ Particles layout: ${update.particlesLayout}`);
+    // If particles are currently enabled, reinitialize with new layout
+    if (state.particlesEnabled) {
+      import('./particles.js').then(({ reinitParticles }) => {
+        reinitParticles(scene);
+      });
+    }
+  }
   if (update.vesselEnabled !== undefined) {
     state.vessel.enabled = update.vesselEnabled;
     console.log(`🚢 Vessel enabled: ${update.vesselEnabled}`);

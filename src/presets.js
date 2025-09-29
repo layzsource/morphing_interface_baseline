@@ -44,6 +44,9 @@ export function savePreset(name, state) {
       backdrop: state.shadows.backdrop,
       opacity: state.shadows.opacity,
       color: state.shadows.color
+    },
+    particles: {
+      layout: state.particles.layout
     }
   };
 
@@ -125,6 +128,14 @@ export function loadPreset(name) {
     state.shadows.backdrop = true;
     state.shadows.opacity = 0.25;
     state.shadows.color = '#000000';
+  }
+
+  // Load particles state (with backward compatibility)
+  if (preset.particles) {
+    if (preset.particles.layout !== undefined) state.particles.layout = preset.particles.layout;
+  } else {
+    // Default to "cube" for legacy presets
+    state.particles.layout = 'cube';
   }
 
   currentPresetName = name;
