@@ -140,9 +140,10 @@ export function updateVessel(audioData) {
   const radius = morphMesh.geometry.boundingSphere.radius;
   let adaptiveRadius = radius * (state.vessel.scaleMultiplier || 1.2) * state.vessel.scale;
 
-  // Base adaptive scale + opacity
+  // Base adaptive scale + opacity + color sync
   vesselGroup.scale.set(adaptiveRadius, adaptiveRadius, adaptiveRadius);
   vesselMaterial.opacity = state.vessel.opacity;
+  vesselMaterial.color.set(state.vessel.color);
 
   if (state.audioReactive) {
     // Bass pulses vessel scale (±5%), does not affect morphs
@@ -179,6 +180,10 @@ export function reinitVessel(scene) {
   }
   // Reinitialize with current layout
   initVessel(scene);
+  // Ensure material color is synced after reinit
+  if (vesselMaterial) {
+    vesselMaterial.color.set(state.vessel.color);
+  }
 }
 
 // Notify HUD about layout changes

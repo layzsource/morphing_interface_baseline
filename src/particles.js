@@ -157,6 +157,14 @@ export function updateParticles(audioReactive, time) {
       }
     }
 
+    // Store velocities for damping (only when organic motion is enabled)
+    if (state.particles.organicMotion && !particleSystem.userData.velocities) {
+      particleSystem.userData.velocities = new Float32Array(positions.length);
+    } else if (!state.particles.organicMotion && particleSystem.userData.velocities) {
+      // Clear velocities when organic motion is disabled
+      particleSystem.userData.velocities = null;
+    }
+
     const baseX = particleSystem.userData.basePositions[i];
     const baseY = particleSystem.userData.basePositions[i + 1];
     const baseZ = particleSystem.userData.basePositions[i + 2];
@@ -168,10 +176,40 @@ export function updateParticles(audioReactive, time) {
 
     // Add organic motion jitter if enabled
     if (state.particles.organicMotion) {
-      const jitterAmount = 0.3;
-      driftX += (Math.random() - 0.5) * jitterAmount;
-      driftY += (Math.random() - 0.5) * jitterAmount;
-      driftZ += (Math.random() - 0.5) * jitterAmount;
+      const jitterAmount = 0.02; // Much smaller amplitude for smooth motion
+      const slowTime = time * 0.003; // Very slow time for organic variation
+      const dampingFactor = 0.95; // Smooth velocity damping
+
+      // Use smooth noise-like functions instead of random for organic motion
+      const organicX = Math.sin(slowTime + particleIndex * 0.01) * Math.cos(slowTime * 1.3 + particleIndex * 0.02);
+      const organicY = Math.cos(slowTime * 1.1 + particleIndex * 0.015) * Math.sin(slowTime * 0.8 + particleIndex * 0.025);
+      const organicZ = Math.sin(slowTime * 0.9 + particleIndex * 0.02) * Math.cos(slowTime * 1.2 + particleIndex * 0.01);
+
+      // Apply damping to organic motion if velocities exist
+      if (particleSystem.userData.velocities) {
+        const prevVelX = particleSystem.userData.velocities[i] || 0;
+        const prevVelY = particleSystem.userData.velocities[i + 1] || 0;
+        const prevVelZ = particleSystem.userData.velocities[i + 2] || 0;
+
+        // Smooth transition between previous and current organic motion
+        const smoothedX = prevVelX * dampingFactor + organicX * jitterAmount * (1 - dampingFactor);
+        const smoothedY = prevVelY * dampingFactor + organicY * jitterAmount * (1 - dampingFactor);
+        const smoothedZ = prevVelZ * dampingFactor + organicZ * jitterAmount * (1 - dampingFactor);
+
+        // Store smoothed velocities
+        particleSystem.userData.velocities[i] = smoothedX;
+        particleSystem.userData.velocities[i + 1] = smoothedY;
+        particleSystem.userData.velocities[i + 2] = smoothedZ;
+
+        driftX += smoothedX;
+        driftY += smoothedY;
+        driftZ += smoothedZ;
+      } else {
+        // Fallback to direct organic motion if no velocity storage
+        driftX += organicX * jitterAmount;
+        driftY += organicY * jitterAmount;
+        driftZ += organicZ * jitterAmount;
+      }
     }
 
     positions[i] = baseX + driftX;
