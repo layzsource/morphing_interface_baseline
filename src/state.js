@@ -37,7 +37,10 @@ export const state = {
     opacity: 0.5,
     scale: 1.0,
     color: "#00ff00",
-    enabled: true
+    enabled: true,
+    spinEnabled: false,     // NEW
+    spinSpeed: 0.0035,      // NEW (radians per frame approx; ~0.2°/frame @60fps)
+    scaleMultiplier: 1.2    // NEW (adaptive scaling margin)
   },
 
   // Particle system

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Vessel Phase 2 - Spacing Fix Test</title>
+    <style>
+        body { font-family: monospace; margin: 20px; background: #111; color: #eee; }
+        h1 { color: #00ff00; }
+        h2 { color: #ffff00; }
+        .checklist { list-style-type: none; }
+        .checklist li::before { content: "🔲 "; }
+        .completed li::before { content: "✅ "; }
+        .test-link { color: #00ffff; font-size: 18px; }
+        .technical { background: #222; padding: 10px; border-left: 3px solid #00ff00; }
+    </style>
+</head>
+<body>
+    <h1>🚢 Vessel Phase 2 - Spacing Fix (v2.1.1)</h1>
+
+    <h2>⚡ Live Test</h2>
+    <p><a href="http://localhost:3000" target="_blank" class="test-link">Open Application →</a></p>
+
+    <h2>🧪 Test Checklist</h2>
+    <ul class="checklist">
+        <li><strong>No Overlap:</strong> Six rings visible with clear separation</li>
+        <li><strong>Even Spacing:</strong> Rings stacked vertically with consistent gaps</li>
+        <li><strong>Size Progression:</strong> Each ring slightly larger than the previous</li>
+        <li><strong>HUD Scale:</strong> Scale slider still affects entire vessel group</li>
+        <li><strong>HUD Opacity:</strong> Opacity slider affects all rings uniformly</li>
+        <li><strong>HUD Color:</strong> Color picker changes all rings simultaneously</li>
+        <li><strong>HUD Toggle:</strong> Enable/disable hides/shows entire vessel</li>
+        <li><strong>Spin Controls:</strong> Spin toggle and speed slider still functional</li>
+        <li><strong>MIDI CC7:</strong> Still maps to vessel opacity</li>
+        <li><strong>Audio Reactive:</strong> Bass still pulses opacity on all rings</li>
+        <li><strong>Presets:</strong> Save/load still includes all vessel settings</li>
+        <li><strong>No Regressions:</strong> Geometry morphing, particles, shadows unaffected</li>
+    </ul>
+
+    <h2>🔧 Technical Implementation</h2>
+    <div class="technical">
+        <h3>Ring Scaling Formula:</h3>
+        <code>scale = 1 + i * 0.15</code>
+        <ul>
+            <li>Ring 0: scale = 1.00 (radius 1.0)</li>
+            <li>Ring 1: scale = 1.15 (radius 1.15)</li>
+            <li>Ring 2: scale = 1.30 (radius 1.30)</li>
+            <li>Ring 3: scale = 1.45 (radius 1.45)</li>
+            <li>Ring 4: scale = 1.60 (radius 1.60)</li>
+            <li>Ring 5: scale = 1.75 (radius 1.75)</li>
+        </ul>
+
+        <h3>Y Position Formula:</h3>
+        <code>position.y = (i - (ringCount - 1) / 2) * 0.3</code>
+        <ul>
+            <li>Ring 0: y = -0.75</li>
+            <li>Ring 1: y = -0.45</li>
+            <li>Ring 2: y = -0.15</li>
+            <li>Ring 3: y = +0.15</li>
+            <li>Ring 4: y = +0.45</li>
+            <li>Ring 5: y = +0.75</li>
+        </ul>
+    </div>
+
+    <h2>🎯 Expected Visual Result</h2>
+    <p>Six green torus rings arranged vertically around the morphing geometry, each ring slightly larger than the one below it, creating a tiered "wedding cake" or "stepped cone" appearance. No rings should overlap in the center.</p>
+
+    <h2>✅ Verification Points</h2>
+    <ul>
+        <li><strong>Clear Separation:</strong> Each ring distinctly visible</li>
+        <li><strong>Progressive Sizing:</strong> Smallest at bottom, largest at top</li>
+        <li><strong>Centered Stack:</strong> All rings aligned on Y-axis</li>
+        <li><strong>State Integration:</strong> All controls affect entire vessel group</li>
+        <li><strong>Performance:</strong> Smooth rendering with no frame drops</li>
+    </ul>
+</body>
+</html>

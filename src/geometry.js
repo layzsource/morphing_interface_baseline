@@ -262,6 +262,8 @@ export function getMorphState() {
   };
 }
 
+export { morphMesh };
+
 // Main animation loop
 function animate() {
   requestAnimationFrame(animate);

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Vessel Phase 1.1 - Orbital Ring Test</title>
+    <style>
+        body { font-family: monospace; margin: 20px; background: #111; color: #eee; }
+        h1 { color: #00ff00; }
+        h2 { color: #ffff00; }
+        .checklist { list-style-type: none; }
+        .checklist li::before { content: "🔲 "; }
+        .completed li::before { content: "✅ "; }
+        .test-link { color: #00ffff; font-size: 18px; }
+    </style>
+</head>
+<body>
+    <h1>🚢 Vessel Phase 1.1 - Orbital Ring Layout Test</h1>
+
+    <h2>⚡ Live Test</h2>
+    <p><a href="http://localhost:3000" target="_blank" class="test-link">Open Application →</a></p>
+
+    <h2>🧪 Test Checklist</h2>
+    <ul class="checklist">
+        <li>Vessel renders as 6 orbital rings wrapping around geometry (not vertical stack)</li>
+        <li>Rings appear as 3 orthogonal pairs: XZ, YZ, XY planes</li>
+        <li>Some rings have 30° angular offsets for visual variety</li>
+        <li>All existing HUD controls still work (toggle/opacity/scale/color)</li>
+        <li>NEW: Vessel Spin toggle appears in HUD</li>
+        <li>NEW: Spin Speed slider appears in HUD (0-0.02 range)</li>
+        <li>Spin toggle starts smooth Y-axis rotation of entire ring assembly</li>
+        <li>Speed slider adjusts spin rate smoothly</li>
+        <li>CC7 MIDI mapping still controls vessel opacity</li>
+        <li>Audio-reactive mode still pulses opacity with bass</li>
+        <li>Presets now save/load spin settings</li>
+        <li>No regressions in other systems (particles, shadows, morphs)</li>
+    </ul>
+
+    <h2>🔧 Technical Implementation</h2>
+    <ul>
+        <li><strong>Ring Layout:</strong> 6 rings in 3 orthogonal pairs</li>
+        <li><strong>Pair A:</strong> XZ plane (0° and 30° Y rotation)</li>
+        <li><strong>Pair B:</strong> YZ plane (90° Z rotation + 0°/30° Y)</li>
+        <li><strong>Pair C:</strong> XY plane (90° X rotation + 0°/30° Y)</li>
+        <li><strong>Spin:</strong> Global Y rotation at configurable speed</li>
+        <li><strong>State:</strong> spinEnabled + spinSpeed fields added</li>
+        <li><strong>Presets:</strong> Include spin configuration</li>
+    </ul>
+
+    <h2>🎯 Expected Visual Result</h2>
+    <p>Six green torus rings surrounding the morphing geometry in a 3D orbital pattern, creating a spherical "cage" or "conflation" structure. When spin is enabled, the entire ring assembly rotates smoothly around the Y-axis.</p>
+
+    <h2>⚙️ Default Values</h2>
+    <ul>
+        <li>spinEnabled: false</li>
+        <li>spinSpeed: 0.0035 radians/frame (~0.2°/frame at 60fps)</li>
+        <li>Speed range: 0 to 0.02 radians/frame</li>
+        <li>Step size: 0.0005 for smooth adjustment</li>
+    </ul>
+</body>
+</html>

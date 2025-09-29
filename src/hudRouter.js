@@ -115,6 +115,14 @@ onHUDUpdate((update) => {
     state.vessel.color = update.vesselColor;
     console.log(`🚢 Vessel color: ${update.vesselColor}`);
   }
+  if (update.vesselSpinEnabled !== undefined) {
+    state.vessel.spinEnabled = update.vesselSpinEnabled;
+    console.log(`🚢 Vessel spin enabled: ${update.vesselSpinEnabled}`);
+  }
+  if (update.vesselSpinSpeed !== undefined) {
+    state.vessel.spinSpeed = update.vesselSpinSpeed;
+    console.log(`🚢 Vessel spin speed: ${update.vesselSpinSpeed}`);
+  }
 
   // Handle preset actions - these will need to be routed to the preset system
   if (update.presetAction !== undefined) {

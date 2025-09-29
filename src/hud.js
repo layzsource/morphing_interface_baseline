@@ -305,6 +305,18 @@ function createHUDPanel() {
   });
   panel.appendChild(vesselColorPickerControl);
 
+  // Vessel spin toggle
+  const vesselSpinControl = createToggleControl('Vessel Spin', false, (value) => {
+    notifyHUDUpdate({ vesselSpinEnabled: value });
+  });
+  panel.appendChild(vesselSpinControl);
+
+  // Vessel spin speed slider
+  const vesselSpinSpeedControl = createSliderControl('Spin Speed', 0.0035, 0, 0.02, 0.0005, (value) => {
+    notifyHUDUpdate({ vesselSpinSpeed: value });
+  });
+  panel.appendChild(vesselSpinSpeedControl);
+
   return panel;
 }
 

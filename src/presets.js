@@ -26,7 +26,14 @@ export function savePreset(name, state) {
     color: state.color,
     idleSpin: state.idleSpin,
     scale: state.scale,
-    vessel: { ...state.vessel }
+    vessel: {
+      opacity: state.vessel.opacity,
+      scale: state.vessel.scale,
+      color: state.vessel.color,
+      enabled: state.vessel.enabled,
+      spinEnabled: state.vessel.spinEnabled,   // NEW
+      spinSpeed: state.vessel.spinSpeed        // NEW
+    }
   };
 
   presets[name] = presetData;
@@ -70,7 +77,12 @@ export function loadPreset(name) {
     state.scale = preset.scale;
   }
   if (preset.vessel) {
-    Object.assign(state.vessel, preset.vessel);
+    if (preset.vessel.opacity !== undefined) state.vessel.opacity = preset.vessel.opacity;
+    if (preset.vessel.scale !== undefined) state.vessel.scale = preset.vessel.scale;
+    if (preset.vessel.color !== undefined) state.vessel.color = preset.vessel.color;
+    if (preset.vessel.enabled !== undefined) state.vessel.enabled = preset.vessel.enabled;
+    if (preset.vessel.spinEnabled !== undefined) state.vessel.spinEnabled = preset.vessel.spinEnabled;
+    if (preset.vessel.spinSpeed !== undefined) state.vessel.spinSpeed = preset.vessel.spinSpeed;
   }
 
   currentPresetName = name;
