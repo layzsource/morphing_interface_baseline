@@ -1,3 +1,5 @@
+import { state } from './state.js';
+
 console.log("💾 presets.js loaded");
 
 const STORAGE_KEY = 'morphing_interface_presets';
@@ -23,7 +25,8 @@ export function savePreset(name, state) {
     morphWeights: { ...state.morphWeights },
     color: state.color,
     idleSpin: state.idleSpin,
-    scale: state.scale
+    scale: state.scale,
+    vessel: { ...state.vessel }
   };
 
   presets[name] = presetData;
@@ -65,6 +68,9 @@ export function loadPreset(name) {
   }
   if (preset.scale !== undefined) {
     state.scale = preset.scale;
+  }
+  if (preset.vessel) {
+    Object.assign(state.vessel, preset.vessel);
   }
 
   currentPresetName = name;

@@ -50,6 +50,9 @@ onCC(({ cc, value, device }) => {
   } else if (cc === 4) {
     // CC4 → Y rotation speed
     state.rotationY = (value / 127) * 0.1;
+  } else if (cc === 7) {
+    // CC7 → Vessel opacity (volume fader on MPK Mini)
+    state.vessel.opacity = value / 127;
   } else if (cc === 10) {
     // CC10 → Sphere weight (individual target control)
     const sphereWeight = value / 127;

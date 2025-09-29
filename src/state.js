@@ -32,6 +32,14 @@ export const state = {
   // Audio reactivity toggle
   audioReactive: false,
 
+  // Vessel system
+  vessel: {
+    opacity: 0.5,
+    scale: 1.0,
+    color: "#00ff00",
+    enabled: true
+  },
+
   // Particle system
   particlesEnabled: true,
   particlesCount: 1000,

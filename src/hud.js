@@ -271,6 +271,40 @@ function createHUDPanel() {
   });
   panel.appendChild(colorPickerControl);
 
+  // Add separator for Vessel controls
+  const vesselSeparator = document.createElement('hr');
+  vesselSeparator.style.cssText = 'border: 1px solid #555; margin: 15px 0;';
+  panel.appendChild(vesselSeparator);
+
+  const vesselTitle = document.createElement('h4');
+  vesselTitle.textContent = '🚢 Vessel';
+  vesselTitle.style.cssText = 'margin: 0 0 10px 0; color: #00ff00; font-size: 12px;';
+  panel.appendChild(vesselTitle);
+
+  // Vessel enable toggle
+  const vesselEnableControl = createToggleControl('Enable Vessel', true, (value) => {
+    notifyHUDUpdate({ vesselEnabled: value });
+  });
+  panel.appendChild(vesselEnableControl);
+
+  // Vessel opacity slider
+  const vesselOpacityControl = createSliderControl('Vessel Opacity', 0.5, 0.0, 1.0, 0.01, (value) => {
+    notifyHUDUpdate({ vesselOpacity: value });
+  });
+  panel.appendChild(vesselOpacityControl);
+
+  // Vessel scale slider
+  const vesselScaleControl = createSliderControl('Vessel Scale', 1.0, 0.5, 2.0, 0.1, (value) => {
+    notifyHUDUpdate({ vesselScale: value });
+  });
+  panel.appendChild(vesselScaleControl);
+
+  // Vessel color picker
+  const vesselColorPickerControl = createColorPickerControl('Vessel Color', '#00ff00', (value) => {
+    notifyHUDUpdate({ vesselColor: value });
+  });
+  panel.appendChild(vesselColorPickerControl);
+
   return panel;
 }
 

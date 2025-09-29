@@ -4,6 +4,7 @@ import { getHUDIdleSpin, getVisualData, getMorphState, scene } from './geometry.
 import { initShadows } from './shadows.js';
 import { initSprites } from './sprites.js';
 import { initParticles } from './particles.js';
+import { initVessel, updateVessel } from './vessel.js';
 import { initTelemetry } from './telemetry.js';
 import { initPresets, createDefaultPresets, listPresets, getCurrentPresetName } from './presets.js';
 import { initAudio, getAudioValues } from './audio.js';
@@ -41,6 +42,8 @@ initAudio();
 initShadows(scene);
 
 initSprites(scene);
+
+initVessel(scene);
 
 if (state.particlesEnabled) {
   initParticles(scene, state.particlesCount);

@@ -99,6 +99,22 @@ onHUDUpdate((update) => {
       console.log(`✨ Particles recreated with count: ${state.particlesCount}`);
     }
   }
+  if (update.vesselEnabled !== undefined) {
+    state.vessel.enabled = update.vesselEnabled;
+    console.log(`🚢 Vessel enabled: ${update.vesselEnabled}`);
+  }
+  if (update.vesselOpacity !== undefined) {
+    state.vessel.opacity = update.vesselOpacity;
+    console.log(`🚢 Vessel opacity: ${update.vesselOpacity}`);
+  }
+  if (update.vesselScale !== undefined) {
+    state.vessel.scale = update.vesselScale;
+    console.log(`🚢 Vessel scale: ${update.vesselScale}`);
+  }
+  if (update.vesselColor !== undefined) {
+    state.vessel.color = update.vesselColor;
+    console.log(`🚢 Vessel color: ${update.vesselColor}`);
+  }
 
   // Handle preset actions - these will need to be routed to the preset system
   if (update.presetAction !== undefined) {

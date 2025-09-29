@@ -4,6 +4,7 @@ import { updateShadows } from './shadows.js';
 import { updateSprites } from './sprites.js';
 import { updateParticles } from './particles.js';
 import { updateAudio } from './audio.js';
+import { updateVessel } from './vessel.js';
 
 console.log("🔺 geometry.js loaded");
 
@@ -291,6 +292,9 @@ function animate() {
 
   // Update sprites
   updateSprites();
+
+  // Update vessel
+  updateVessel(state.audio);
 
   renderer.render(scene, camera);
 }

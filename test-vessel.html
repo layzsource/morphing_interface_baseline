@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Vessel Phase 1 Test</title>
+</head>
+<body>
+    <h1>🚢 Vessel Phase 1 Test Checklist</h1>
+
+    <h2>✅ Implementation Status</h2>
+    <ul>
+        <li>✅ State updated with vessel properties</li>
+        <li>✅ Vessel.js module created with 6-ring structure</li>
+        <li>✅ HUD controls added (toggle, opacity, scale, color)</li>
+        <li>✅ MIDI CC7 mapping implemented</li>
+        <li>✅ Audio reactivity integrated</li>
+        <li>✅ Preset support added</li>
+        <li>✅ Integration with main.js and geometry.js</li>
+    </ul>
+
+    <h2>🧪 Manual Test Instructions</h2>
+    <ol>
+        <li>Open <a href="http://localhost:3000" target="_blank">http://localhost:3000</a></li>
+        <li>Check that 6 green torus rings appear around the morphing geometry</li>
+        <li>Verify Vessel section appears in HUD with all controls</li>
+        <li>Test Toggle: Click to hide/show vessel</li>
+        <li>Test Opacity: Adjust slider from 0-1</li>
+        <li>Test Scale: Adjust slider from 0.5-2.0</li>
+        <li>Test Color: Change vessel color with picker</li>
+        <li>Test MIDI: Send CC7 messages (if MIDI device available)</li>
+        <li>Test Audio: Enable audio-reactive mode and verify opacity pulses</li>
+        <li>Test Presets: Save current state, modify vessel, then load preset</li>
+    </ol>
+
+    <h2>📋 Expected Results</h2>
+    <ul>
+        <li>🚢 Vessel renders as 6 stacked green torus rings</li>
+        <li>🎛️ All HUD controls respond immediately</li>
+        <li>🎹 MIDI CC7 controls vessel opacity</li>
+        <li>🎵 Audio-reactive mode pulses opacity with bass</li>
+        <li>💾 Presets include vessel settings</li>
+    </ul>
+
+    <h2>🔧 Technical Implementation</h2>
+    <ul>
+        <li>TorusGeometry(1, 0.05, 16, 100) for each ring</li>
+        <li>Vertical spacing: (i - 2.5) * 0.3</li>
+        <li>MeshStandardMaterial with transparency</li>
+        <li>Audio reactivity: ±0.2 opacity range</li>
+        <li>MIDI CC7 → vessel.opacity</li>
+        <li>State persistence in presets</li>
+    </ul>
+</body>
+</html>
