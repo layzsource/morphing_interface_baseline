@@ -68,18 +68,29 @@ export function updateVessel(audioData) {
   // Adaptive scale based on morph target size
   morphMesh.geometry.computeBoundingSphere();
   const radius = morphMesh.geometry.boundingSphere.radius;
-  const adaptiveScale = radius * (state.vessel.scaleMultiplier || 1.2) * state.vessel.scale;
+  let adaptiveRadius = radius * (state.vessel.scaleMultiplier || 1.2) * state.vessel.scale;
 
-  vesselGroup.scale.setScalar(adaptiveScale);
+  // Audio reactivity: subtle scale modulation (±5%)
+  if (state.audioReactive && audioData) {
+    const bass = audioData.bass || 0;
+    const scaleModulation = 1 + (bass - 0.5) * 0.1; // ±5% scale variation
+    adaptiveRadius *= scaleModulation;
+  }
+
+  // Apply adaptive scale to vessel group
+  vesselGroup.scale.set(adaptiveRadius, adaptiveRadius, adaptiveRadius);
 
   // Live material sync + audio pulse
   vesselMaterial.color.set(state.vessel.color);
-  let o = state.vessel.opacity;
+  let opacity = state.vessel.opacity;
+
+  // Audio reactivity: opacity modulation (0.2-0.8 range)
   if (state.audioReactive && audioData) {
-    const bass = audioData.bass || 0;
-    o = THREE.MathUtils.clamp(o + bass * 0.2, 0, 1);
+    const mid = audioData.mid || 0;
+    opacity = THREE.MathUtils.clamp(0.2 + mid * 0.6, 0.2, 0.8);
   }
-  vesselMaterial.opacity = o;
+
+  vesselMaterial.opacity = opacity;
 }
 
 export function getVesselGroup() {

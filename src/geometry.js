@@ -194,11 +194,18 @@ function updateGeometryFromState() {
   morphMesh.morphTargetInfluences[2] = state.morphWeights.pyramid; // pyramid
   morphMesh.morphTargetInfluences[3] = state.morphWeights.torus;   // torus
 
-  // Audio-reactive morph influence (only when audio reactive enabled)
+  // Audio-reactive morph influence (additive modulation, preserves base weights)
   if (state.audioReactive) {
-    morphMesh.morphTargetInfluences[0] = state.audio.bass;    // sphere
-    morphMesh.morphTargetInfluences[1] = state.audio.mid;     // cube
-    morphMesh.morphTargetInfluences[2] = state.audio.treble;  // pyramid
+    // Subtle audio modulation on top of existing weights (max ±0.1)
+    morphMesh.morphTargetInfluences[0] = THREE.MathUtils.clamp(
+      state.morphWeights.sphere + (state.audio.bass - 0.5) * 0.1, 0, 1
+    );
+    morphMesh.morphTargetInfluences[1] = THREE.MathUtils.clamp(
+      state.morphWeights.cube + (state.audio.mid - 0.5) * 0.1, 0, 1
+    );
+    morphMesh.morphTargetInfluences[2] = THREE.MathUtils.clamp(
+      state.morphWeights.pyramid + (state.audio.treble - 0.5) * 0.1, 0, 1
+    );
   }
 
   // Update material color from state
