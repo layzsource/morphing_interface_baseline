@@ -55,11 +55,16 @@ onHUDUpdate((update) => {
     state.audioReactive = update.audioEnabled;
     console.log(`🎵 Audio Reactive: ${update.audioEnabled}`);
 
-    // Initialize microphone when first enabled
     if (update.audioEnabled) {
+      // Initialize microphone when first enabled
       import('./audio.js').then(({ enableAudio }) => {
         enableAudio();
       });
+    } else {
+      // Reset audio values immediately when disabled
+      state.audio.bass = 0;
+      state.audio.mid = 0;
+      state.audio.treble = 0;
     }
   }
   if (update.audioSensitivity !== undefined) {
@@ -141,6 +146,26 @@ onHUDUpdate((update) => {
   if (update.vesselHueShiftRange !== undefined) {
     state.vessel.hueShiftRange = update.vesselHueShiftRange;
     console.log(`🚢 Vessel hue shift range: ${update.vesselHueShiftRange}°`);
+  }
+  if (update.shadowsEnabled !== undefined) {
+    state.shadows.enabled = update.shadowsEnabled;
+    console.log(`🌑 Shadows enabled: ${update.shadowsEnabled}`);
+  }
+  if (update.shadowsGround !== undefined) {
+    state.shadows.ground = update.shadowsGround;
+    console.log(`🌑 Ground shadow: ${update.shadowsGround}`);
+  }
+  if (update.shadowsBackdrop !== undefined) {
+    state.shadows.backdrop = update.shadowsBackdrop;
+    console.log(`🌑 Backdrop shadow: ${update.shadowsBackdrop}`);
+  }
+  if (update.shadowsOpacity !== undefined) {
+    state.shadows.opacity = update.shadowsOpacity;
+    console.log(`🌑 Shadow opacity: ${update.shadowsOpacity}`);
+  }
+  if (update.shadowsColor !== undefined) {
+    state.shadows.color = update.shadowsColor;
+    console.log(`🌑 Shadow color: ${update.shadowsColor}`);
   }
 
   // Handle preset actions - these will need to be routed to the preset system

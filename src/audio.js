@@ -233,6 +233,15 @@ export function updateAudio() {
       treble: alpha * state.audio.smooth.treble + (1 - alpha) * treble,
     };
   }
+
+  // Hard cutoff when audio reactive is OFF
+  if (!state.audioReactive) {
+    // Wipe audio values so they don't leak into geometry
+    state.audio.bass = 0.5;
+    state.audio.mid = 0.5;
+    state.audio.treble = 0.5;
+    state.audio.smooth = { bass: 0.5, mid: 0.5, treble: 0.5 };
+  }
 }
 
 function avg(arr) {

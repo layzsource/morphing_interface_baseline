@@ -37,6 +37,13 @@ export function savePreset(name, state) {
       layoutIndex: state.vessel.layoutIndex,   // NEW
       audioSmoothing: state.vessel.audioSmoothing,  // NEW
       hueShiftRange: state.vessel.hueShiftRange     // NEW
+    },
+    shadows: {
+      enabled: state.shadows.enabled,
+      ground: state.shadows.ground,
+      backdrop: state.shadows.backdrop,
+      opacity: state.shadows.opacity,
+      color: state.shadows.color
     }
   };
 
@@ -102,6 +109,22 @@ export function loadPreset(name) {
     }
     if (preset.vessel.audioSmoothing !== undefined) state.vessel.audioSmoothing = preset.vessel.audioSmoothing;
     if (preset.vessel.hueShiftRange !== undefined) state.vessel.hueShiftRange = preset.vessel.hueShiftRange;
+  }
+
+  // Load shadows state (with backward compatibility)
+  if (preset.shadows) {
+    if (preset.shadows.enabled !== undefined) state.shadows.enabled = preset.shadows.enabled;
+    if (preset.shadows.ground !== undefined) state.shadows.ground = preset.shadows.ground;
+    if (preset.shadows.backdrop !== undefined) state.shadows.backdrop = preset.shadows.backdrop;
+    if (preset.shadows.opacity !== undefined) state.shadows.opacity = preset.shadows.opacity;
+    if (preset.shadows.color !== undefined) state.shadows.color = preset.shadows.color;
+  } else {
+    // Backward compatibility: missing keys default to enabled/black
+    state.shadows.enabled = true;
+    state.shadows.ground = true;
+    state.shadows.backdrop = true;
+    state.shadows.opacity = 0.25;
+    state.shadows.color = '#000000';
   }
 
   currentPresetName = name;

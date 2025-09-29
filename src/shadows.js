@@ -2,39 +2,78 @@
 import * as THREE from 'three';
 import { state } from './state.js';
 
-let shadowMesh;
+console.log("🌑 shadows.js loaded");
+
+let groundShadow = null;
+let backdropShadow = null;
+let shadowMaterial = null;
 
 export function initShadows(scene) {
-  console.log("🌑 Shadows initialized (v1.8.5)");
+  console.log("🌑 Initializing multi-plane shadow system (v2.2.0)...");
 
-  const geom = new THREE.CircleGeometry(2.5, 64);
-  const mat = new THREE.MeshBasicMaterial({
-    color: 0x000000,    // true black
+  // Shared shadow material
+  shadowMaterial = new THREE.MeshBasicMaterial({
+    color: state.shadows.color,
     transparent: true,
-    opacity: 0.25,      // subtle default
+    opacity: state.shadows.opacity,
     depthWrite: false
   });
 
-  shadowMesh = new THREE.Mesh(geom, mat);
+  // Ground shadow: CircleGeometry (3, 64), positioned at y = -1.2
+  const groundGeometry = new THREE.CircleGeometry(3, 64);
+  groundShadow = new THREE.Mesh(groundGeometry, shadowMaterial);
+  groundShadow.rotation.x = -Math.PI / 2; // Rotate to lie flat on ground
+  groundShadow.position.y = -1.2;
+  groundShadow.visible = state.shadows.enabled && state.shadows.ground;
+  scene.add(groundShadow);
 
-  // Flat disk directly under vessel
-  shadowMesh.rotation.x = -Math.PI / 2;
-  shadowMesh.position.set(0, -1.2, 0);
+  // Backdrop shadow: PlaneGeometry (8×8), positioned behind vessel at z = -4
+  const backdropGeometry = new THREE.PlaneGeometry(8, 8);
+  backdropShadow = new THREE.Mesh(backdropGeometry, shadowMaterial.clone());
+  backdropShadow.position.z = -4;
+  backdropShadow.visible = state.shadows.enabled && state.shadows.backdrop;
+  scene.add(backdropShadow);
 
-  scene.add(shadowMesh);
+  console.log("✅ Multi-plane shadow system initialized");
 }
 
 export function updateShadows(audioReactive) {
-  if (!shadowMesh) return;
+  if (!groundShadow || !backdropShadow || !shadowMaterial) return;
 
-  // Scale relative to vessel
-  shadowMesh.scale.set(state.scale * 2, state.scale * 2, 1);
+  // Update visibility from state
+  groundShadow.visible = state.shadows.enabled && state.shadows.ground;
+  backdropShadow.visible = state.shadows.enabled && state.shadows.backdrop;
 
-  // Audio-reactive opacity
-  if (audioReactive && state.audio) {
-    const avg = (state.audio.bass + state.audio.mid + state.audio.treble) / 3;
-    shadowMesh.material.opacity = 0.1 + avg * 0.4; // 0.1 – 0.5 range
+  // Update material color from state
+  shadowMaterial.color.set(state.shadows.color);
+  backdropShadow.material.color.set(state.shadows.color);
+
+  // Scale shadows dynamically with vessel scale
+  const vesselScale = state.vessel.scale || 1.0;
+  groundShadow.scale.setScalar(vesselScale);
+  backdropShadow.scale.setScalar(vesselScale);
+
+  // Apply audio modulation only if audioReactive === true
+  if (state.audioReactive) {
+    // Map bass → opacity pulse (±0.1 range)
+    const bassPulse = (state.audio.bass || 0) * 0.1;
+    const baseOpacity = state.shadows.opacity;
+    shadowMaterial.opacity = Math.max(0.0, Math.min(1.0, baseOpacity + bassPulse));
+
+    // Map mid → backdrop only subtle flicker (±0.05)
+    if (backdropShadow.visible) {
+      const midFlicker = (state.audio.mid || 0) * 0.05;
+      backdropShadow.material.opacity = Math.max(0.0, Math.min(1.0, baseOpacity + midFlicker));
+    }
   } else {
-    shadowMesh.material.opacity = 0.25;
+    // Static opacity when audio reactivity is off
+    shadowMaterial.opacity = state.shadows.opacity;
+    backdropShadow.material.opacity = state.shadows.opacity;
   }
 }
+
+export function getShadowElements() {
+  return { groundShadow, backdropShadow, shadowMaterial };
+}
+
+console.log("🌑 Enhanced shadow module ready");

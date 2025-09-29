@@ -69,6 +69,15 @@ export const state = {
     progress: 0,
     isTransitioning: false,
     targets: ['cube', 'sphere', 'pyramid', 'torus']
+  },
+
+  // Shadows configuration
+  shadows: {
+    enabled: true,
+    ground: true,
+    backdrop: true,
+    opacity: 0.25,
+    color: '#000000'
   }
 };
 

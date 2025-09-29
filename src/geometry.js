@@ -186,26 +186,47 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
+// Clamp helper
+function clamp(val, min, max) {
+  return Math.max(min, Math.min(max, val));
+}
+
+function updateMorphTargets(state) {
+  const baseWeights = [
+    state.morphWeights.sphere || 0,
+    state.morphWeights.cube || 0,
+    state.morphWeights.pyramid || 0,
+    state.morphWeights.torus || 0
+  ];
+
+  // Calculate audio deltas for each morph target
+  const audioDelta = [
+    (state.audio.bass || 0) * 0.05,
+    (state.audio.mid || 0) * 0.03,
+    (state.audio.treble || 0) * 0.02,
+    ((state.audio.bass || 0) + (state.audio.mid || 0) + (state.audio.treble || 0)) / 3 * 0.02
+  ];
+
+  if (state.audioReactive) {
+    for (let i = 0; i < morphMesh.morphTargetInfluences.length; i++) {
+      morphMesh.morphTargetInfluences[i] =
+        clamp(baseWeights[i] + audioDelta[i], 0, 1);
+    }
+  } else {
+    for (let i = 0; i < morphMesh.morphTargetInfluences.length; i++) {
+      morphMesh.morphTargetInfluences[i] = baseWeights[i];
+    }
+  }
+
+  // Debug logging (temporary for v2.1.9)
+  console.log("🎛️ Base:", baseWeights, "🎵 Audio:", audioDelta, "➡️ Final:", Array.from(morphMesh.morphTargetInfluences));
+}
+
 // Function to update geometry from state
 function updateGeometryFromState() {
-  // Update morph target influences from state
-  morphMesh.morphTargetInfluences[0] = state.morphWeights.sphere;  // sphere
-  morphMesh.morphTargetInfluences[1] = state.morphWeights.cube;    // cube
-  morphMesh.morphTargetInfluences[2] = state.morphWeights.pyramid; // pyramid
-  morphMesh.morphTargetInfluences[3] = state.morphWeights.torus;   // torus
-
-  // Audio-reactive morph influence (additive modulation, preserves base weights)
-  if (state.audioReactive) {
-    // Subtle audio modulation on top of existing weights (max ±0.1)
-    morphMesh.morphTargetInfluences[0] = THREE.MathUtils.clamp(
-      state.morphWeights.sphere + (state.audio.bass - 0.5) * 0.1, 0, 1
-    );
-    morphMesh.morphTargetInfluences[1] = THREE.MathUtils.clamp(
-      state.morphWeights.cube + (state.audio.mid - 0.5) * 0.1, 0, 1
-    );
-    morphMesh.morphTargetInfluences[2] = THREE.MathUtils.clamp(
-      state.morphWeights.pyramid + (state.audio.treble - 0.5) * 0.1, 0, 1
-    );
+  // Update morph targets with persistent weights and optional audio overlay
+  if (morphMesh && state.morphWeights) {
+    updateMorphTargets(state);
   }
 
   // Update material color from state

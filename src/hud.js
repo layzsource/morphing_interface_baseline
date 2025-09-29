@@ -342,6 +342,46 @@ function createHUDPanel() {
   vesselDebugDiv.innerHTML = '<p id="vessel-debug">Radius: --</p>';
   panel.appendChild(vesselDebugDiv);
 
+  // Add separator for Shadows controls
+  const shadowsSeparator = document.createElement('hr');
+  shadowsSeparator.style.cssText = 'border: 1px solid #555; margin: 15px 0;';
+  panel.appendChild(shadowsSeparator);
+
+  const shadowsTitle = document.createElement('h4');
+  shadowsTitle.textContent = '🌑 Shadows';
+  shadowsTitle.style.cssText = 'margin: 0 0 10px 0; color: #555; font-size: 12px;';
+  panel.appendChild(shadowsTitle);
+
+  // Shadows enable toggle
+  const shadowsEnableControl = createToggleControl('Enable Shadows', true, (value) => {
+    notifyHUDUpdate({ shadowsEnabled: value });
+  });
+  panel.appendChild(shadowsEnableControl);
+
+  // Ground shadow checkbox
+  const groundShadowControl = createToggleControl('Ground Shadow', true, (value) => {
+    notifyHUDUpdate({ shadowsGround: value });
+  });
+  panel.appendChild(groundShadowControl);
+
+  // Backdrop shadow checkbox
+  const backdropShadowControl = createToggleControl('Backdrop Shadow', true, (value) => {
+    notifyHUDUpdate({ shadowsBackdrop: value });
+  });
+  panel.appendChild(backdropShadowControl);
+
+  // Shadow opacity slider
+  const shadowOpacityControl = createSliderControl('Shadow Opacity', 0.25, 0.0, 1.0, 0.05, (value) => {
+    notifyHUDUpdate({ shadowsOpacity: value });
+  });
+  panel.appendChild(shadowOpacityControl);
+
+  // Shadow color picker
+  const shadowColorControl = createColorPickerControl('Shadow Color', '#000000', (value) => {
+    notifyHUDUpdate({ shadowsColor: value });
+  });
+  panel.appendChild(shadowColorControl);
+
   return panel;
 }
 
