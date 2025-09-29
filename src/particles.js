@@ -62,7 +62,45 @@ export function initParticles(scene, count = 1000) {
   console.log(`✨ Particles initialized (v2.2.1, count=${count}, layout=${state.particles.layout})`);
 
   const geometry = new THREE.BufferGeometry();
-  const positions = getLayoutPositions(state.particles.layout, count);
+  const positions = new Float32Array(count * 3);
+
+  switch (state.particles.layout) {
+    case "sphere":
+      for (let i = 0; i < count; i++) {
+        const theta = Math.random() * 2 * Math.PI;
+        const phi = Math.acos(2 * Math.random() - 1);
+        const x = Math.sin(phi) * Math.cos(theta);
+        const y = Math.sin(phi) * Math.sin(theta);
+        const z = Math.cos(phi);
+        positions[i * 3] = x * 5; // Scale by 5
+        positions[i * 3 + 1] = y * 5;
+        positions[i * 3 + 2] = z * 5;
+      }
+      break;
+
+    case "torus":
+      const R = 1.0, r = 0.3;
+      for (let i = 0; i < count; i++) {
+        const u = Math.random() * 2 * Math.PI;
+        const v = Math.random() * 2 * Math.PI;
+        const x = (R + r * Math.cos(v)) * Math.cos(u);
+        const y = (R + r * Math.cos(v)) * Math.sin(u);
+        const z = r * Math.sin(v);
+        positions[i * 3] = x * 5; // Scale by 5
+        positions[i * 3 + 1] = y * 5;
+        positions[i * 3 + 2] = z * 5;
+      }
+      break;
+
+    case "cube":
+    default:
+      for (let i = 0; i < count; i++) {
+        positions[i * 3] = (Math.random() - 0.5) * 20;
+        positions[i * 3 + 1] = (Math.random() - 0.5) * 20;
+        positions[i * 3 + 2] = (Math.random() - 0.5) * 20;
+      }
+      break;
+  }
 
   geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
   particleGeometry = geometry;
@@ -110,7 +148,7 @@ export function reinitParticles(scene) {
     destroyParticles(scene);
   }
   // Reinitialize with current layout and count
-  initParticles(scene, state.particlesCount);
+  initParticles(scene, state.particles.count);
   console.log(`✨ Particles reinitalized with layout: ${state.particles.layout}`);
 }
 

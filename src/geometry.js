@@ -200,26 +200,24 @@ function updateMorphTargets(state) {
   ];
 
   // Calculate audio deltas for each morph target
-  const audioDelta = [
-    (state.audio.bass || 0) * 0.05,
-    (state.audio.mid || 0) * 0.03,
-    (state.audio.treble || 0) * 0.02,
-    ((state.audio.bass || 0) + (state.audio.mid || 0) + (state.audio.treble || 0)) / 3 * 0.02
+  const audioWeights = [
+    (state.audio.bass || 0) * 0.1,
+    (state.audio.mid || 0) * 0.1,
+    (state.audio.treble || 0) * 0.1,
+    ((state.audio.bass || 0) + (state.audio.mid || 0) + (state.audio.treble || 0)) / 3 * 0.1
   ];
 
-  if (state.audioReactive) {
-    for (let i = 0; i < morphMesh.morphTargetInfluences.length; i++) {
-      morphMesh.morphTargetInfluences[i] =
-        clamp(baseWeights[i] + audioDelta[i], 0, 1);
-    }
-  } else {
-    for (let i = 0; i < morphMesh.morphTargetInfluences.length; i++) {
-      morphMesh.morphTargetInfluences[i] = baseWeights[i];
+  for (let i = 0; i < morphMesh.morphTargetInfluences.length; i++) {
+    const baseWeight = baseWeights[i] || 0;
+    if (state.audioReactive) {
+      morphMesh.morphTargetInfluences[i] = clamp(baseWeight + audioWeights[i], 0, 1);
+    } else {
+      morphMesh.morphTargetInfluences[i] = baseWeight;
     }
   }
 
-  // Debug logging (temporary for v2.1.9)
-  console.log("🎛️ Base:", baseWeights, "🎵 Audio:", audioDelta, "➡️ Final:", Array.from(morphMesh.morphTargetInfluences));
+  // Debug logging (temporary)
+  console.log("🎛️ Base:", baseWeights, "🎵 Audio:", audioWeights, "➡️ Final:", Array.from(morphMesh.morphTargetInfluences));
 }
 
 // Function to update geometry from state

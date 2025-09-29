@@ -48,11 +48,14 @@ export const state = {
   },
 
   // Particle system
+  particles: {
+    enabled: true,
+    count: 1000,
+    layout: "cube"  // 'cube' | 'sphere' | 'torus'
+  },
+  // Backward compatibility
   particlesEnabled: true,
   particlesCount: 1000,
-  particles: {
-    layout: 'cube'  // 'cube' | 'sphere' | 'torus'
-  },
 
   // Lighting system
   lighting: {

@@ -108,7 +108,7 @@ onHUDUpdate((update) => {
     state.particles.layout = update.particlesLayout;
     console.log(`✨ Particles layout: ${update.particlesLayout}`);
     // If particles are currently enabled, reinitialize with new layout
-    if (state.particlesEnabled) {
+    if (state.particles.enabled) {
       import('./particles.js').then(({ reinitParticles }) => {
         reinitParticles(scene);
       });
@@ -182,6 +182,20 @@ onHUDUpdate((update) => {
   if (update.presetAction !== undefined) {
     // This will be handled by the preset router
     console.log("📟 Preset action:", update.presetAction, update.presetName);
+  }
+});
+
+// Wire dropdown to state + reinit directly
+document.addEventListener('DOMContentLoaded', () => {
+  const dropdown = document.getElementById("particle-layout-dropdown");
+  if (dropdown) {
+    dropdown.addEventListener("change", (e) => {
+      state.particles.layout = e.target.value;
+      import('./particles.js').then(({ reinitParticles }) => {
+        reinitParticles(scene);
+        console.log(`✨ Particle layout switched to: ${state.particles.layout}`);
+      });
+    });
   }
 });
 

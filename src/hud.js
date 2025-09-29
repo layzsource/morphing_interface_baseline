@@ -232,12 +232,28 @@ function createHUDPanel() {
   panel.appendChild(particleDensityControl);
 
   // Particle layout dropdown
-  const particleLayoutControl = createDropdownControl('Particle Layout', 'cube',
-    ['cube', 'sphere', 'torus'], (value) => {
-    notifyHUDUpdate({ particlesLayout: value });
+  const particleLayoutDiv = document.createElement('div');
+  particleLayoutDiv.style.cssText = 'margin-bottom: 10px;';
+
+  const particleLayoutLabel = document.createElement('label');
+  particleLayoutLabel.textContent = 'Layout';
+  particleLayoutLabel.style.cssText = 'display: block; margin-bottom: 5px; color: #ccc; font-size: 12px;';
+  particleLayoutDiv.appendChild(particleLayoutLabel);
+
+  const particleLayoutSelect = document.createElement('select');
+  particleLayoutSelect.id = 'particle-layout-dropdown';
+  particleLayoutSelect.style.cssText = 'width: 100%; padding: 5px; background: #333; color: white; border: 1px solid #555; border-radius: 3px;';
+
+  ['cube', 'sphere', 'torus'].forEach(option => {
+    const optionEl = document.createElement('option');
+    optionEl.value = option;
+    optionEl.textContent = option.charAt(0).toUpperCase() + option.slice(1);
+    optionEl.selected = option === 'cube';
+    particleLayoutSelect.appendChild(optionEl);
   });
-  particleLayoutControl.title = "Particle distribution pattern";
-  panel.appendChild(particleLayoutControl);
+
+  particleLayoutDiv.appendChild(particleLayoutSelect);
+  panel.appendChild(particleLayoutDiv);
 
   // Add separator for Phase 7 visual controls
   const visualSeparator = document.createElement('hr');

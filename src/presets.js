@@ -46,6 +46,8 @@ export function savePreset(name, state) {
       color: state.shadows.color
     },
     particles: {
+      enabled: state.particles.enabled,
+      count: state.particles.count,
       layout: state.particles.layout
     }
   };
@@ -132,7 +134,17 @@ export function loadPreset(name) {
 
   // Load particles state (with backward compatibility)
   if (preset.particles) {
+    if (preset.particles.enabled !== undefined) state.particles.enabled = preset.particles.enabled;
+    if (preset.particles.count !== undefined) state.particles.count = preset.particles.count;
     if (preset.particles.layout !== undefined) state.particles.layout = preset.particles.layout;
+    // Reinitialize particles with new layout
+    if (state.particles.enabled) {
+      import('./particles.js').then(({ reinitParticles }) => {
+        import('./geometry.js').then(({ scene }) => {
+          reinitParticles(scene);
+        });
+      });
+    }
   } else {
     // Default to "cube" for legacy presets
     state.particles.layout = 'cube';
