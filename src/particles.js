@@ -123,13 +123,35 @@ export function updateParticles(audioReactive, time) {
   // Sync color
   particleSystem.material.color.set(state.color);
 
-  // Gentle orbital drift motion
+  // Apply motion with velocity + spread multipliers
+  const { velocity, spread } = state.particlesMotion || { velocity: 0.5, spread: 1.0 };
   const positions = particleGeometry.attributes.position.array;
+
   for (let i = 0; i < positions.length; i += 3) {
-    positions[i] += 0.002 * Math.sin(time + i);   // x drift
-    positions[i + 1] += 0.002 * Math.cos(time + i * 0.5); // y drift
-    // z left static for now
+    const particleIndex = i / 3;
+
+    // Store base positions (initial layout positions)
+    if (!particleSystem.userData.basePositions) {
+      particleSystem.userData.basePositions = new Float32Array(positions.length);
+      for (let j = 0; j < positions.length; j++) {
+        particleSystem.userData.basePositions[j] = positions[j];
+      }
+    }
+
+    const baseX = particleSystem.userData.basePositions[i];
+    const baseY = particleSystem.userData.basePositions[i + 1];
+    const baseZ = particleSystem.userData.basePositions[i + 2];
+
+    // Use base drift with velocity multiplier
+    const driftX = Math.sin(time * 0.1 * velocity + particleIndex) * 0.5 * spread;
+    const driftY = Math.cos(time * 0.1 * velocity + particleIndex * 1.1) * 0.5 * spread;
+    const driftZ = Math.sin(time * 0.1 * velocity + particleIndex * 1.3) * 0.5 * spread;
+
+    positions[i] = baseX + driftX;
+    positions[i + 1] = baseY + driftY;
+    positions[i + 2] = baseZ + driftZ;
   }
+
   particleGeometry.attributes.position.needsUpdate = true;
 
   // Audio reactivity
@@ -149,6 +171,10 @@ export function reinitParticles(scene) {
   }
   // Reinitialize with current layout and count
   initParticles(scene, state.particles.count);
+  // Clear base positions so they get recalculated for new layout
+  if (particleSystem) {
+    particleSystem.userData.basePositions = null;
+  }
   console.log(`✨ Particles reinitalized with layout: ${state.particles.layout}`);
 }
 

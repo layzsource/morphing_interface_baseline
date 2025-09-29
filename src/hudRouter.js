@@ -197,6 +197,26 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
   }
+
+  // Velocity slider → state.particlesMotion.velocity
+  const velocityInput = document.getElementById("particles-velocity");
+  if (velocityInput) {
+    velocityInput.addEventListener("input", (e) => {
+      const value = parseFloat(e.target.value);
+      state.particlesMotion.velocity = value;
+      console.log(`✨ Particles velocity set to ${value}`);
+    });
+  }
+
+  // Spread slider → state.particlesMotion.spread
+  const spreadInput = document.getElementById("particles-spread");
+  if (spreadInput) {
+    spreadInput.addEventListener("input", (e) => {
+      const value = parseFloat(e.target.value);
+      state.particlesMotion.spread = value;
+      console.log(`✨ Particles spread set to ${value}`);
+    });
+  }
 });
 
 console.log("📟 HUD routing configured");

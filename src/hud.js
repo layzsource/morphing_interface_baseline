@@ -255,6 +255,54 @@ function createHUDPanel() {
   particleLayoutDiv.appendChild(particleLayoutSelect);
   panel.appendChild(particleLayoutDiv);
 
+  // Motion Controls
+  const particlesMotionLabel = document.createElement("h4");
+  particlesMotionLabel.textContent = "Motion Controls";
+  particlesMotionLabel.style.cssText = 'margin: 15px 0 10px 0; color: #00ffff; font-size: 12px;';
+  panel.appendChild(particlesMotionLabel);
+
+  // Velocity slider
+  const velocityDiv = document.createElement('div');
+  velocityDiv.style.cssText = 'margin-bottom: 10px;';
+
+  const velocityLabel = document.createElement("label");
+  velocityLabel.textContent = "Velocity";
+  velocityLabel.style.cssText = 'display: block; margin-bottom: 5px; color: #ccc; font-size: 12px;';
+  velocityDiv.appendChild(velocityLabel);
+
+  const velocityInput = document.createElement("input");
+  velocityInput.type = "range";
+  velocityInput.min = 0.1;
+  velocityInput.max = 2.0;
+  velocityInput.step = 0.1;
+  velocityInput.value = 0.5; // Default value, will be synced later
+  velocityInput.id = "particles-velocity";
+  velocityInput.style.cssText = 'width: 100%;';
+  velocityDiv.appendChild(velocityInput);
+
+  panel.appendChild(velocityDiv);
+
+  // Spread slider
+  const spreadDiv = document.createElement('div');
+  spreadDiv.style.cssText = 'margin-bottom: 10px;';
+
+  const spreadLabel = document.createElement("label");
+  spreadLabel.textContent = "Spread";
+  spreadLabel.style.cssText = 'display: block; margin-bottom: 5px; color: #ccc; font-size: 12px;';
+  spreadDiv.appendChild(spreadLabel);
+
+  const spreadInput = document.createElement("input");
+  spreadInput.type = "range";
+  spreadInput.min = 0.1;
+  spreadInput.max = 2.0;
+  spreadInput.step = 0.1;
+  spreadInput.value = 1.0; // Default value, will be synced later
+  spreadInput.id = "particles-spread";
+  spreadInput.style.cssText = 'width: 100%;';
+  spreadDiv.appendChild(spreadInput);
+
+  panel.appendChild(spreadDiv);
+
   // Add separator for Phase 7 visual controls
   const visualSeparator = document.createElement('hr');
   visualSeparator.style.cssText = 'border: 1px solid #555; margin: 15px 0;';

@@ -56,6 +56,10 @@ export const state = {
   // Backward compatibility
   particlesEnabled: true,
   particlesCount: 1000,
+  particlesMotion: {
+    velocity: 0.5,   // base drift speed multiplier (HUD slider: 0.1–2.0)
+    spread: 1.0,     // spatial spread multiplier (HUD slider: 0.1–2.0)
+  },
 
   // Lighting system
   lighting: {

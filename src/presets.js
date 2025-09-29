@@ -48,7 +48,11 @@ export function savePreset(name, state) {
     particles: {
       enabled: state.particles.enabled,
       count: state.particles.count,
-      layout: state.particles.layout
+      layout: state.particles.layout,
+      motion: {
+        velocity: state.particlesMotion.velocity,
+        spread: state.particlesMotion.spread
+      }
     }
   };
 
@@ -137,6 +141,21 @@ export function loadPreset(name) {
     if (preset.particles.enabled !== undefined) state.particles.enabled = preset.particles.enabled;
     if (preset.particles.count !== undefined) state.particles.count = preset.particles.count;
     if (preset.particles.layout !== undefined) state.particles.layout = preset.particles.layout;
+
+    // Motion (with backward compatibility defaults)
+    state.particlesMotion = {
+      velocity: preset.particles.motion?.velocity ?? 0.5,
+      spread: preset.particles.motion?.spread ?? 1.0
+    };
+
+    // Update HUD sliders to reflect loaded values
+    setTimeout(() => {
+      const velocitySlider = document.getElementById('particles-velocity');
+      const spreadSlider = document.getElementById('particles-spread');
+      if (velocitySlider) velocitySlider.value = state.particlesMotion.velocity;
+      if (spreadSlider) spreadSlider.value = state.particlesMotion.spread;
+    }, 100);
+
     // Reinitialize particles with new layout
     if (state.particles.enabled) {
       import('./particles.js').then(({ reinitParticles }) => {
@@ -148,6 +167,10 @@ export function loadPreset(name) {
   } else {
     // Default to "cube" for legacy presets
     state.particles.layout = 'cube';
+    state.particlesMotion = {
+      velocity: 0.5,
+      spread: 1.0
+    };
   }
 
   currentPresetName = name;
