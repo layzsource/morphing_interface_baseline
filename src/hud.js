@@ -303,6 +303,42 @@ function createHUDPanel() {
 
   panel.appendChild(spreadDiv);
 
+  // ✨ Particle Polish section
+  const particlePolishLabel = document.createElement("h4");
+  particlePolishLabel.textContent = "✨ Particle Polish";
+  particlePolishLabel.style.cssText = 'margin: 15px 0 10px 0; color: #ffff00; font-size: 12px;';
+  panel.appendChild(particlePolishLabel);
+
+  // Hue shift slider (0-360)
+  const hueShiftControl = createSliderControl('Hue Shift', 0, 0, 360, 5, (value) => {
+    notifyHUDUpdate({ particlesHue: value });
+  });
+  panel.appendChild(hueShiftControl);
+
+  // Size slider (0.1-3.0)
+  const sizeControl = createSliderControl('Size', 0.15, 0.1, 3.0, 0.05, (value) => {
+    notifyHUDUpdate({ particlesSize: value });
+  });
+  panel.appendChild(sizeControl);
+
+  // Opacity slider (0.0-1.0)
+  const opacityControl = createSliderControl('Opacity', 0.5, 0.0, 1.0, 0.05, (value) => {
+    notifyHUDUpdate({ particlesOpacity: value });
+  });
+  panel.appendChild(opacityControl);
+
+  // Organic motion toggle
+  const organicMotionControl = createToggleControl('Organic Motion', false, (value) => {
+    notifyHUDUpdate({ particlesOrganicMotion: value });
+  });
+  panel.appendChild(organicMotionControl);
+
+  // Audio-reactive hue toggle
+  const audioHueControl = createToggleControl('Audio-Reactive Hue', false, (value) => {
+    notifyHUDUpdate({ particlesAudioReactiveHue: value });
+  });
+  panel.appendChild(audioHueControl);
+
   // Add separator for Phase 7 visual controls
   const visualSeparator = document.createElement('hr');
   visualSeparator.style.cssText = 'border: 1px solid #555; margin: 15px 0;';

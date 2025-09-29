@@ -51,7 +51,12 @@ export const state = {
   particles: {
     enabled: true,
     count: 1000,
-    layout: "cube"  // 'cube' | 'sphere' | 'torus'
+    layout: "cube",  // 'cube' | 'sphere' | 'torus'
+    hue: 0,          // Hue shift in degrees (0-360)
+    size: 0.15,      // Particle size (0.1-3.0)
+    opacity: 0.5,    // Particle opacity (0.0-1.0)
+    organicMotion: false,  // Enable organic motion with jitter
+    audioReactiveHue: false  // Enable audio-reactive hue cycling
   },
   // Backward compatibility
   particlesEnabled: true,

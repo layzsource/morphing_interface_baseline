@@ -107,9 +107,9 @@ export function initParticles(scene, count = 1000) {
 
   const material = new THREE.PointsMaterial({
     color: state.color,
-    size: 0.15,
+    size: state.particles.size,
     transparent: true,
-    opacity: 0.5,
+    opacity: state.particles.opacity,
     depthWrite: false
   });
 
@@ -120,8 +120,27 @@ export function initParticles(scene, count = 1000) {
 export function updateParticles(audioReactive, time) {
   if (!particleSystem) return;
 
+  // Calculate color with hue shift
+  let particleColor = state.color;
+  if (state.particles.hue !== 0 || state.particles.audioReactiveHue) {
+    const baseColor = new THREE.Color(state.color);
+    let hsl = {};
+    baseColor.getHSL(hsl);
+
+    let hueShift = state.particles.hue / 360;
+
+    // Audio-reactive hue cycling based on treble
+    if (state.particles.audioReactiveHue && audioReactive && state.audio) {
+      hueShift += state.audio.treble * 0.3; // Treble drives hue cycling
+    }
+
+    hsl.h = (hsl.h + hueShift) % 1;
+    baseColor.setHSL(hsl.h, hsl.s, hsl.l);
+    particleColor = baseColor;
+  }
+
   // Sync color
-  particleSystem.material.color.set(state.color);
+  particleSystem.material.color.copy(particleColor);
 
   // Apply motion with velocity + spread multipliers
   const { velocity, spread } = state.particlesMotion || { velocity: 0.5, spread: 1.0 };
@@ -142,10 +161,18 @@ export function updateParticles(audioReactive, time) {
     const baseY = particleSystem.userData.basePositions[i + 1];
     const baseZ = particleSystem.userData.basePositions[i + 2];
 
-    // Use base drift with velocity multiplier
-    const driftX = Math.sin(time * 0.1 * velocity + particleIndex) * 0.5 * spread;
-    const driftY = Math.cos(time * 0.1 * velocity + particleIndex * 1.1) * 0.5 * spread;
-    const driftZ = Math.sin(time * 0.1 * velocity + particleIndex * 1.3) * 0.5 * spread;
+    // Base drift with velocity multiplier
+    let driftX = Math.sin(time * 0.1 * velocity + particleIndex) * 0.5 * spread;
+    let driftY = Math.cos(time * 0.1 * velocity + particleIndex * 1.1) * 0.5 * spread;
+    let driftZ = Math.sin(time * 0.1 * velocity + particleIndex * 1.3) * 0.5 * spread;
+
+    // Add organic motion jitter if enabled
+    if (state.particles.organicMotion) {
+      const jitterAmount = 0.3;
+      driftX += (Math.random() - 0.5) * jitterAmount;
+      driftY += (Math.random() - 0.5) * jitterAmount;
+      driftZ += (Math.random() - 0.5) * jitterAmount;
+    }
 
     positions[i] = baseX + driftX;
     positions[i + 1] = baseY + driftY;
@@ -154,15 +181,19 @@ export function updateParticles(audioReactive, time) {
 
   particleGeometry.attributes.position.needsUpdate = true;
 
-  // Audio reactivity
+  // Update size and opacity from state
+  let baseSize = state.particles.size;
+  let baseOpacity = state.particles.opacity;
+
+  // Audio reactivity enhances base values
   if (audioReactive && state.audio) {
     const avg = (state.audio.bass + state.audio.mid + state.audio.treble) / 3;
-    particleSystem.material.size = 0.1 + avg * 0.3;
-    particleSystem.material.opacity = 0.3 + avg * 0.5;
-  } else {
-    particleSystem.material.size = 0.15;
-    particleSystem.material.opacity = 0.5;
+    baseSize = baseSize + avg * 0.3; // Add audio boost to base size
+    baseOpacity = Math.min(1.0, baseOpacity + avg * 0.3); // Add audio boost to base opacity
   }
+
+  particleSystem.material.size = baseSize;
+  particleSystem.material.opacity = baseOpacity;
 }
 
 export function reinitParticles(scene) {

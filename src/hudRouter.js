@@ -114,6 +114,26 @@ onHUDUpdate((update) => {
       });
     }
   }
+  if (update.particlesHue !== undefined) {
+    state.particles.hue = update.particlesHue;
+    console.log(`✨ Particles hue: ${update.particlesHue}°`);
+  }
+  if (update.particlesSize !== undefined) {
+    state.particles.size = update.particlesSize;
+    console.log(`✨ Particles size: ${update.particlesSize}`);
+  }
+  if (update.particlesOpacity !== undefined) {
+    state.particles.opacity = update.particlesOpacity;
+    console.log(`✨ Particles opacity: ${update.particlesOpacity}`);
+  }
+  if (update.particlesOrganicMotion !== undefined) {
+    state.particles.organicMotion = update.particlesOrganicMotion;
+    console.log(`✨ Particles organic motion: ${update.particlesOrganicMotion}`);
+  }
+  if (update.particlesAudioReactiveHue !== undefined) {
+    state.particles.audioReactiveHue = update.particlesAudioReactiveHue;
+    console.log(`✨ Particles audio-reactive hue: ${update.particlesAudioReactiveHue}`);
+  }
   if (update.vesselEnabled !== undefined) {
     state.vessel.enabled = update.vesselEnabled;
     console.log(`🚢 Vessel enabled: ${update.vesselEnabled}`);

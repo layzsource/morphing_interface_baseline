@@ -49,6 +49,11 @@ export function savePreset(name, state) {
       enabled: state.particles.enabled,
       count: state.particles.count,
       layout: state.particles.layout,
+      hue: state.particles.hue,
+      size: state.particles.size,
+      opacity: state.particles.opacity,
+      organicMotion: state.particles.organicMotion,
+      audioReactiveHue: state.particles.audioReactiveHue,
       motion: {
         velocity: state.particlesMotion.velocity,
         spread: state.particlesMotion.spread
@@ -142,6 +147,13 @@ export function loadPreset(name) {
     if (preset.particles.count !== undefined) state.particles.count = preset.particles.count;
     if (preset.particles.layout !== undefined) state.particles.layout = preset.particles.layout;
 
+    // Particle polish properties (with backward compatibility)
+    state.particles.hue = preset.particles.hue ?? 0;
+    state.particles.size = preset.particles.size ?? 0.15;
+    state.particles.opacity = preset.particles.opacity ?? 0.5;
+    state.particles.organicMotion = preset.particles.organicMotion ?? false;
+    state.particles.audioReactiveHue = preset.particles.audioReactiveHue ?? false;
+
     // Motion (with backward compatibility defaults)
     state.particlesMotion = {
       velocity: preset.particles.motion?.velocity ?? 0.5,
@@ -154,6 +166,19 @@ export function loadPreset(name) {
       const spreadSlider = document.getElementById('particles-spread');
       if (velocitySlider) velocitySlider.value = state.particlesMotion.velocity;
       if (spreadSlider) spreadSlider.value = state.particlesMotion.spread;
+
+      // Update particle polish controls
+      const hueSlider = document.querySelector('input[type="range"][onchange*="particlesHue"]');
+      const sizeSlider = document.querySelector('input[type="range"][onchange*="particlesSize"]');
+      const opacitySlider = document.querySelector('input[type="range"][onchange*="particlesOpacity"]');
+      const organicToggle = document.querySelector('input[type="checkbox"][onchange*="particlesOrganicMotion"]');
+      const audioHueToggle = document.querySelector('input[type="checkbox"][onchange*="particlesAudioReactiveHue"]');
+
+      if (hueSlider) hueSlider.value = state.particles.hue;
+      if (sizeSlider) sizeSlider.value = state.particles.size;
+      if (opacitySlider) opacitySlider.value = state.particles.opacity;
+      if (organicToggle) organicToggle.checked = state.particles.organicMotion;
+      if (audioHueToggle) audioHueToggle.checked = state.particles.audioReactiveHue;
     }, 100);
 
     // Reinitialize particles with new layout
@@ -167,6 +192,11 @@ export function loadPreset(name) {
   } else {
     // Default to "cube" for legacy presets
     state.particles.layout = 'cube';
+    state.particles.hue = 0;
+    state.particles.size = 0.15;
+    state.particles.opacity = 0.5;
+    state.particles.organicMotion = false;
+    state.particles.audioReactiveHue = false;
     state.particlesMotion = {
       velocity: 0.5,
       spread: 1.0
