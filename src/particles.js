@@ -107,9 +107,9 @@ export function initParticles(scene, count = 1000) {
 
   const material = new THREE.PointsMaterial({
     color: state.color,
-    size: state.particles.size,
+    size: state.particles.size || 0.15,
     transparent: true,
-    opacity: state.particles.opacity,
+    opacity: state.particles.opacity || 0.5,
     depthWrite: false
   });
 
@@ -139,8 +139,8 @@ export function updateParticles(audioReactive, time) {
     particleColor = baseColor;
   }
 
-  // Sync color
-  particleSystem.material.color.copy(particleColor);
+  // Sync color - ensure proper color propagation
+  particleSystem.material.color.set(state.color);
 
   // Apply motion with velocity + spread multipliers
   const { velocity, spread } = state.particlesMotion || { velocity: 0.5, spread: 1.0 };
@@ -219,19 +219,27 @@ export function updateParticles(audioReactive, time) {
 
   particleGeometry.attributes.position.needsUpdate = true;
 
-  // Update size and opacity from state
-  let baseSize = state.particles.size;
-  let baseOpacity = state.particles.opacity;
+  // Update size and opacity from state with fallbacks
+  let baseSize = state.particles.size || 0.15;
+  let baseOpacity = state.particles.opacity || 0.5;
 
-  // Audio reactivity enhances base values
+  // Audio reactivity with proper bass-driven opacity
   if (audioReactive && state.audio) {
     const avg = (state.audio.bass + state.audio.mid + state.audio.treble) / 3;
     baseSize = baseSize + avg * 0.3; // Add audio boost to base size
-    baseOpacity = Math.min(1.0, baseOpacity + avg * 0.3); // Add audio boost to base opacity
+
+    // Bass-driven opacity using THREE.MathUtils.lerp for 0.3-0.8 range
+    baseOpacity = THREE.MathUtils.lerp(0.3, 0.8, state.audio.bass || 0);
   }
 
   particleSystem.material.size = baseSize;
   particleSystem.material.opacity = baseOpacity;
+
+  // Debug logging for validation
+  console.log("✨ Particle sync → color:", state.color,
+              "opacity:", particleSystem.material.opacity.toFixed(2),
+              "size:", particleSystem.material.size.toFixed(2),
+              "audioReactive:", audioReactive);
 }
 
 export function reinitParticles(scene) {

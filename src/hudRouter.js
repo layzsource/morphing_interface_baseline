@@ -84,6 +84,9 @@ onHUDUpdate((update) => {
   }
   if (update.color !== undefined) {
     setColor(update.color);
+    // Ensure vessel color stays in sync with main color
+    state.vessel.color = update.color;
+    console.log(`🎨 Color updated: ${update.color} (vessel + particles)`);
   }
   if (update.particlesEnabled !== undefined) {
     state.particlesEnabled = update.particlesEnabled;
