@@ -324,6 +324,24 @@ function createHUDPanel() {
   });
   panel.appendChild(vesselLayoutControl);
 
+  // Audio smoothing slider
+  const vesselAudioSmoothingControl = createSliderControl('Audio Smoothing', 0.7, 0.1, 0.9, 0.05, (value) => {
+    notifyHUDUpdate({ vesselAudioSmoothing: value });
+  });
+  panel.appendChild(vesselAudioSmoothingControl);
+
+  // Hue shift range slider
+  const vesselHueShiftControl = createSliderControl('Hue Shift Range', 20, 0, 60, 5, (value) => {
+    notifyHUDUpdate({ vesselHueShiftRange: value });
+  });
+  panel.appendChild(vesselHueShiftControl);
+
+  // Vessel debug display
+  const vesselDebugDiv = document.createElement('div');
+  vesselDebugDiv.style.cssText = 'margin-top: 15px; font-size: 12px; color: #888;';
+  vesselDebugDiv.innerHTML = '<p id="vessel-debug">Radius: --</p>';
+  panel.appendChild(vesselDebugDiv);
+
   return panel;
 }
 

@@ -221,6 +221,18 @@ export function updateAudio() {
   state.audio.bass = bass;
   state.audio.mid = mid;
   state.audio.treble = treble;
+
+  // Audio smoothing for vessel
+  const alpha = state.vessel.audioSmoothing;
+  if (!state.audio.smooth) {
+    state.audio.smooth = { bass, mid, treble };
+  } else {
+    state.audio.smooth = {
+      bass: alpha * state.audio.smooth.bass + (1 - alpha) * bass,
+      mid: alpha * state.audio.smooth.mid + (1 - alpha) * mid,
+      treble: alpha * state.audio.smooth.treble + (1 - alpha) * treble,
+    };
+  }
 }
 
 function avg(arr) {

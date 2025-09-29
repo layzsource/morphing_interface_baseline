@@ -140,27 +140,38 @@ export function updateVessel(audioData) {
   const radius = morphMesh.geometry.boundingSphere.radius;
   let adaptiveRadius = radius * (state.vessel.scaleMultiplier || 1.2) * state.vessel.scale;
 
-  // Audio reactivity: subtle scale modulation (±5%)
-  if (state.audioReactive && audioData) {
-    const bass = audioData.bass || 0;
-    const scaleModulation = 1 + (bass - 0.5) * 0.1; // ±5% scale variation
-    adaptiveRadius *= scaleModulation;
+  // Enhanced audio reactivity using smoothed values
+  if (state.audioReactive && state.audio?.smooth) {
+    const { bass, mid, treble } = state.audio.smooth;
+
+    // Bass affects scale (±5% variation)
+    adaptiveRadius *= (1 + (bass - 0.5) * 0.1);
+
+    // Mid affects opacity (0.2-0.8 range)
+    vesselMaterial.opacity = THREE.MathUtils.clamp(0.2 + mid * 0.6, 0.2, 0.8);
+
+    // Treble affects hue shift
+    const hueShift = (treble - 0.5) * (state.vessel.hueShiftRange || 20);
+    const newHue = (state.hue + hueShift + 360) % 360;
+
+    // Convert hue to HSL and set color
+    const h = newHue / 360;
+    const tempColor = new THREE.Color().setHSL(h, 0.8, 0.5); // Fixed saturation and lightness for consistency
+    vesselMaterial.color.copy(tempColor);
+  } else {
+    // Non-audio reactive: use vessel color and opacity from state
+    vesselMaterial.color.set(state.vessel.color);
+    vesselMaterial.opacity = state.vessel.opacity;
   }
 
   // Apply adaptive scale to vessel group
   vesselGroup.scale.set(adaptiveRadius, adaptiveRadius, adaptiveRadius);
 
-  // Live material sync + audio pulse
-  vesselMaterial.color.set(state.vessel.color);
-  let opacity = state.vessel.opacity;
-
-  // Audio reactivity: opacity modulation (0.2-0.8 range)
-  if (state.audioReactive && audioData) {
-    const mid = audioData.mid || 0;
-    opacity = THREE.MathUtils.clamp(0.2 + mid * 0.6, 0.2, 0.8);
+  // Update debug display
+  const debugElement = document.getElementById('vessel-debug');
+  if (debugElement) {
+    debugElement.textContent = `Radius: ${adaptiveRadius.toFixed(2)}`;
   }
-
-  vesselMaterial.opacity = opacity;
 }
 
 export function cycleLayout(scene) {

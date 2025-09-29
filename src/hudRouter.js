@@ -134,6 +134,14 @@ onHUDUpdate((update) => {
       reinitVessel(scene);
     });
   }
+  if (update.vesselAudioSmoothing !== undefined) {
+    state.vessel.audioSmoothing = update.vesselAudioSmoothing;
+    console.log(`🚢 Vessel audio smoothing: ${update.vesselAudioSmoothing}`);
+  }
+  if (update.vesselHueShiftRange !== undefined) {
+    state.vessel.hueShiftRange = update.vesselHueShiftRange;
+    console.log(`🚢 Vessel hue shift range: ${update.vesselHueShiftRange}°`);
+  }
 
   // Handle preset actions - these will need to be routed to the preset system
   if (update.presetAction !== undefined) {

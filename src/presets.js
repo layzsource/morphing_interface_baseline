@@ -34,7 +34,9 @@ export function savePreset(name, state) {
       spinEnabled: state.vessel.spinEnabled,   // NEW
       spinSpeed: state.vessel.spinSpeed,       // NEW
       layout: state.vessel.layout,             // NEW
-      layoutIndex: state.vessel.layoutIndex    // NEW
+      layoutIndex: state.vessel.layoutIndex,   // NEW
+      audioSmoothing: state.vessel.audioSmoothing,  // NEW
+      hueShiftRange: state.vessel.hueShiftRange     // NEW
     }
   };
 
@@ -98,6 +100,8 @@ export function loadPreset(name) {
         });
       });
     }
+    if (preset.vessel.audioSmoothing !== undefined) state.vessel.audioSmoothing = preset.vessel.audioSmoothing;
+    if (preset.vessel.hueShiftRange !== undefined) state.vessel.hueShiftRange = preset.vessel.hueShiftRange;
   }
 
   currentPresetName = name;
