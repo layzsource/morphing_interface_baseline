@@ -32,7 +32,9 @@ export function savePreset(name, state) {
       color: state.vessel.color,
       enabled: state.vessel.enabled,
       spinEnabled: state.vessel.spinEnabled,   // NEW
-      spinSpeed: state.vessel.spinSpeed        // NEW
+      spinSpeed: state.vessel.spinSpeed,       // NEW
+      layout: state.vessel.layout,             // NEW
+      layoutIndex: state.vessel.layoutIndex    // NEW
     }
   };
 
@@ -83,6 +85,19 @@ export function loadPreset(name) {
     if (preset.vessel.enabled !== undefined) state.vessel.enabled = preset.vessel.enabled;
     if (preset.vessel.spinEnabled !== undefined) state.vessel.spinEnabled = preset.vessel.spinEnabled;
     if (preset.vessel.spinSpeed !== undefined) state.vessel.spinSpeed = preset.vessel.spinSpeed;
+    if (preset.vessel.layout !== undefined) {
+      state.vessel.layout = preset.vessel.layout;
+      // Update layoutIndex to match (with fallback)
+      const layouts = ["lattice", "hoops", "shells"];
+      state.vessel.layoutIndex = preset.vessel.layoutIndex !== undefined ?
+        preset.vessel.layoutIndex : layouts.indexOf(preset.vessel.layout);
+      // Reinitialize vessel with new layout
+      import('./vessel.js').then(({ reinitVessel }) => {
+        import('./geometry.js').then(({ scene }) => {
+          reinitVessel(scene);
+        });
+      });
+    }
   }
 
   currentPresetName = name;

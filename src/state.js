@@ -40,7 +40,9 @@ export const state = {
     enabled: true,
     spinEnabled: false,     // NEW
     spinSpeed: 0.0035,      // NEW (radians per frame approx; ~0.2°/frame @60fps)
-    scaleMultiplier: 1.2    // NEW (adaptive scaling margin)
+    scaleMultiplier: 1.2,   // NEW (adaptive scaling margin)
+    layout: 'lattice',      // NEW (orbital layout: 'lattice' | 'hoops' | 'shells')
+    layoutIndex: 0          // NEW (layout index for MIDI cycling: 0=lattice, 1=hoops, 2=shells)
   },
 
   // Particle system

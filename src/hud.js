@@ -317,6 +317,13 @@ function createHUDPanel() {
   });
   panel.appendChild(vesselSpinSpeedControl);
 
+  // Vessel layout dropdown
+  const vesselLayoutControl = createDropdownControl('Vessel Layout', 'lattice',
+    ['lattice', 'hoops', 'shells'], (value) => {
+    notifyHUDUpdate({ vesselLayout: value });
+  });
+  panel.appendChild(vesselLayoutControl);
+
   return panel;
 }
 
@@ -396,6 +403,11 @@ function createDropdownControl(label, defaultValue, options, onChange) {
 
   const select = document.createElement('select');
   select.style.cssText = 'width: 100%; padding: 4px; background: #333; color: white; border: 1px solid #555;';
+
+  // Add ID for vessel layout dropdown
+  if (label === 'Vessel Layout') {
+    select.id = 'vessel-layout-dropdown';
+  }
 
   options.forEach(option => {
     const optionEl = document.createElement('option');

@@ -53,6 +53,15 @@ onCC(({ cc, value, device }) => {
   } else if (cc === 7) {
     // CC7 → Vessel opacity (volume fader on MPK Mini)
     state.vessel.opacity = value / 127;
+  } else if (cc === 8) {
+    // CC8 → Vessel layout cycling (knob #2 on MPK Mini)
+    if (value > 64) { // Detect knob turn or button press
+      import('./vessel.js').then(({ cycleLayout }) => {
+        import('./geometry.js').then(({ scene }) => {
+          cycleLayout(scene);
+        });
+      });
+    }
   } else if (cc === 10) {
     // CC10 → Sphere weight (individual target control)
     const sphereWeight = value / 127;

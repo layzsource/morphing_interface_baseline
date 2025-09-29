@@ -123,6 +123,17 @@ onHUDUpdate((update) => {
     state.vessel.spinSpeed = update.vesselSpinSpeed;
     console.log(`🚢 Vessel spin speed: ${update.vesselSpinSpeed}`);
   }
+  if (update.vesselLayout !== undefined) {
+    state.vessel.layout = update.vesselLayout;
+    // Update layoutIndex to match
+    const layouts = ["lattice", "hoops", "shells"];
+    state.vessel.layoutIndex = layouts.indexOf(update.vesselLayout);
+    console.log(`🚢 Vessel layout: ${update.vesselLayout} (index: ${state.vessel.layoutIndex})`);
+    // Reinitialize vessel with new layout
+    import('./vessel.js').then(({ reinitVessel }) => {
+      reinitVessel(scene);
+    });
+  }
 
   // Handle preset actions - these will need to be routed to the preset system
   if (update.presetAction !== undefined) {
