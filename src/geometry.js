@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { state } from './state.js';
 import { updateShadows } from './shadows.js';
 import { updateSprites } from './sprites.js';
+import { updateParticles } from './particles.js';
 import { updateAudio } from './audio.js';
 
 console.log("🔺 geometry.js loaded");
@@ -282,6 +283,11 @@ function animate() {
 
   // Update shadows
   updateShadows(state.audioReactive);
+
+  // Update particles
+  if (state.particlesEnabled) {
+    updateParticles(state.audioReactive, performance.now() * 0.001);
+  }
 
   // Update sprites
   updateSprites();

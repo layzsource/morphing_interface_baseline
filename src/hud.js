@@ -27,7 +27,26 @@ function createHUDPanel() {
     font-size: 14px;
     z-index: 1000;
     min-width: 200px;
+    max-height: 90vh;
+    overflow-y: auto;
+    scrollbar-width: thin;
   `;
+
+  // Add webkit scrollbar styling
+  const style = document.createElement('style');
+  style.textContent = `
+    #hud-panel::-webkit-scrollbar {
+      width: 6px;
+    }
+    #hud-panel::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 3px;
+    }
+    #hud-panel::-webkit-scrollbar-track {
+      background: transparent;
+    }
+  `;
+  document.head.appendChild(style);
 
   const title = document.createElement('h3');
   title.textContent = '🔺 Geometry Controls';
@@ -189,6 +208,28 @@ function createHUDPanel() {
     notifyHUDUpdate({ audioSensitivity: value });
   });
   panel.appendChild(audioSensitivityControl);
+
+  // Add separator for particle controls
+  const particleSeparator = document.createElement('hr');
+  particleSeparator.style.cssText = 'border: 1px solid #555; margin: 15px 0;';
+  panel.appendChild(particleSeparator);
+
+  const particleTitle = document.createElement('h4');
+  particleTitle.textContent = '✨ Particles';
+  particleTitle.style.cssText = 'margin: 0 0 10px 0; color: #00ffff; font-size: 12px;';
+  panel.appendChild(particleTitle);
+
+  // Particles enable toggle
+  const particlesEnableControl = createToggleControl('Enable Particles', true, (value) => {
+    notifyHUDUpdate({ particlesEnabled: value });
+  });
+  panel.appendChild(particlesEnableControl);
+
+  // Particle density slider
+  const particleDensityControl = createSliderControl('Particle Density', 1000, 500, 2000, 50, (value) => {
+    notifyHUDUpdate({ particlesCount: value });
+  });
+  panel.appendChild(particleDensityControl);
 
   // Add separator for Phase 7 visual controls
   const visualSeparator = document.createElement('hr');

@@ -32,6 +32,10 @@ export const state = {
   // Audio reactivity toggle
   audioReactive: false,
 
+  // Particle system
+  particlesEnabled: true,
+  particlesCount: 1000,
+
   // Lighting system
   lighting: {
     ambientIntensity: 0.4,

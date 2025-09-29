@@ -1,5 +1,7 @@
 import { onHUDUpdate } from './hud.js';
 import { state, setMorphWeight, setMorphWeights, setColor, setHue } from './state.js';
+import { scene } from './geometry.js';
+import { initParticles, destroyParticles } from './particles.js';
 
 console.log("📟 hudRouter.js loaded");
 
@@ -77,6 +79,25 @@ onHUDUpdate((update) => {
   }
   if (update.color !== undefined) {
     setColor(update.color);
+  }
+  if (update.particlesEnabled !== undefined) {
+    state.particlesEnabled = update.particlesEnabled;
+    if (update.particlesEnabled) {
+      initParticles(scene, state.particlesCount);
+      console.log(`✨ Particles enabled (count: ${state.particlesCount})`);
+    } else {
+      destroyParticles(scene);
+      console.log("✨ Particles disabled");
+    }
+  }
+  if (update.particlesCount !== undefined) {
+    state.particlesCount = update.particlesCount;
+    // If particles are currently enabled, recreate them with new count
+    if (state.particlesEnabled) {
+      destroyParticles(scene);
+      initParticles(scene, state.particlesCount);
+      console.log(`✨ Particles recreated with count: ${state.particlesCount}`);
+    }
   }
 
   // Handle preset actions - these will need to be routed to the preset system

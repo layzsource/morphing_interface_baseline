@@ -3,6 +3,7 @@ import { initMIDI, getMIDIDeviceCount } from './midi.js';
 import { getHUDIdleSpin, getVisualData, getMorphState, scene } from './geometry.js';
 import { initShadows } from './shadows.js';
 import { initSprites } from './sprites.js';
+import { initParticles } from './particles.js';
 import { initTelemetry } from './telemetry.js';
 import { initPresets, createDefaultPresets, listPresets, getCurrentPresetName } from './presets.js';
 import { initAudio, getAudioValues } from './audio.js';
@@ -40,6 +41,10 @@ initAudio();
 initShadows(scene);
 
 initSprites(scene);
+
+if (state.particlesEnabled) {
+  initParticles(scene, state.particlesCount);
+}
 
 initTelemetry(() => ({
   midiDevices: getMIDIDeviceCount(),
