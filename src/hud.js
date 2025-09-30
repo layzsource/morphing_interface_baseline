@@ -115,28 +115,29 @@ function createHUDPanel() {
   });
   panel.appendChild(torusWeightControl);
 
-  // Add separator for Phase 5 preset controls
+  // Phase 11.2.4: Enhanced Preset Editor UI
   const presetSeparator = document.createElement('hr');
   presetSeparator.style.cssText = 'border: 1px solid #555; margin: 15px 0;';
   panel.appendChild(presetSeparator);
 
   const presetTitle = document.createElement('h4');
-  presetTitle.textContent = '💾 Presets';
+  presetTitle.textContent = '💾 Preset Manager (Phase 11.2.4)';
   presetTitle.style.cssText = 'margin: 0 0 10px 0; color: #00ffff; font-size: 12px;';
   panel.appendChild(presetTitle);
 
-  // Preset save controls
+  // Preset save controls (new preset)
   const saveContainer = document.createElement('div');
   saveContainer.style.cssText = 'margin-bottom: 10px;';
 
   const saveInput = document.createElement('input');
   saveInput.type = 'text';
-  saveInput.placeholder = 'Preset name...';
-  saveInput.style.cssText = 'width: 60%; padding: 4px; background: #333; color: white; border: 1px solid #555; margin-right: 5px;';
+  saveInput.placeholder = 'New preset name...';
+  saveInput.style.cssText = 'width: 58%; padding: 4px; background: #333; color: white; border: 1px solid #555; margin-right: 2%;';
 
   const saveButton = document.createElement('button');
-  saveButton.textContent = 'Save';
-  saveButton.style.cssText = 'width: 35%; padding: 4px; background: #00ff00; color: black; border: none; cursor: pointer;';
+  saveButton.textContent = 'Save New';
+  saveButton.style.cssText = 'width: 38%; padding: 4px; background: #00ff00; color: black; border: none; cursor: pointer; font-weight: bold;';
+  saveButton.title = 'Save current state as new preset';
 
   saveButton.addEventListener('click', () => {
     const presetName = saveInput.value.trim();
@@ -150,42 +151,130 @@ function createHUDPanel() {
   saveContainer.appendChild(saveButton);
   panel.appendChild(saveContainer);
 
-  // Preset load/delete controls
-  const loadContainer = document.createElement('div');
-  loadContainer.style.cssText = 'margin-bottom: 10px;';
+  // Phase 11.2.4: Preset list view (improved from dropdown)
+  const presetListLabel = document.createElement('div');
+  presetListLabel.textContent = 'Saved Presets:';
+  presetListLabel.style.cssText = 'margin-bottom: 5px; color: #aaa; font-size: 11px;';
+  panel.appendChild(presetListLabel);
 
-  const presetSelect = document.createElement('select');
-  presetSelect.style.cssText = 'width: 60%; padding: 4px; background: #333; color: white; border: 1px solid #555; margin-right: 5px;';
+  const presetListContainer = document.createElement('div');
+  presetListContainer.id = 'preset-list-container';
+  presetListContainer.style.cssText = `
+    max-height: 150px;
+    overflow-y: auto;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid #555;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    padding: 5px;
+  `;
+  panel.appendChild(presetListContainer);
+
+  // Preset action buttons (load/update/delete)
+  const actionContainer = document.createElement('div');
+  actionContainer.style.cssText = 'display: flex; gap: 5px; margin-bottom: 10px;';
 
   const loadButton = document.createElement('button');
   loadButton.textContent = 'Load';
-  loadButton.style.cssText = 'width: 18%; padding: 4px; background: #0088ff; color: white; border: none; cursor: pointer; margin-right: 2%;';
+  loadButton.style.cssText = 'flex: 1; padding: 6px; background: #0088ff; color: white; border: none; cursor: pointer; border-radius: 3px;';
+  loadButton.title = 'Load selected preset';
+  loadButton.disabled = true;
+
+  const updateButton = document.createElement('button');
+  updateButton.textContent = 'Update';
+  updateButton.style.cssText = 'flex: 1; padding: 6px; background: #ff9900; color: white; border: none; cursor: pointer; border-radius: 3px;';
+  updateButton.title = 'Overwrite selected preset with current state';
+  updateButton.disabled = true;
 
   const deleteButton = document.createElement('button');
-  deleteButton.textContent = 'Del';
-  deleteButton.style.cssText = 'width: 15%; padding: 4px; background: #ff4444; color: white; border: none; cursor: pointer;';
+  deleteButton.textContent = 'Delete';
+  deleteButton.style.cssText = 'flex: 1; padding: 6px; background: #ff4444; color: white; border: none; cursor: pointer; border-radius: 3px;';
+  deleteButton.title = 'Delete selected preset';
+  deleteButton.disabled = true;
+
+  // Track selected preset
+  let selectedPresetName = null;
 
   loadButton.addEventListener('click', () => {
-    const selectedPreset = presetSelect.value;
-    if (selectedPreset) {
-      notifyHUDUpdate({ presetAction: 'load', presetName: selectedPreset });
+    if (selectedPresetName) {
+      notifyHUDUpdate({ presetAction: 'load', presetName: selectedPresetName });
+    }
+  });
+
+  updateButton.addEventListener('click', () => {
+    if (selectedPresetName && confirm(`Overwrite preset "${selectedPresetName}" with current state?`)) {
+      notifyHUDUpdate({ presetAction: 'update', presetName: selectedPresetName });
     }
   });
 
   deleteButton.addEventListener('click', () => {
-    const selectedPreset = presetSelect.value;
-    if (selectedPreset && confirm(`Delete preset "${selectedPreset}"?`)) {
-      notifyHUDUpdate({ presetAction: 'delete', presetName: selectedPreset });
+    if (selectedPresetName && confirm(`Delete preset "${selectedPresetName}"?`)) {
+      notifyHUDUpdate({ presetAction: 'delete', presetName: selectedPresetName });
+      selectedPresetName = null;
+      loadButton.disabled = true;
+      updateButton.disabled = true;
+      deleteButton.disabled = true;
     }
   });
 
-  loadContainer.appendChild(presetSelect);
-  loadContainer.appendChild(loadButton);
-  loadContainer.appendChild(deleteButton);
-  panel.appendChild(loadContainer);
+  actionContainer.appendChild(loadButton);
+  actionContainer.appendChild(updateButton);
+  actionContainer.appendChild(deleteButton);
+  panel.appendChild(actionContainer);
+
+  // Phase 11.2.5: Import/Export buttons
+  const importExportContainer = document.createElement('div');
+  importExportContainer.style.cssText = 'display: flex; gap: 5px; margin-bottom: 10px;';
+
+  const exportButton = document.createElement('button');
+  exportButton.textContent = '📥 Export';
+  exportButton.style.cssText = 'flex: 1; padding: 6px; background: #00aa00; color: white; border: none; cursor: pointer; border-radius: 3px; font-size: 11px;';
+  exportButton.title = 'Export all presets as JSON file';
+
+  const importButton = document.createElement('button');
+  importButton.textContent = '📤 Import';
+  importButton.style.cssText = 'flex: 1; padding: 6px; background: #aa00aa; color: white; border: none; cursor: pointer; border-radius: 3px; font-size: 11px;';
+  importButton.title = 'Import presets from JSON file';
+
+  // Hidden file input for import
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.accept = '.json,application/json';
+  fileInput.style.display = 'none';
+
+  exportButton.addEventListener('click', () => {
+    notifyHUDUpdate({ presetAction: 'export' });
+  });
+
+  importButton.addEventListener('click', () => {
+    fileInput.click();
+  });
+
+  fileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      notifyHUDUpdate({ presetAction: 'import', file: file });
+      fileInput.value = ''; // Reset input
+    }
+  });
+
+  importExportContainer.appendChild(exportButton);
+  importExportContainer.appendChild(importButton);
+  panel.appendChild(importExportContainer);
+  panel.appendChild(fileInput);
 
   // Store references for updating preset list
-  panel.presetSelect = presetSelect;
+  panel.presetListContainer = presetListContainer;
+  panel.presetLoadButton = loadButton;
+  panel.presetUpdateButton = updateButton;
+  panel.presetDeleteButton = deleteButton;
+  panel.getSelectedPreset = () => selectedPresetName;
+  panel.setSelectedPreset = (name) => {
+    selectedPresetName = name;
+    loadButton.disabled = !name;
+    updateButton.disabled = !name;
+    deleteButton.disabled = !name;
+  };
 
   // Add separator for Phase 6 audio controls
   const audioSeparator = document.createElement('hr');
@@ -905,24 +994,68 @@ function createColorPickerControl(label, defaultValue, onChange) {
 
 export function updatePresetList(presets) {
   const hudPanel = document.getElementById('hud-panel');
-  if (hudPanel && hudPanel.presetSelect) {
-    const presetSelect = hudPanel.presetSelect;
+  if (hudPanel && hudPanel.presetListContainer) {
+    const listContainer = hudPanel.presetListContainer;
+    const setSelectedPreset = hudPanel.setSelectedPreset;
 
-    // Clear current options
-    presetSelect.innerHTML = '';
+    // Clear current list
+    listContainer.innerHTML = '';
 
-    // Add empty option
-    const emptyOption = document.createElement('option');
-    emptyOption.value = '';
-    emptyOption.textContent = 'Select preset...';
-    presetSelect.appendChild(emptyOption);
+    if (presets.length === 0) {
+      // Show empty state
+      const emptyMessage = document.createElement('div');
+      emptyMessage.textContent = 'No presets saved yet';
+      emptyMessage.style.cssText = 'color: #666; font-size: 11px; text-align: center; padding: 10px;';
+      listContainer.appendChild(emptyMessage);
+      return;
+    }
 
-    // Add preset options
+    // Add preset items
     presets.forEach(presetName => {
-      const option = document.createElement('option');
-      option.value = presetName;
-      option.textContent = presetName;
-      presetSelect.appendChild(option);
+      const presetItem = document.createElement('div');
+      presetItem.className = 'preset-item';
+      presetItem.textContent = presetName;
+      presetItem.style.cssText = `
+        padding: 6px 8px;
+        margin-bottom: 3px;
+        background: #2a2a2a;
+        border: 1px solid #444;
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 11px;
+        transition: background 0.2s, border-color 0.2s;
+      `;
+
+      // Hover effect
+      presetItem.addEventListener('mouseenter', () => {
+        presetItem.style.background = '#3a3a3a';
+        presetItem.style.borderColor = '#666';
+      });
+
+      presetItem.addEventListener('mouseleave', () => {
+        if (!presetItem.classList.contains('selected')) {
+          presetItem.style.background = '#2a2a2a';
+          presetItem.style.borderColor = '#444';
+        }
+      });
+
+      // Click to select
+      presetItem.addEventListener('click', () => {
+        // Deselect all
+        listContainer.querySelectorAll('.preset-item').forEach(item => {
+          item.classList.remove('selected');
+          item.style.background = '#2a2a2a';
+          item.style.borderColor = '#444';
+        });
+
+        // Select this item
+        presetItem.classList.add('selected');
+        presetItem.style.background = '#0088ff';
+        presetItem.style.borderColor = '#00aaff';
+        setSelectedPreset(presetName);
+      });
+
+      listContainer.appendChild(presetItem);
     });
   }
 }

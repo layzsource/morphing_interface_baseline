@@ -74,6 +74,15 @@ export function applyBinding(category, property, value, source = "HUD") {
 
   // Apply value to state using path notation
   setNestedValue(state, statePath, value);
+
+  // Phase 11.2.3+: Emit CustomEvent for reactive listeners / external tools
+  try {
+    document.dispatchEvent(new CustomEvent("controlUpdate", {
+      detail: { category, property, value, source, statePath }
+    }));
+  } catch (e) {
+    // Silently fail if document not available (e.g., testing environment)
+  }
 }
 
 /**
@@ -181,6 +190,29 @@ export function registerBinding(category, property, bindingConfig) {
 }
 
 /**
+ * Phase 11.2.3+: Apply control update by direct state path
+ * Used by preset system for properties not in binding registry
+ * @param {string} statePath - Direct state path (e.g., "rotationX", "lighting.ambientIntensity")
+ * @param {any} value - New value
+ * @param {string} source - Source for logging (default: "Preset")
+ */
+export function applyDirectUpdate(statePath, value, source = "Preset") {
+  console.log(`🎛️ [ControlUpdate] ${source} → ${statePath} = ${value}`);
+
+  // Apply value to state using path notation
+  setNestedValue(state, statePath, value);
+
+  // Emit CustomEvent for reactive listeners
+  try {
+    document.dispatchEvent(new CustomEvent("controlUpdate", {
+      detail: { statePath, value, source }
+    }));
+  } catch (e) {
+    // Silently fail if document not available
+  }
+}
+
+/**
  * Get all bindings for debugging
  */
 export function getBindings() {
@@ -205,6 +237,7 @@ export function initDefaultBindings() {
 export default {
   applyBinding,
   applyMIDIBinding,
+  applyDirectUpdate,
   getBindingForCC,
   updateControl,
   registerBinding,
