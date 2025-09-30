@@ -139,17 +139,61 @@ function createHUDPanel() {
   saveButton.style.cssText = 'width: 38%; padding: 4px; background: #00ff00; color: black; border: none; cursor: pointer; font-weight: bold;';
   saveButton.title = 'Save current state as new preset';
 
+  // Phase 11.2.6: Category and tags inputs
+  const categoryInput = document.createElement('input');
+  categoryInput.type = 'text';
+  categoryInput.placeholder = 'Category (e.g., Live, Test)';
+  categoryInput.value = 'Uncategorized';
+  categoryInput.style.cssText = 'width: 100%; padding: 4px; background: #333; color: white; border: 1px solid #555; margin-top: 5px; font-size: 11px;';
+
+  const tagsInput = document.createElement('input');
+  tagsInput.type = 'text';
+  tagsInput.placeholder = 'Tags (comma-separated, e.g., bright, fast)';
+  tagsInput.style.cssText = 'width: 100%; padding: 4px; background: #333; color: white; border: 1px solid #555; margin-top: 5px; font-size: 11px;';
+
   saveButton.addEventListener('click', () => {
     const presetName = saveInput.value.trim();
     if (presetName) {
-      notifyHUDUpdate({ presetAction: 'save', presetName: presetName });
+      const category = categoryInput.value.trim() || 'Uncategorized';
+      const tags = tagsInput.value.trim() ? tagsInput.value.split(',').map(t => t.trim()).filter(t => t.length > 0) : [];
+      notifyHUDUpdate({ presetAction: 'save', presetName: presetName, category: category, tags: tags });
       saveInput.value = '';
+      categoryInput.value = 'Uncategorized';
+      tagsInput.value = '';
     }
   });
 
   saveContainer.appendChild(saveInput);
   saveContainer.appendChild(saveButton);
+  saveContainer.appendChild(categoryInput);
+  saveContainer.appendChild(tagsInput);
   panel.appendChild(saveContainer);
+
+  // Phase 11.2.6: Filter controls (category dropdown + tag filter)
+  const filterContainer = document.createElement('div');
+  filterContainer.style.cssText = 'margin-bottom: 10px;';
+
+  const categoryFilterLabel = document.createElement('div');
+  categoryFilterLabel.textContent = 'Filter by Category:';
+  categoryFilterLabel.style.cssText = 'margin-bottom: 3px; color: #aaa; font-size: 10px;';
+
+  const categoryFilter = document.createElement('select');
+  categoryFilter.style.cssText = 'width: 100%; padding: 4px; background: #333; color: white; border: 1px solid #555; margin-bottom: 5px; font-size: 11px;';
+
+  const tagFilterLabel = document.createElement('div');
+  tagFilterLabel.textContent = 'Filter by Tags (comma-separated):';
+  tagFilterLabel.style.cssText = 'margin-bottom: 3px; color: #aaa; font-size: 10px;';
+
+  const tagFilter = document.createElement('input');
+  tagFilter.type = 'text';
+  tagFilter.placeholder = 'e.g., bright, fast';
+  tagFilter.style.cssText = 'width: 100%; padding: 4px; background: #333; color: white; border: 1px solid #555; font-size: 11px;';
+
+  filterContainer.appendChild(categoryFilterLabel);
+  filterContainer.appendChild(categoryFilter);
+  filterContainer.appendChild(tagFilterLabel);
+  filterContainer.appendChild(tagFilter);
+  panel.appendChild(filterContainer);
 
   // Phase 11.2.4: Preset list view (improved from dropdown)
   const presetListLabel = document.createElement('div');
@@ -268,6 +312,8 @@ function createHUDPanel() {
   panel.presetLoadButton = loadButton;
   panel.presetUpdateButton = updateButton;
   panel.presetDeleteButton = deleteButton;
+  panel.categoryFilter = categoryFilter;
+  panel.tagFilter = tagFilter;
   panel.getSelectedPreset = () => selectedPresetName;
   panel.setSelectedPreset = (name) => {
     selectedPresetName = name;
@@ -275,6 +321,19 @@ function createHUDPanel() {
     updateButton.disabled = !name;
     deleteButton.disabled = !name;
   };
+
+  // Phase 11.2.6: Filter event listeners
+  categoryFilter.addEventListener('change', () => {
+    import('./presets.js').then(({ listPresets }) => {
+      updatePresetList(listPresets());
+    });
+  });
+
+  tagFilter.addEventListener('input', () => {
+    import('./presets.js').then(({ listPresets }) => {
+      updatePresetList(listPresets());
+    });
+  });
 
   // Add separator for Phase 6 audio controls
   const audioSeparator = document.createElement('hr');
@@ -997,9 +1056,40 @@ export function updatePresetList(presets) {
   if (hudPanel && hudPanel.presetListContainer) {
     const listContainer = hudPanel.presetListContainer;
     const setSelectedPreset = hudPanel.setSelectedPreset;
+    const categoryFilter = hudPanel.categoryFilter;
+    const tagFilter = hudPanel.tagFilter;
 
     // Clear current list
     listContainer.innerHTML = '';
+
+    // Phase 11.2.6: Get filter values
+    const selectedCategory = categoryFilter ? categoryFilter.value : 'All';
+    const filterTagsInput = tagFilter ? tagFilter.value.trim() : '';
+    const filterTags = filterTagsInput ? filterTagsInput.split(',').map(t => t.trim().toLowerCase()).filter(t => t.length > 0) : [];
+
+    // Phase 11.2.6: Collect all categories and update category filter dropdown
+    if (categoryFilter) {
+      const allCategories = new Set(['All']);
+      import('./presets.js').then(({ getPresetData }) => {
+        presets.forEach(name => {
+          const preset = getPresetData(name);
+          if (preset && preset.category) {
+            allCategories.add(preset.category);
+          }
+        });
+
+        // Update category filter options
+        const currentValue = categoryFilter.value;
+        categoryFilter.innerHTML = '';
+        Array.from(allCategories).sort().forEach(cat => {
+          const option = document.createElement('option');
+          option.value = cat;
+          option.textContent = cat;
+          if (cat === currentValue) option.selected = true;
+          categoryFilter.appendChild(option);
+        });
+      });
+    }
 
     if (presets.length === 0) {
       // Show empty state
@@ -1010,52 +1100,97 @@ export function updatePresetList(presets) {
       return;
     }
 
-    // Add preset items
-    presets.forEach(presetName => {
-      const presetItem = document.createElement('div');
-      presetItem.className = 'preset-item';
-      presetItem.textContent = presetName;
-      presetItem.style.cssText = `
-        padding: 6px 8px;
-        margin-bottom: 3px;
-        background: #2a2a2a;
-        border: 1px solid #444;
-        border-radius: 3px;
-        cursor: pointer;
-        font-size: 11px;
-        transition: background 0.2s, border-color 0.2s;
-      `;
+    // Phase 11.2.6: Filter and display presets
+    import('./presets.js').then(({ getPresetData }) => {
+      let filteredCount = 0;
+      presets.forEach(presetName => {
+        const presetData = getPresetData(presetName);
+        const presetCategory = presetData?.category || 'Uncategorized';
+        const presetTags = presetData?.tags || [];
 
-      // Hover effect
-      presetItem.addEventListener('mouseenter', () => {
-        presetItem.style.background = '#3a3a3a';
-        presetItem.style.borderColor = '#666';
-      });
-
-      presetItem.addEventListener('mouseleave', () => {
-        if (!presetItem.classList.contains('selected')) {
-          presetItem.style.background = '#2a2a2a';
-          presetItem.style.borderColor = '#444';
+        // Apply category filter
+        if (selectedCategory !== 'All' && presetCategory !== selectedCategory) {
+          return; // Skip this preset
         }
-      });
 
-      // Click to select
-      presetItem.addEventListener('click', () => {
-        // Deselect all
-        listContainer.querySelectorAll('.preset-item').forEach(item => {
-          item.classList.remove('selected');
-          item.style.background = '#2a2a2a';
-          item.style.borderColor = '#444';
+        // Apply tag filter (all filter tags must be present)
+        if (filterTags.length > 0) {
+          const presetTagsLower = presetTags.map(t => t.toLowerCase());
+          const hasAllTags = filterTags.every(ft => presetTagsLower.includes(ft));
+          if (!hasAllTags) {
+            return; // Skip this preset
+          }
+        }
+
+        filteredCount++;
+
+        const presetItem = document.createElement('div');
+        presetItem.className = 'preset-item';
+        presetItem.style.cssText = `
+          padding: 6px 8px;
+          margin-bottom: 3px;
+          background: #2a2a2a;
+          border: 1px solid #444;
+          border-radius: 3px;
+          cursor: pointer;
+          font-size: 11px;
+          transition: background 0.2s, border-color 0.2s;
+        `;
+
+        // Phase 11.2.6: Preset name
+        const nameSpan = document.createElement('div');
+        nameSpan.textContent = presetName;
+        nameSpan.style.cssText = 'font-weight: bold; margin-bottom: 3px;';
+        presetItem.appendChild(nameSpan);
+
+        // Phase 11.2.6: Category and tags display
+        const metaSpan = document.createElement('div');
+        metaSpan.style.cssText = 'font-size: 9px; color: #888;';
+        metaSpan.textContent = `[${presetCategory}]`;
+        if (presetTags.length > 0) {
+          metaSpan.textContent += ` ${presetTags.map(t => `#${t}`).join(' ')}`;
+        }
+        presetItem.appendChild(metaSpan);
+
+        // Hover effect
+        presetItem.addEventListener('mouseenter', () => {
+          presetItem.style.background = '#3a3a3a';
+          presetItem.style.borderColor = '#666';
         });
 
-        // Select this item
-        presetItem.classList.add('selected');
-        presetItem.style.background = '#0088ff';
-        presetItem.style.borderColor = '#00aaff';
-        setSelectedPreset(presetName);
+        presetItem.addEventListener('mouseleave', () => {
+          if (!presetItem.classList.contains('selected')) {
+            presetItem.style.background = '#2a2a2a';
+            presetItem.style.borderColor = '#444';
+          }
+        });
+
+        // Click to select
+        presetItem.addEventListener('click', () => {
+          // Deselect all
+          listContainer.querySelectorAll('.preset-item').forEach(item => {
+            item.classList.remove('selected');
+            item.style.background = '#2a2a2a';
+            item.style.borderColor = '#444';
+          });
+
+          // Select this item
+          presetItem.classList.add('selected');
+          presetItem.style.background = '#0088ff';
+          presetItem.style.borderColor = '#00aaff';
+          setSelectedPreset(presetName);
+        });
+
+        listContainer.appendChild(presetItem);
       });
 
-      listContainer.appendChild(presetItem);
+      // Show "no results" message if all presets were filtered out
+      if (filteredCount === 0) {
+        const noResultsMessage = document.createElement('div');
+        noResultsMessage.textContent = 'No presets match filters';
+        noResultsMessage.style.cssText = 'color: #666; font-size: 11px; text-align: center; padding: 10px;';
+        listContainer.appendChild(noResultsMessage);
+      }
     });
   }
 }

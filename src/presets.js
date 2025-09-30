@@ -10,7 +10,7 @@ export function initPresets() {
   console.log("💾 Presets system initialized");
 }
 
-export function savePreset(name, state) {
+export function savePreset(name, state, category = 'Uncategorized', tags = []) {
   if (!name || typeof name !== 'string') {
     console.warn('💾 Invalid preset name:', name);
     return false;
@@ -21,6 +21,8 @@ export function savePreset(name, state) {
   const presetData = {
     name,
     timestamp: new Date().toISOString(),
+    category: category || 'Uncategorized',
+    tags: Array.isArray(tags) ? tags : [],
     visualSettings: { ...state.lighting },
     morphWeights: { ...state.morphWeights },
     color: state.color,

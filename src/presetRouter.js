@@ -7,13 +7,13 @@ console.log("💾 presetRouter.js loaded");
 
 // Handle preset actions from HUD
 onHUDUpdate((update) => {
-  if (update.presetAction !== undefined && update.presetName) {
-    handlePresetAction(update.presetAction, update.presetName);
+  if (update.presetAction !== undefined) {
+    handlePresetAction(update.presetAction, update.presetName, update.category, update.tags);
   }
 });
 
-function handlePresetAction(action, presetName) {
-  if (!presetName) return;
+function handlePresetAction(action, presetName, category, tags) {
+  if (!presetName && action !== 'export' && action !== 'import') return;
 
   switch (action) {
     case 'save':
@@ -40,8 +40,9 @@ function handlePresetAction(action, presetName) {
         colorLayers: JSON.parse(JSON.stringify(state.colorLayers))
       };
 
-      if (savePreset(presetName, currentState)) {
-        console.log(`💾 Saved preset: ${presetName}`);
+      // Phase 11.2.6: Include category and tags
+      if (savePreset(presetName, currentState, category, tags)) {
+        console.log(`💾 Saved preset: ${presetName} [${category}] ${tags ? tags.join(', ') : ''}`);
         state.presets.currentPresetName = presetName;
         // Refresh the preset dropdown
         import('./hud.js').then(({ updatePresetList }) => {
@@ -125,7 +126,12 @@ function handlePresetAction(action, presetName) {
 
     case 'update':
       // Phase 11.2.4: Update/overwrite existing preset with current state
-      const currentState = {
+      // Phase 11.2.6: Preserve existing category/tags if not provided
+      const existingPreset = getPresetData(presetName);
+      const updateCategory = category || (existingPreset ? existingPreset.category : 'Uncategorized');
+      const updateTags = tags || (existingPreset ? existingPreset.tags : []);
+
+      const currentStateUpdate = {
         // Morph system
         morphWeights: { ...state.morphWeights },
         morphState: { ...state.morphState },
@@ -148,8 +154,8 @@ function handlePresetAction(action, presetName) {
         colorLayers: JSON.parse(JSON.stringify(state.colorLayers))
       };
 
-      if (savePreset(presetName, currentState)) {
-        console.log(`💾 Updated preset: ${presetName} (overwritten with current state)`);
+      if (savePreset(presetName, currentStateUpdate, updateCategory, updateTags)) {
+        console.log(`💾 Updated preset: ${presetName} [${updateCategory}] ${updateTags.join(', ')}`);
         state.presets.currentPresetName = presetName;
         // Refresh the preset list
         import('./hud.js').then(({ updatePresetList }) => {
@@ -273,7 +279,11 @@ function importPresets(file) {
           particles: presetData.particles || {}
         };
 
-        savePreset(name, stateToSave);
+        // Phase 11.2.6: Extract category and tags from imported preset
+        const importCategory = presetData.category || 'Uncategorized';
+        const importTags = Array.isArray(presetData.tags) ? presetData.tags : [];
+
+        savePreset(name, stateToSave, importCategory, importTags);
       });
 
       console.log(`💾 ✅ Imported ${importCount + overwriteCount} presets (${importCount} new, ${overwriteCount} overwritten) from ${file.name}`);
