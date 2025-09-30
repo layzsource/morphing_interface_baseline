@@ -15,10 +15,38 @@ export const state = {
     torus: 0.0,
   },
 
+  // Phase 11.2: Additive audio morphing (base + audio modulation)
+  morphBaseWeights: [0.0, 1.0, 0.0, 0.0],  // [sphere, cube, pyramid, torus] - persistent manual values
+  morphAudioWeights: [0.0, 0.0, 0.0, 0.0], // Audio modulation deltas (applied additively)
+
   // Visual properties
-  color: "#00ff00",  // Current geometry color
+  color: "#00ff00",  // Current geometry color (legacy)
   hue: 120,          // Current hue in degrees (0-360)
   idleSpin: true,    // Enable/disable idle rotation
+
+  // Phase 11.2.1: Per-layer color system (base + audio additive)
+  colorLayers: {
+    geometry: {
+      baseColor: "#00ff00",
+      audioColor: "#ff0000",
+      audioIntensity: 0.5
+    },
+    vessel: {
+      baseColor: "#00ff00",
+      audioColor: "#00ffff",
+      audioIntensity: 0.3
+    },
+    particles: {
+      baseColor: "#ffff00",
+      audioColor: "#ff00ff",
+      audioIntensity: 0.7
+    },
+    shadows: {
+      baseColor: "#000000",
+      audioColor: "#333333",
+      audioIntensity: 0.2
+    }
+  },
 
   // Audio-reactive values (normalized 0-1)
   audio: {
@@ -161,6 +189,12 @@ export function setMorphWeight(target, weight) {
   if (state.morphState.targets.includes(target)) {
     state.morphWeights[target] = Math.max(0, Math.min(1, weight));
     normalizeMorphWeights();
+
+    // Phase 11.2: Sync to morphBaseWeights array [sphere, cube, pyramid, torus]
+    const targetIndex = ['sphere', 'cube', 'pyramid', 'torus'].indexOf(target);
+    if (targetIndex >= 0) {
+      state.morphBaseWeights[targetIndex] = state.morphWeights[target];
+    }
   } else {
     console.warn(`🎯 Invalid morph target: ${target}`);
   }
@@ -174,6 +208,14 @@ export function setMorphWeights(weights) {
     }
   });
   normalizeMorphWeights();
+
+  // Phase 11.2: Sync to morphBaseWeights array [sphere, cube, pyramid, torus]
+  state.morphBaseWeights = [
+    state.morphWeights.sphere || 0,
+    state.morphWeights.cube || 0,
+    state.morphWeights.pyramid || 0,
+    state.morphWeights.torus || 0
+  ];
 }
 
 // Utility function to get current morph weights
@@ -233,6 +275,37 @@ export function setHue(hue) {
   b = Math.round((b + m) * 255);
 
   state.color = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+}
+
+// Phase 11.2.1: Color blending utilities for per-layer additive colors
+export function hexToRGB(hex) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return { r, g, b };
+}
+
+export function rgbToHex(rgb) {
+  const r = Math.round(Math.max(0, Math.min(255, rgb.r)));
+  const g = Math.round(Math.max(0, Math.min(255, rgb.g)));
+  const b = Math.round(Math.max(0, Math.min(255, rgb.b)));
+  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+}
+
+// Phase 11.2.1: Additive color blending
+// final = base + (audio * intensity * audioLevel)
+export function blendColors(baseHex, audioHex, intensity, audioLevel) {
+  const baseRGB = hexToRGB(baseHex);
+  const audioRGB = hexToRGB(audioHex);
+
+  const contribution = intensity * audioLevel;
+  const finalRGB = {
+    r: baseRGB.r + (audioRGB.r * contribution),
+    g: baseRGB.g + (audioRGB.g * contribution),
+    b: baseRGB.b + (audioRGB.b * contribution)
+  };
+
+  return rgbToHex(finalRGB);
 }
 
 console.log("🎯 State initialized:", state);

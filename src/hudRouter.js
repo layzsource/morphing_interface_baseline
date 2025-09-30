@@ -29,6 +29,13 @@ onHUDUpdate((update) => {
       state.morphWeights[target] = 0;
     });
     state.morphWeights[update.morphTarget] = 1.0;
+
+    // Phase 11.2: Sync to morphBaseWeights array [sphere, cube, pyramid, torus]
+    const targetIndex = ['sphere', 'cube', 'pyramid', 'torus'].indexOf(update.morphTarget);
+    state.morphBaseWeights = [0, 0, 0, 0];
+    if (targetIndex >= 0) {
+      state.morphBaseWeights[targetIndex] = 1.0;
+    }
   }
   if (update.morphBlend !== undefined) {
     // Legacy morph blend support - blend between current and next target
@@ -44,6 +51,11 @@ onHUDUpdate((update) => {
     });
     state.morphWeights[currentTarget] = 1 - update.morphBlend;
     state.morphWeights[nextTarget] = update.morphBlend;
+
+    // Phase 11.2: Sync to morphBaseWeights array [sphere, cube, pyramid, torus]
+    state.morphBaseWeights = [0, 0, 0, 0];
+    state.morphBaseWeights[currentIndex] = 1 - update.morphBlend;
+    state.morphBaseWeights[nextIndex] = update.morphBlend;
   }
   if (update.targetWeight !== undefined) {
     // Individual target weight control
@@ -533,6 +545,22 @@ onHUDUpdate((update) => {
         reinitSprites(scene);
       });
     });
+  }
+
+  // Phase 11.2.2: Per-layer color system routing
+  if (update.colorLayer !== undefined) {
+    const { colorLayer, property, value } = update;
+    if (state.colorLayers[colorLayer]) {
+      state.colorLayers[colorLayer][property] = value;
+      console.log(`🎨 [${colorLayer}] ${property} = ${value}`);
+
+      // Import controlBindings for unified control logging
+      import('./controlBindings.js').then(({ updateControl }) => {
+        updateControl(`colorLayer.${colorLayer}.${property}`, value);
+      });
+    } else {
+      console.warn(`🎨 Invalid color layer: ${colorLayer}`);
+    }
   }
 
   // Handle preset actions - these will need to be routed to the preset system

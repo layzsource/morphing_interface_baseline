@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { state } from './state.js';
+import { state, blendColors } from './state.js'; // Phase 11.2.1: Import blendColors
 import { updateShadows } from './shadows.js';
 import { updateSprites } from './sprites.js';
 import { updateParticles } from './particles.js';
@@ -199,7 +199,9 @@ function clamp(val, min, max) {
 }
 
 function updateMorphTargets(state) {
-  const baseWeights = [
+  // Phase 11.2: Use new array-based additive morphing system
+  // Read from morphBaseWeights (persistent user values) and morphAudioWeights (from audio.js)
+  const baseWeights = state.morphBaseWeights || [
     state.morphWeights.sphere || 0,
     state.morphWeights.cube || 0,
     state.morphWeights.pyramid || 0,
@@ -209,7 +211,7 @@ function updateMorphTargets(state) {
   // Audio Gating Fix: Get audio data through centralized gating
   const audioData = getEffectiveAudio();
 
-  // Calculate audio deltas for each morph target
+  // Phase 11.2: Calculate audio deltas for each morph target (stored in state for reuse)
   const audioWeights = [
     (audioData.bass || 0) * 0.1,
     (audioData.mid || 0) * 0.1,
@@ -217,17 +219,28 @@ function updateMorphTargets(state) {
     ((audioData.bass || 0) + (audioData.mid || 0) + (audioData.treble || 0)) / 3 * 0.1
   ];
 
+  // Update state.morphAudioWeights for other systems to read
+  state.morphAudioWeights = audioWeights;
+
+  // Phase 11.2: Additive morphing - base + (audio * gain)
+  const gain = state.audio.sensitivity || 1.0;
   for (let i = 0; i < morphMesh.morphTargetInfluences.length; i++) {
     const baseWeight = baseWeights[i] || 0;
     if (state.audioReactive) {
-      morphMesh.morphTargetInfluences[i] = clamp(baseWeight + audioWeights[i], 0, 1);
+      // Additive: final = base + (audio * gain)
+      morphMesh.morphTargetInfluences[i] = clamp(baseWeight + (audioWeights[i] * gain), 0, 1);
     } else {
+      // Audio off: use base only
       morphMesh.morphTargetInfluences[i] = baseWeight;
     }
   }
 
-  // Debug logging (temporary)
-  console.log("🎛️ Base:", baseWeights, "🎵 Audio:", audioWeights, "➡️ Final:", Array.from(morphMesh.morphTargetInfluences));
+  // Phase 11.2: Debug logging with base + audio breakdown
+  if (Math.random() < 0.02) {
+    console.log("🎛️ Base:", baseWeights.map(v => v.toFixed(2)),
+                "🎵 Audio:", audioWeights.map(v => v.toFixed(2)),
+                "➡️ Final:", Array.from(morphMesh.morphTargetInfluences).map(v => v.toFixed(2)));
+  }
 }
 
 // Function to update geometry from state
@@ -237,8 +250,28 @@ function updateGeometryFromState() {
     updateMorphTargets(state);
   }
 
-  // Update material color from state
-  material.color.set(state.color);
+  // Phase 11.2.1: Update material color using layered system
+  const layerConfig = state.colorLayers.geometry;
+  const audioData = getEffectiveAudio();
+  const audioLevel = (audioData.bass + audioData.mid + audioData.treble) / 3;
+
+  let finalColor = layerConfig.baseColor;
+
+  if (state.audioReactive) {
+    finalColor = blendColors(
+      layerConfig.baseColor,
+      layerConfig.audioColor,
+      layerConfig.audioIntensity,
+      audioLevel
+    );
+
+    // Debug logging (2% sample rate)
+    if (Math.random() < 0.02) {
+      console.log(`🎨 Geometry: base=${layerConfig.baseColor} audio=${layerConfig.audioColor} final=${finalColor}`);
+    }
+  }
+
+  material.color.set(finalColor);
 
   // Update lighting from state
   if (ambientLight) {

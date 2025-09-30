@@ -467,6 +467,106 @@ function createHUDPanel() {
   });
   panel.appendChild(colorPickerControl);
 
+  // Phase 11.2.2: Per-Layer Color System
+  const colorLayersSeparator = document.createElement('hr');
+  colorLayersSeparator.style.cssText = 'border: 1px solid #555; margin: 15px 0;';
+  panel.appendChild(colorLayersSeparator);
+
+  const colorLayersTitle = document.createElement('h4');
+  colorLayersTitle.textContent = '🎨 Color Layers (Phase 11.2.2)';
+  colorLayersTitle.style.cssText = 'margin: 0 0 10px 0; color: #ff00ff; font-size: 12px;';
+  panel.appendChild(colorLayersTitle);
+
+  // Geometry Layer
+  const geometryLayerLabel = document.createElement('h5');
+  geometryLayerLabel.textContent = '🔺 Geometry';
+  geometryLayerLabel.style.cssText = 'margin: 10px 0 5px 0; color: #00ff00; font-size: 11px;';
+  panel.appendChild(geometryLayerLabel);
+
+  const geometryBaseColorControl = createColorPickerControl('Base Color', '#00ff00', (value) => {
+    notifyHUDUpdate({ colorLayer: 'geometry', property: 'baseColor', value });
+  });
+  panel.appendChild(geometryBaseColorControl);
+
+  const geometryAudioColorControl = createColorPickerControl('Audio Color', '#ff0000', (value) => {
+    notifyHUDUpdate({ colorLayer: 'geometry', property: 'audioColor', value });
+  });
+  panel.appendChild(geometryAudioColorControl);
+
+  const geometryIntensityControl = createSliderControl('Audio Intensity', 0.5, 0.0, 1.0, 0.05, (value) => {
+    notifyHUDUpdate({ colorLayer: 'geometry', property: 'audioIntensity', value });
+  });
+  geometryIntensityControl.title = 'Controls audio color contribution (0 = none, 1 = full)';
+  panel.appendChild(geometryIntensityControl);
+
+  // Vessel Layer
+  const vesselLayerLabel = document.createElement('h5');
+  vesselLayerLabel.textContent = '🚢 Vessel';
+  vesselLayerLabel.style.cssText = 'margin: 10px 0 5px 0; color: #00ffff; font-size: 11px;';
+  panel.appendChild(vesselLayerLabel);
+
+  const vesselBaseColorControl = createColorPickerControl('Base Color', '#00ff00', (value) => {
+    notifyHUDUpdate({ colorLayer: 'vessel', property: 'baseColor', value });
+  });
+  panel.appendChild(vesselBaseColorControl);
+
+  const vesselAudioColorControl = createColorPickerControl('Audio Color', '#00ffff', (value) => {
+    notifyHUDUpdate({ colorLayer: 'vessel', property: 'audioColor', value });
+  });
+  panel.appendChild(vesselAudioColorControl);
+
+  const vesselIntensityControl = createSliderControl('Audio Intensity', 0.3, 0.0, 1.0, 0.05, (value) => {
+    notifyHUDUpdate({ colorLayer: 'vessel', property: 'audioIntensity', value });
+  });
+  vesselIntensityControl.title = 'Controls audio color contribution (0 = none, 1 = full)';
+  panel.appendChild(vesselIntensityControl);
+
+  // Shadows Layer
+  const shadowsLayerLabel = document.createElement('h5');
+  shadowsLayerLabel.textContent = '🌑 Shadows';
+  shadowsLayerLabel.style.cssText = 'margin: 10px 0 5px 0; color: #888; font-size: 11px;';
+  panel.appendChild(shadowsLayerLabel);
+
+  const shadowsBaseColorControl = createColorPickerControl('Base Color', '#000000', (value) => {
+    notifyHUDUpdate({ colorLayer: 'shadows', property: 'baseColor', value });
+  });
+  panel.appendChild(shadowsBaseColorControl);
+
+  const shadowsAudioColorControl = createColorPickerControl('Audio Color', '#333333', (value) => {
+    notifyHUDUpdate({ colorLayer: 'shadows', property: 'audioColor', value });
+  });
+  panel.appendChild(shadowsAudioColorControl);
+
+  const shadowsIntensityControl = createSliderControl('Audio Intensity', 0.2, 0.0, 1.0, 0.05, (value) => {
+    notifyHUDUpdate({ colorLayer: 'shadows', property: 'audioIntensity', value });
+  });
+  shadowsIntensityControl.title = 'Controls audio color contribution (0 = none, 1 = full)';
+  panel.appendChild(shadowsIntensityControl);
+
+  // Particles Layer
+  const particlesLayerLabel = document.createElement('h5');
+  particlesLayerLabel.textContent = '✨ Particles (Shader - Infra Only)';
+  particlesLayerLabel.style.cssText = 'margin: 10px 0 5px 0; color: #ffff00; font-size: 11px;';
+  panel.appendChild(particlesLayerLabel);
+
+  const particlesBaseColorControl = createColorPickerControl('Base Color', '#ffff00', (value) => {
+    notifyHUDUpdate({ colorLayer: 'particles', property: 'baseColor', value });
+  });
+  particlesBaseColorControl.title = 'Ready but requires shader update (future phase)';
+  panel.appendChild(particlesBaseColorControl);
+
+  const particlesAudioColorControl = createColorPickerControl('Audio Color', '#ff00ff', (value) => {
+    notifyHUDUpdate({ colorLayer: 'particles', property: 'audioColor', value });
+  });
+  particlesAudioColorControl.title = 'Ready but requires shader update (future phase)';
+  panel.appendChild(particlesAudioColorControl);
+
+  const particlesIntensityControl = createSliderControl('Audio Intensity', 0.7, 0.0, 1.0, 0.05, (value) => {
+    notifyHUDUpdate({ colorLayer: 'particles', property: 'audioIntensity', value });
+  });
+  particlesIntensityControl.title = 'Ready but requires shader update (future phase)';
+  panel.appendChild(particlesIntensityControl);
+
   // Add separator for Vessel controls
   const vesselSeparator = document.createElement('hr');
   vesselSeparator.style.cssText = 'border: 1px solid #555; margin: 15px 0;';

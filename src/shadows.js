@@ -1,6 +1,6 @@
 // src/shadows.js
 import * as THREE from 'three';
-import { state } from './state.js';
+import { state, blendColors } from './state.js'; // Phase 11.2.1: Import blendColors
 import { getEffectiveAudio } from './audio.js'; // Audio Gating Fix
 
 console.log("🌑 shadows.js loaded");
@@ -45,20 +45,27 @@ export function updateShadows(audioReactive) {
   groundShadow.visible = state.shadows.enabled && state.shadows.ground;
   backdropShadow.visible = state.shadows.enabled && state.shadows.backdrop;
 
-  // Update material color from state
-  shadowMaterial.color.set(state.shadows.color);
-  backdropShadow.material.color.set(state.shadows.color);
-
-  // Scale shadows dynamically with vessel scale
-  const vesselScale = state.vessel.scale || 1.0;
-  groundShadow.scale.setScalar(vesselScale);
-  backdropShadow.scale.setScalar(vesselScale);
-
-  // Audio Gating Fix: Get audio data through centralized gating
+  // Phase 11.2.1: Layered color system
+  const layerConfig = state.colorLayers.shadows;
   const audioData = getEffectiveAudio();
+  const audioLevel = (audioData.bass + audioData.mid + audioData.treble) / 3;
 
-  // Apply audio modulation only if audioReactive === true
+  let finalColor = layerConfig.baseColor;
+
   if (state.audioReactive) {
+    // Phase 11.2.1: Additive color blending
+    finalColor = blendColors(
+      layerConfig.baseColor,
+      layerConfig.audioColor,
+      layerConfig.audioIntensity,
+      audioLevel
+    );
+
+    // Debug logging (2% sample rate)
+    if (Math.random() < 0.02) {
+      console.log(`🌑 Shadows: base=${layerConfig.baseColor} audio=${layerConfig.audioColor} final=${finalColor}`);
+    }
+
     // Map bass → opacity pulse (±0.1 range)
     const bassPulse = (audioData.bass || 0) * 0.1;
     const baseOpacity = state.shadows.opacity;
@@ -74,6 +81,15 @@ export function updateShadows(audioReactive) {
     shadowMaterial.opacity = state.shadows.opacity;
     backdropShadow.material.opacity = state.shadows.opacity;
   }
+
+  // Apply layered color
+  shadowMaterial.color.set(finalColor);
+  backdropShadow.material.color.set(finalColor);
+
+  // Scale shadows dynamically with vessel scale
+  const vesselScale = state.vessel.scale || 1.0;
+  groundShadow.scale.setScalar(vesselScale);
+  backdropShadow.scale.setScalar(vesselScale);
 }
 
 export function getShadowElements() {

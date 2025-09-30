@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { state } from './state.js';
+import { state, blendColors } from './state.js'; // Phase 11.2.1: Import blendColors
 import { morphMesh } from './geometry.js';
 import { SHADOW_LAYER } from './constants.js'; // Phase 2.3.3
 import { getEffectiveAudio } from './audio.js'; // Audio Gating Fix
@@ -271,13 +271,16 @@ export function updateVessel() {
   const radius = morphMesh.geometry.boundingSphere.radius;
   let adaptiveRadius = radius * (state.vessel.scaleMultiplier || 1.2) * state.vessel.scale;
 
-  // Base adaptive scale + opacity + color sync
+  // Base adaptive scale + opacity
   vesselGroup.scale.set(adaptiveRadius, adaptiveRadius, adaptiveRadius);
   vesselMaterial.opacity = state.vessel.opacity;
-  vesselMaterial.color.set(state.vessel.color);
 
-  // Audio Gating Fix: Get audio data through centralized gating
+  // Phase 11.2.1: Layered color system
+  const layerConfig = state.colorLayers.vessel;
   const audioData = getEffectiveAudio();
+  const audioLevel = (audioData.bass + audioData.mid + audioData.treble) / 3;
+
+  let finalColor = layerConfig.baseColor;
 
   if (state.audioReactive) {
     // Bass pulses vessel scale (±5%), does not affect morphs
@@ -286,7 +289,22 @@ export function updateVessel() {
 
     // Mid pulses vessel opacity (0.2–0.8 range)
     vesselMaterial.opacity = THREE.MathUtils.clamp(0.2 + audioData.mid * 0.6, 0.2, 0.8);
+
+    // Phase 11.2.1: Additive color blending
+    finalColor = blendColors(
+      layerConfig.baseColor,
+      layerConfig.audioColor,
+      layerConfig.audioIntensity,
+      audioLevel
+    );
+
+    // Debug logging (2% sample rate)
+    if (Math.random() < 0.02) {
+      console.log(`🎨 Vessel: base=${layerConfig.baseColor} audio=${layerConfig.audioColor} final=${finalColor}`);
+    }
   }
+
+  vesselMaterial.color.set(finalColor);
 
   // Update debug display
   const debugElement = document.getElementById('vessel-debug');
