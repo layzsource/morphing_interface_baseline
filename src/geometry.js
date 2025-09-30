@@ -3,8 +3,10 @@ import { state } from './state.js';
 import { updateShadows } from './shadows.js';
 import { updateSprites } from './sprites.js';
 import { updateParticles } from './particles.js';
-import { updateAudio } from './audio.js';
-import { updateVessel } from './vessel.js';
+import { updateAudio, getEffectiveAudio } from './audio.js'; // Audio Gating Fix
+import { updateVessel, renderShadowProjection } from './vessel.js';
+import { getShadowBox } from './main.js'; // Phase 2.3.3
+import { createPostProcessing } from './postprocessing.js'; // Dual Trail System
 
 console.log("🔺 geometry.js loaded");
 
@@ -18,11 +20,14 @@ export function getHUDIdleSpin() {
 
 const canvas = document.querySelector('#app');
 export const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer({ canvas });
+export const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+export const renderer = new THREE.WebGLRenderer({ canvas });
 
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
+
+// Dual Trail System: Initialize postprocessing composer with AfterimagePass
+const { composer, afterimagePass } = createPostProcessing(renderer, scene, camera);
 
 // Create consistent vertex correspondence system for morph targets
 function createMorphGeometry() {
@@ -161,6 +166,7 @@ const material = new THREE.MeshStandardMaterial({
 // Create single mesh with morph targets
 const morphGeometry = createMorphGeometry();
 const morphMesh = new THREE.Mesh(morphGeometry, material);
+morphMesh.visible = true;
 morphMesh.position.set(0, 0, 0);
 scene.add(morphMesh);
 
@@ -171,6 +177,7 @@ morphMesh.morphTargetInfluences = [0, 1, 0, 0]; // [sphere, cube, pyramid, torus
 const morphObjects = {
   mesh: morphMesh // Single mesh reference
 };
+
 
 // Setup lighting
 setupLighting();
@@ -199,12 +206,15 @@ function updateMorphTargets(state) {
     state.morphWeights.torus || 0
   ];
 
+  // Audio Gating Fix: Get audio data through centralized gating
+  const audioData = getEffectiveAudio();
+
   // Calculate audio deltas for each morph target
   const audioWeights = [
-    (state.audio.bass || 0) * 0.1,
-    (state.audio.mid || 0) * 0.1,
-    (state.audio.treble || 0) * 0.1,
-    ((state.audio.bass || 0) + (state.audio.mid || 0) + (state.audio.treble || 0)) / 3 * 0.1
+    (audioData.bass || 0) * 0.1,
+    (audioData.mid || 0) * 0.1,
+    (audioData.treble || 0) * 0.1,
+    ((audioData.bass || 0) + (audioData.mid || 0) + (audioData.treble || 0)) / 3 * 0.1
   ];
 
   for (let i = 0; i < morphMesh.morphTargetInfluences.length; i++) {
@@ -321,10 +331,25 @@ function animate() {
   // Update sprites
   updateSprites();
 
-  // Update vessel
-  updateVessel(state.audio);
+  // Update vessel (uses getEffectiveAudio() internally)
+  updateVessel();
 
-  renderer.render(scene, camera);
+  // Phase 2.2.0: Render shadow projection for Conflat 6
+  renderShadowProjection();
+
+  // Phase 2.3.3: Render Shadow Box projection
+  const shadowBox = getShadowBox();
+  if (shadowBox) {
+    shadowBox.render(scene);
+  }
+
+  // Dual Trail System: Use composer for motion trails, renderer for normal rendering
+  if (state.motionTrailsEnabled) {
+    afterimagePass.uniforms['damp'].value = state.motionTrailIntensity;
+    composer.render();
+  } else {
+    renderer.render(scene, camera);
+  }
 }
 
 animate();

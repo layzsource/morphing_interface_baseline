@@ -219,16 +219,33 @@ function createHUDPanel() {
   particleTitle.style.cssText = 'margin: 0 0 10px 0; color: #00ffff; font-size: 12px;';
   panel.appendChild(particleTitle);
 
+  // === Phase 4.8.1: Performance HUD ===
+  const perfDiv = document.createElement('div');
+  perfDiv.style.cssText = 'margin-bottom: 15px; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 5px;';
+
+  const fpsLabel = document.createElement('div');
+  fpsLabel.innerHTML = '<span style="color: #888;">FPS:</span> <span id="hud-fps" style="color: #0f0;">--</span>';
+  fpsLabel.style.cssText = 'margin-bottom: 5px; font-size: 12px;';
+  perfDiv.appendChild(fpsLabel);
+
+  const drawCallsLabel = document.createElement('div');
+  drawCallsLabel.innerHTML = '<span style="color: #888;">Draw Calls:</span> <span id="hud-drawcalls" style="color: #0ff;">--</span>';
+  drawCallsLabel.style.cssText = 'font-size: 12px;';
+  perfDiv.appendChild(drawCallsLabel);
+
+  panel.appendChild(perfDiv);
+
   // Particles enable toggle
   const particlesEnableControl = createToggleControl('Enable Particles', true, (value) => {
     notifyHUDUpdate({ particlesEnabled: value });
   });
   panel.appendChild(particlesEnableControl);
 
-  // Particle density slider
-  const particleDensityControl = createSliderControl('Particle Density', 1000, 500, 2000, 50, (value) => {
+  // Particle density slider (Phase 4.4: expanded to 10,000)
+  const particleDensityControl = createSliderControl('Particle Density', 5000, 1000, 10000, 100, (value) => {
     notifyHUDUpdate({ particlesCount: value });
   });
+  particleDensityControl.title = 'Number of particles (1000-10000, requires reinit)';
   panel.appendChild(particleDensityControl);
 
   // Particle layout dropdown
@@ -244,64 +261,26 @@ function createHUDPanel() {
   particleLayoutSelect.id = 'particle-layout-dropdown';
   particleLayoutSelect.style.cssText = 'width: 100%; padding: 5px; background: #333; color: white; border: 1px solid #555; border-radius: 3px;';
 
-  ['cube', 'sphere', 'torus'].forEach(option => {
+  ['cube', 'sphere', 'torus', 'vesselPlanes'].forEach(option => {
     const optionEl = document.createElement('option');
     optionEl.value = option;
-    optionEl.textContent = option.charAt(0).toUpperCase() + option.slice(1);
+    // Special case for vesselPlanes display name
+    if (option === 'vesselPlanes') {
+      optionEl.textContent = 'Vessel Planes';
+    } else {
+      optionEl.textContent = option.charAt(0).toUpperCase() + option.slice(1);
+    }
     optionEl.selected = option === 'cube';
     particleLayoutSelect.appendChild(optionEl);
   });
 
+  // Phase 4.3b: Add event listener for layout changes
+  particleLayoutSelect.addEventListener('change', () => {
+    notifyHUDUpdate({ particlesLayout: particleLayoutSelect.value });
+  });
+
   particleLayoutDiv.appendChild(particleLayoutSelect);
   panel.appendChild(particleLayoutDiv);
-
-  // Motion Controls
-  const particlesMotionLabel = document.createElement("h4");
-  particlesMotionLabel.textContent = "Motion Controls";
-  particlesMotionLabel.style.cssText = 'margin: 15px 0 10px 0; color: #00ffff; font-size: 12px;';
-  panel.appendChild(particlesMotionLabel);
-
-  // Velocity slider
-  const velocityDiv = document.createElement('div');
-  velocityDiv.style.cssText = 'margin-bottom: 10px;';
-
-  const velocityLabel = document.createElement("label");
-  velocityLabel.textContent = "Velocity";
-  velocityLabel.style.cssText = 'display: block; margin-bottom: 5px; color: #ccc; font-size: 12px;';
-  velocityDiv.appendChild(velocityLabel);
-
-  const velocityInput = document.createElement("input");
-  velocityInput.type = "range";
-  velocityInput.min = 0.1;
-  velocityInput.max = 2.0;
-  velocityInput.step = 0.1;
-  velocityInput.value = 0.5; // Default value, will be synced later
-  velocityInput.id = "particles-velocity";
-  velocityInput.style.cssText = 'width: 100%;';
-  velocityDiv.appendChild(velocityInput);
-
-  panel.appendChild(velocityDiv);
-
-  // Spread slider
-  const spreadDiv = document.createElement('div');
-  spreadDiv.style.cssText = 'margin-bottom: 10px;';
-
-  const spreadLabel = document.createElement("label");
-  spreadLabel.textContent = "Spread";
-  spreadLabel.style.cssText = 'display: block; margin-bottom: 5px; color: #ccc; font-size: 12px;';
-  spreadDiv.appendChild(spreadLabel);
-
-  const spreadInput = document.createElement("input");
-  spreadInput.type = "range";
-  spreadInput.min = 0.1;
-  spreadInput.max = 2.0;
-  spreadInput.step = 0.1;
-  spreadInput.value = 1.0; // Default value, will be synced later
-  spreadInput.id = "particles-spread";
-  spreadInput.style.cssText = 'width: 100%;';
-  spreadDiv.appendChild(spreadInput);
-
-  panel.appendChild(spreadDiv);
 
   // ✨ Particle Polish section
   const particlePolishLabel = document.createElement("h4");
@@ -315,10 +294,11 @@ function createHUDPanel() {
   });
   panel.appendChild(hueShiftControl);
 
-  // Size slider (0.1-3.0)
-  const sizeControl = createSliderControl('Size', 0.15, 0.1, 3.0, 0.05, (value) => {
+  // Size slider (Phase 4.8: true world-unit sizing, 0.05-2.0)
+  const sizeControl = createSliderControl('Size', 0.5, 0.05, 2.0, 0.05, (value) => {
     notifyHUDUpdate({ particlesSize: value });
   });
+  sizeControl.title = 'True 3D world-unit size (0.05 = tiny, 2.0 = large)';
   panel.appendChild(sizeControl);
 
   // Opacity slider (0.0-1.0)
@@ -333,11 +313,119 @@ function createHUDPanel() {
   });
   panel.appendChild(organicMotionControl);
 
+  // Organic strength slider (Phase 4.8.1.7)
+  const organicStrengthControl = createSliderControl('Organic Strength', 0.2, 0.0, 1.0, 0.05, (value) => {
+    notifyHUDUpdate({ particlesOrganicStrength: value });
+  });
+  organicStrengthControl.title = 'Controls wander strength (0 = clean orbit, 1 = chaotic swarm)';
+  panel.appendChild(organicStrengthControl);
+
   // Audio-reactive hue toggle
   const audioHueControl = createToggleControl('Audio-Reactive Hue', false, (value) => {
     notifyHUDUpdate({ particlesAudioReactiveHue: value });
   });
   panel.appendChild(audioHueControl);
+
+  // Audio Gain slider (Phase 4.8)
+  const audioGainControl = createSliderControl('Audio Gain', 2.0, 0.5, 5.0, 0.1, (value) => {
+    notifyHUDUpdate({ particlesAudioGain: value });
+  });
+  audioGainControl.title = 'Amplifies per-particle audio hue variation';
+  panel.appendChild(audioGainControl);
+
+  // Orbital Speed slider (Phase 4.9.0)
+  const velocityControl = createSliderControl('Orbital Speed', 0.05, 0.01, 2.0, 0.01, (value) => {
+    notifyHUDUpdate({ particlesVelocity: value });
+  });
+  velocityControl.title = 'Controls particle orbital speed around vessel (min: 0.01)';
+  panel.appendChild(velocityControl);
+
+  // Motion Smoothness slider
+  const motionSmoothnessControl = createSliderControl('Motion Smoothness', 0.5, 0.0, 1.0, 0.1, (value) => {
+    notifyHUDUpdate({ particlesMotionSmoothness: value });
+  });
+  panel.appendChild(motionSmoothnessControl);
+
+  // === Phase 2.3.2A: Particle Trails ===
+  const trailsLabel = document.createElement("h4");
+  trailsLabel.textContent = "🌊 Particle Trails (Line Segments)";
+  trailsLabel.style.cssText = 'margin: 15px 0 10px 0; color: #00ffff; font-size: 12px;';
+  panel.appendChild(trailsLabel);
+
+  // Trail enabled toggle (line trails)
+  const trailEnabledControl = createToggleControl('Enable Line Trails', false, (value) => {
+    notifyHUDUpdate({ particlesTrailEnabled: value });
+  });
+  panel.appendChild(trailEnabledControl);
+
+  // Trail length slider
+  const trailLengthControl = createSliderControl('Trail Length', 0, 0, 10, 1, (value) => {
+    notifyHUDUpdate({ particlesTrailLength: value });
+  });
+  trailLengthControl.title = 'Number of frames to persist (0-10)';
+  panel.appendChild(trailLengthControl);
+
+  // Trail opacity slider
+  const trailOpacityControl = createSliderControl('Trail Opacity', 0.3, 0.0, 1.0, 0.05, (value) => {
+    notifyHUDUpdate({ particlesTrailOpacity: value });
+  });
+  trailOpacityControl.title = 'Transparency of trail lines (0.0-1.0)';
+  panel.appendChild(trailOpacityControl);
+
+  // Trail fade slider (Phase 2.3.2C)
+  const trailFadeControl = createSliderControl('Trail Fade', 1.0, 0.0, 1.0, 0.05, (value) => {
+    notifyHUDUpdate({ particlesTrailFade: value });
+  });
+  trailFadeControl.title = 'Strength of fading (0=no fade, 1=full taper)';
+  panel.appendChild(trailFadeControl);
+
+  // Phase 2.3.2D: Audio-reactive trail length controls
+  const trailAudioReactiveControl = createToggleControl('Audio Reactive Length', false, (value) => {
+    notifyHUDUpdate({ particlesTrailAudioReactive: value });
+  });
+  trailAudioReactiveControl.title = 'Trail length follows audio level';
+  panel.appendChild(trailAudioReactiveControl);
+
+  const trailLengthMinControl = createSliderControl('Min Length', 2, 1, 10, 1, (value) => {
+    notifyHUDUpdate({ particlesTrailLengthMin: value });
+  });
+  trailLengthMinControl.title = 'Shortest trail when audio is quiet';
+  panel.appendChild(trailLengthMinControl);
+
+  const trailLengthMaxControl = createSliderControl('Max Length', 10, 1, 20, 1, (value) => {
+    notifyHUDUpdate({ particlesTrailLengthMax: value });
+  });
+  trailLengthMaxControl.title = 'Longest trail when audio is loud';
+  panel.appendChild(trailLengthMaxControl);
+
+  // === Dual Trail System: Motion Trails (postprocessing blur) ===
+  const motionTrailsLabel = document.createElement("h4");
+  motionTrailsLabel.textContent = "🎞️ Motion Trails (Postprocessing)";
+  motionTrailsLabel.style.cssText = 'margin: 15px 0 10px 0; color: #ffcc00; font-size: 12px;';
+  panel.appendChild(motionTrailsLabel);
+
+  // Motion trails toggle
+  const motionTrailsControl = createToggleControl('Enable Motion Trails', false, (value) => {
+    notifyHUDUpdate({ motionTrailsEnabled: value });
+  });
+  motionTrailsControl.title = 'AfterimagePass blur effect (works independently of line trails)';
+  panel.appendChild(motionTrailsControl);
+
+  // Motion trail intensity slider
+  const motionTrailIntensityControl = createSliderControl('Trail Intensity', 0.96, 0.85, 0.99, 0.01, (value) => {
+    notifyHUDUpdate({ motionTrailIntensity: value });
+  });
+  motionTrailIntensityControl.title = 'Blur damp value (higher = longer trails)';
+  panel.appendChild(motionTrailIntensityControl);
+
+  // === Phase 4.8.1: Reset to Defaults Button ===
+  const resetButton = document.createElement('button');
+  resetButton.textContent = '🔄 Reset to Defaults';
+  resetButton.style.cssText = 'width: 100%; padding: 10px; background: #ff9900; color: black; border: none; cursor: pointer; font-weight: bold; border-radius: 5px; margin-top: 15px; margin-bottom: 15px;';
+  resetButton.addEventListener('click', () => {
+    notifyHUDUpdate({ particlesResetDefaults: true });
+  });
+  panel.appendChild(resetButton);
 
   // Add separator for Phase 7 visual controls
   const visualSeparator = document.createElement('hr');
@@ -395,6 +483,14 @@ function createHUDPanel() {
   });
   panel.appendChild(vesselEnableControl);
 
+  // Vessel mode dropdown (Phase 2.x)
+  const vesselModeControl = createDropdownControl('Vessel Mode', 'gyre',
+    ['gyre', 'conflat6'], (value) => {
+    notifyHUDUpdate({ vesselMode: value });
+  });
+  vesselModeControl.title = 'Switch between Gyre (torus rings) and Conflat 6 (cube-sphere circles)';
+  panel.appendChild(vesselModeControl);
+
   // Vessel opacity slider
   const vesselOpacityControl = createSliderControl('Vessel Opacity', 0.5, 0.0, 1.0, 0.01, (value) => {
     notifyHUDUpdate({ vesselOpacity: value });
@@ -450,6 +546,56 @@ function createHUDPanel() {
   vesselDebugDiv.innerHTML = '<p id="vessel-debug">Radius: --</p>';
   panel.appendChild(vesselDebugDiv);
 
+  // Add separator for Shadow Box controls
+  const shadowBoxSeparator = document.createElement('hr');
+  shadowBoxSeparator.style.cssText = 'border: 1px solid #555; margin: 15px 0;';
+  panel.appendChild(shadowBoxSeparator);
+
+  const shadowBoxTitle = document.createElement('h4');
+  shadowBoxTitle.textContent = '📦 Shadow Box';
+  shadowBoxTitle.style.cssText = 'margin: 0 0 10px 0; color: #888; font-size: 12px;';
+  panel.appendChild(shadowBoxTitle);
+
+  // Phase 2.3.3: Shadow Box controls
+  const projectParticlesToShadowControl = createToggleControl('Project Particles', false, (value) => {
+    notifyHUDUpdate({ shadowBoxProjectParticles: value });
+  });
+  panel.appendChild(projectParticlesToShadowControl);
+
+  // Phase 2.3.6: Shadow Box palette selector
+  const shadowPaletteControl = createDropdownControl('Palette', 'Manual',
+    ['Manual', 'Alchemy Gold', 'Blake Indigo', 'Cosmic White'], (value) => {
+    notifyHUDUpdate({ shadowBoxPalette: value });
+  });
+  shadowPaletteControl.title = 'Quick palette presets or manual color selection';
+  panel.appendChild(shadowPaletteControl);
+
+  // Phase 2.3.4: Shadow Box shader controls
+  const shadowThresholdControl = createSliderControl('Threshold', 0.5, 0.0, 1.0, 0.01, (value) => {
+    notifyHUDUpdate({ shadowBoxThreshold: value });
+  });
+  shadowThresholdControl.title = 'Cutoff point: below = background, above = foreground';
+  panel.appendChild(shadowThresholdControl);
+
+  const shadowBleachGainControl = createSliderControl('Bleach Gain', 1.0, 0.5, 3.0, 0.1, (value) => {
+    notifyHUDUpdate({ shadowBoxBleachGain: value });
+  });
+  shadowBleachGainControl.title = 'Luminance amplification before threshold';
+  panel.appendChild(shadowBleachGainControl);
+
+  // Phase 2.3.5: Two-tone color controls
+  const shadowBgColorControl = createColorPickerControl('Background Color', '#000000', (value) => {
+    notifyHUDUpdate({ shadowBoxBgColor: value });
+  });
+  shadowBgColorControl.title = 'Color for pixels below threshold';
+  panel.appendChild(shadowBgColorControl);
+
+  const shadowFgColorControl = createColorPickerControl('Foreground Color', '#ffffff', (value) => {
+    notifyHUDUpdate({ shadowBoxFgColor: value });
+  });
+  shadowFgColorControl.title = 'Color for pixels above threshold';
+  panel.appendChild(shadowFgColorControl);
+
   // Add separator for Shadows controls
   const shadowsSeparator = document.createElement('hr');
   shadowsSeparator.style.cssText = 'border: 1px solid #555; margin: 15px 0;';
@@ -489,6 +635,38 @@ function createHUDPanel() {
     notifyHUDUpdate({ shadowsColor: value });
   });
   panel.appendChild(shadowColorControl);
+
+  // Add separator for Sprites controls
+  const spritesSeparator = document.createElement('hr');
+  spritesSeparator.style.cssText = 'border: 1px solid #555; margin: 15px 0;';
+  panel.appendChild(spritesSeparator);
+
+  const spritesTitle = document.createElement('h4');
+  spritesTitle.textContent = '✨ Sprites';
+  spritesTitle.style.cssText = 'margin: 0 0 10px 0; color: #ffff00; font-size: 12px;';
+  panel.appendChild(spritesTitle);
+
+  // Sprites enable toggle
+  const spritesEnableControl = createToggleControl('Enable Sprites', true, (value) => {
+    notifyHUDUpdate({ spritesEnabled: value });
+  });
+  panel.appendChild(spritesEnableControl);
+
+  // Sprites count slider
+  const spritesCountControl = createSliderControl('Sprite Count', 200, 50, 500, 10, (value) => {
+    notifyHUDUpdate({ spritesCount: value });
+  });
+  panel.appendChild(spritesCountControl);
+
+  // Add separator for Debug controls
+  const debugSeparator = document.createElement('hr');
+  debugSeparator.style.cssText = 'border: 1px solid #555; margin: 15px 0;';
+  panel.appendChild(debugSeparator);
+
+  const debugTitle = document.createElement('h4');
+  debugTitle.textContent = '📐 Debug';
+  debugTitle.style.cssText = 'margin: 0 0 10px 0; color: #ff9900; font-size: 12px;';
+  panel.appendChild(debugTitle);
 
   return panel;
 }
@@ -657,4 +835,12 @@ function notifyHUDUpdate(update) {
       console.error('📟 Error in HUD callback:', error);
     }
   });
+}
+
+// Phase 4.8.1: Performance HUD update
+export function updatePerformanceHUD(fps, drawCalls) {
+  const fpsEl = document.getElementById('hud-fps');
+  const drawCallsEl = document.getElementById('hud-drawcalls');
+  if (fpsEl) fpsEl.textContent = fps;
+  if (drawCallsEl) drawCallsEl.textContent = drawCalls;
 }

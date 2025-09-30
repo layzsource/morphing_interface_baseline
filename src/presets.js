@@ -45,6 +45,10 @@ export function savePreset(name, state) {
       opacity: state.shadows.opacity,
       color: state.shadows.color
     },
+    sprites: {
+      enabled: state.sprites.enabled,
+      count: state.sprites.count
+    },
     particles: {
       enabled: state.particles.enabled,
       count: state.particles.count,
@@ -53,11 +57,16 @@ export function savePreset(name, state) {
       size: state.particles.size,
       opacity: state.particles.opacity,
       organicMotion: state.particles.organicMotion,
+      organicStrength: state.particles.organicStrength || 0.2,  // Phase 4.2
       audioReactiveHue: state.particles.audioReactiveHue,
-      motion: {
-        velocity: state.particlesMotion.velocity,
-        spread: state.particlesMotion.spread
-      }
+      velocity: state.particles.velocity,
+      orbitalSpeed: state.particles.orbitalSpeed || 0.05,  // Phase 4.2a: gentle default
+      motionSmoothness: state.particles.motionSmoothness,
+      spread: state.particlesMotion?.spread || 1.0,  // Legacy spread only
+      minCount: state.particles.minCount || 1000,    // Phase 4.4: adjusted ranges
+      maxCount: state.particles.maxCount || 10000,
+      minSize: state.particles.minSize || 0.005,
+      maxSize: state.particles.maxSize || 0.1
     }
   };
 
@@ -141,45 +150,47 @@ export function loadPreset(name) {
     state.shadows.color = '#000000';
   }
 
+  // Load sprites state (with backward compatibility)
+  if (preset.sprites) {
+    state.sprites.enabled = preset.sprites.enabled ?? true;
+    state.sprites.count = preset.sprites.count ?? 200;
+  } else {
+    // Backward compatibility: default to enabled
+    state.sprites = { enabled: true, count: 200 };
+  }
+
   // Load particles state (with backward compatibility)
   if (preset.particles) {
     if (preset.particles.enabled !== undefined) state.particles.enabled = preset.particles.enabled;
     if (preset.particles.count !== undefined) state.particles.count = preset.particles.count;
     if (preset.particles.layout !== undefined) state.particles.layout = preset.particles.layout;
 
-    // Particle polish properties (with backward compatibility)
+    // Particle polish properties (with backward compatibility and safe defaults)
     state.particles.hue = preset.particles.hue ?? 0;
-    state.particles.size = preset.particles.size ?? 0.15;
+    state.particles.size = preset.particles.size ?? 0.02; // Phase 4.4: smaller default
     state.particles.opacity = preset.particles.opacity ?? 0.5;
     state.particles.organicMotion = preset.particles.organicMotion ?? false;
+    state.particles.organicStrength = preset.particles.organicStrength ?? 0.2; // Phase 4.2
     state.particles.audioReactiveHue = preset.particles.audioReactiveHue ?? false;
 
-    // Motion (with backward compatibility defaults)
+    // Velocity: prefer new single value, fallback to legacy motion.velocity
+    state.particles.velocity = preset.particles.velocity ?? preset.particles.motion?.velocity ?? 0.05;
+    state.particles.orbitalSpeed = preset.particles.orbitalSpeed ?? preset.particles.velocity ?? 0.05; // Phase 4.2a: gentle default
+    state.particles.motionSmoothness = preset.particles.motionSmoothness ?? 0.5;
+
+    // Phase 4.4: adjusted ranges for higher density/smaller particles
+    state.particles.minCount = preset.particles.minCount ?? 1000;
+    state.particles.maxCount = preset.particles.maxCount ?? 10000;
+    state.particles.minSize = preset.particles.minSize ?? 0.005;
+    state.particles.maxSize = preset.particles.maxSize ?? 0.1;
+
+    // Legacy spread support only
     state.particlesMotion = {
-      velocity: preset.particles.motion?.velocity ?? 0.5,
-      spread: preset.particles.motion?.spread ?? 1.0
+      velocity: 0.5,  // Deprecated, not used
+      spread: preset.particles.spread ?? preset.particles.motion?.spread ?? 1.0
     };
 
-    // Update HUD sliders to reflect loaded values
-    setTimeout(() => {
-      const velocitySlider = document.getElementById('particles-velocity');
-      const spreadSlider = document.getElementById('particles-spread');
-      if (velocitySlider) velocitySlider.value = state.particlesMotion.velocity;
-      if (spreadSlider) spreadSlider.value = state.particlesMotion.spread;
-
-      // Update particle polish controls
-      const hueSlider = document.querySelector('input[type="range"][onchange*="particlesHue"]');
-      const sizeSlider = document.querySelector('input[type="range"][onchange*="particlesSize"]');
-      const opacitySlider = document.querySelector('input[type="range"][onchange*="particlesOpacity"]');
-      const organicToggle = document.querySelector('input[type="checkbox"][onchange*="particlesOrganicMotion"]');
-      const audioHueToggle = document.querySelector('input[type="checkbox"][onchange*="particlesAudioReactiveHue"]');
-
-      if (hueSlider) hueSlider.value = state.particles.hue;
-      if (sizeSlider) sizeSlider.value = state.particles.size;
-      if (opacitySlider) opacitySlider.value = state.particles.opacity;
-      if (organicToggle) organicToggle.checked = state.particles.organicMotion;
-      if (audioHueToggle) audioHueToggle.checked = state.particles.audioReactiveHue;
-    }, 100);
+    // Note: HUD sliders are now controlled via HUD update callbacks, no manual sync needed
 
     // Reinitialize particles with new layout
     if (state.particles.enabled) {
@@ -190,13 +201,21 @@ export function loadPreset(name) {
       });
     }
   } else {
-    // Default to "cube" for legacy presets
+    // Default to safe values for legacy presets (Phase 4.4: higher density/smaller particles)
     state.particles.layout = 'cube';
     state.particles.hue = 0;
-    state.particles.size = 0.15;
+    state.particles.size = 0.02; // Phase 4.4: smaller default
     state.particles.opacity = 0.5;
     state.particles.organicMotion = false;
+    state.particles.organicStrength = 0.2; // Phase 4.2
     state.particles.audioReactiveHue = false;
+    state.particles.velocity = 0.05;
+    state.particles.orbitalSpeed = 0.05; // Phase 4.2a: gentle default
+    state.particles.motionSmoothness = 0.5;
+    state.particles.minCount = 1000; // Phase 4.4: adjusted
+    state.particles.maxCount = 10000; // Phase 4.4: adjusted
+    state.particles.minSize = 0.005; // Phase 4.4: adjusted
+    state.particles.maxSize = 0.1; // Phase 4.4: adjusted
     state.particlesMotion = {
       velocity: 0.5,
       spread: 1.0

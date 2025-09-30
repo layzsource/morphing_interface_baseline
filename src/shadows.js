@@ -1,6 +1,7 @@
 // src/shadows.js
 import * as THREE from 'three';
 import { state } from './state.js';
+import { getEffectiveAudio } from './audio.js'; // Audio Gating Fix
 
 console.log("🌑 shadows.js loaded");
 
@@ -53,16 +54,19 @@ export function updateShadows(audioReactive) {
   groundShadow.scale.setScalar(vesselScale);
   backdropShadow.scale.setScalar(vesselScale);
 
+  // Audio Gating Fix: Get audio data through centralized gating
+  const audioData = getEffectiveAudio();
+
   // Apply audio modulation only if audioReactive === true
   if (state.audioReactive) {
     // Map bass → opacity pulse (±0.1 range)
-    const bassPulse = (state.audio.bass || 0) * 0.1;
+    const bassPulse = (audioData.bass || 0) * 0.1;
     const baseOpacity = state.shadows.opacity;
     shadowMaterial.opacity = Math.max(0.0, Math.min(1.0, baseOpacity + bassPulse));
 
     // Map mid → backdrop only subtle flicker (±0.05)
     if (backdropShadow.visible) {
-      const midFlicker = (state.audio.mid || 0) * 0.05;
+      const midFlicker = (audioData.mid || 0) * 0.05;
       backdropShadow.material.opacity = Math.max(0.0, Math.min(1.0, baseOpacity + midFlicker));
     }
   } else {

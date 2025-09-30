@@ -44,23 +44,43 @@ export const state = {
     layout: 'lattice',      // NEW (orbital layout: 'lattice' | 'hoops' | 'shells')
     layoutIndex: 0,         // NEW (layout index for MIDI cycling: 0=lattice, 1=hoops, 2=shells)
     audioSmoothing: 0.7,    // NEW (audio smoothing factor)
-    hueShiftRange: 20       // NEW (hue shift range in degrees)
+    hueShiftRange: 20,      // NEW (hue shift range in degrees)
+    mode: 'gyre'            // Phase 2.x: Vessel mode ('gyre' | 'conflat6')
   },
 
   // Particle system
   particles: {
     enabled: true,
-    count: 1000,
-    layout: "cube",  // 'cube' | 'sphere' | 'torus'
-    hue: 0,          // Hue shift in degrees (0-360)
-    size: 0.15,      // Particle size (0.1-3.0)
-    opacity: 0.5,    // Particle opacity (0.0-1.0)
+    count: 5000,         // Phase 4.4: default (was 1000)
+    minCount: 1000,      // Phase 4.4: lower bound (was 100)
+    maxCount: 10000,     // Phase 4.4: upper bound (was 5000)
+    layout: "cube",      // 'cube' | 'sphere' | 'torus'
+    hue: 0,              // Hue shift in degrees (0-360)
+    size: 0.02,          // Phase 4.4: Particle size (was 0.15)
+    minSize: 0.005,      // Phase 4.4: lower size bound (was 0.05)
+    maxSize: 0.1,        // Phase 4.4: upper size bound (was 1.0)
+    opacity: 0.5,        // Particle opacity (0.0-1.0)
     organicMotion: false,  // Enable organic motion with jitter
-    audioReactiveHue: false  // Enable audio-reactive hue cycling
+    organicStrength: 0.2,  // Phase 4.2: Organic wobble strength (0-1)
+    audioReactiveHue: false,  // Enable audio-reactive hue cycling
+    velocity: 0.05,      // Orbital speed factor (0.1-2.0) - legacy compatibility
+    orbitalSpeed: 0.05,  // Phase 4.2a: Gentle start (was 0.8)
+    motionSmoothness: 0.5,  // Motion damping factor (0-1, higher = smoother)
+    trailEnabled: false,    // Phase 2.3.2A: Line trails (InstancedMesh segments)
+    trailLength: 0,         // Phase 2.3.2A: Trail length in frames (0-10)
+    trailOpacity: 0.3,      // Phase 2.3.2A: Trail line opacity
+    trailFade: 1.0,         // Phase 2.3.2C: Trail fade strength
+    trailAudioReactive: false,  // Phase 2.3.2D: Audio-reactive trail length
+    trailLengthMin: 2,      // Phase 2.3.2D: Min trail length for audio reactivity
+    trailLengthMax: 10      // Phase 2.3.2D: Max trail length for audio reactivity
   },
+
+  // Dual Trail System: Motion Trails (postprocessing blur)
+  motionTrailsEnabled: false,     // AfterimagePass toggle
+  motionTrailIntensity: 0.96,     // Blur damp value (0.85-0.99)
   // Backward compatibility
   particlesEnabled: true,
-  particlesCount: 1000,
+  particlesCount: 5000, // Phase 4.4: matches new default
   particlesMotion: {
     velocity: 0.5,   // base drift speed multiplier (HUD slider: 0.1–2.0)
     spread: 1.0,     // spatial spread multiplier (HUD slider: 0.1–2.0)
@@ -93,6 +113,32 @@ export const state = {
     backdrop: true,
     opacity: 0.25,
     color: '#000000'
+  },
+
+  // Phase 2.3.5/6: Shadow Box configuration
+  shadowBox: {
+    threshold: 0.5,
+    gain: 1.0,
+    bgColor: '#000000',
+    fgColor: '#ffffff',
+    palette: 'Manual'  // Phase 2.3.6: 'Manual' | 'Alchemy Gold' | 'Blake Indigo' | 'Cosmic White'
+  },
+
+  // Sprites configuration
+  sprites: {
+    enabled: true,
+    count: 200
+  },
+
+  // Wireframe overlay configuration
+  wireframe: {
+    enabled: true
+  },
+
+  // Debug visualization options (OFF by default)
+  debug: {
+    showWireframe: false,
+    showRibbon: false
   }
 };
 
