@@ -173,6 +173,16 @@ function createHUDPanel() {
   const filterContainer = document.createElement('div');
   filterContainer.style.cssText = 'margin-bottom: 10px;';
 
+  // Phase 11.2.7: Search input
+  const searchLabel = document.createElement('div');
+  searchLabel.textContent = 'Search Presets:';
+  searchLabel.style.cssText = 'margin-bottom: 3px; color: #aaa; font-size: 10px;';
+
+  const searchInput = document.createElement('input');
+  searchInput.type = 'text';
+  searchInput.placeholder = 'Search by name, category, or tags...';
+  searchInput.style.cssText = 'width: 100%; padding: 4px; background: #333; color: white; border: 1px solid #555; margin-bottom: 8px; font-size: 11px;';
+
   const categoryFilterLabel = document.createElement('div');
   categoryFilterLabel.textContent = 'Filter by Category:';
   categoryFilterLabel.style.cssText = 'margin-bottom: 3px; color: #aaa; font-size: 10px;';
@@ -189,6 +199,8 @@ function createHUDPanel() {
   tagFilter.placeholder = 'e.g., bright, fast';
   tagFilter.style.cssText = 'width: 100%; padding: 4px; background: #333; color: white; border: 1px solid #555; font-size: 11px;';
 
+  filterContainer.appendChild(searchLabel);
+  filterContainer.appendChild(searchInput);
   filterContainer.appendChild(categoryFilterLabel);
   filterContainer.appendChild(categoryFilter);
   filterContainer.appendChild(tagFilterLabel);
@@ -314,6 +326,7 @@ function createHUDPanel() {
   panel.presetDeleteButton = deleteButton;
   panel.categoryFilter = categoryFilter;
   panel.tagFilter = tagFilter;
+  panel.searchInput = searchInput; // Phase 11.2.7
   panel.getSelectedPreset = () => selectedPresetName;
   panel.setSelectedPreset = (name) => {
     selectedPresetName = name;
@@ -330,6 +343,13 @@ function createHUDPanel() {
   });
 
   tagFilter.addEventListener('input', () => {
+    import('./presets.js').then(({ listPresets }) => {
+      updatePresetList(listPresets());
+    });
+  });
+
+  // Phase 11.2.7: Search event listener
+  searchInput.addEventListener('input', () => {
     import('./presets.js').then(({ listPresets }) => {
       updatePresetList(listPresets());
     });
@@ -1058,6 +1078,7 @@ export function updatePresetList(presets) {
     const setSelectedPreset = hudPanel.setSelectedPreset;
     const categoryFilter = hudPanel.categoryFilter;
     const tagFilter = hudPanel.tagFilter;
+    const searchInput = hudPanel.searchInput; // Phase 11.2.7
 
     // Clear current list
     listContainer.innerHTML = '';
@@ -1066,6 +1087,12 @@ export function updatePresetList(presets) {
     const selectedCategory = categoryFilter ? categoryFilter.value : 'All';
     const filterTagsInput = tagFilter ? tagFilter.value.trim() : '';
     const filterTags = filterTagsInput ? filterTagsInput.split(',').map(t => t.trim().toLowerCase()).filter(t => t.length > 0) : [];
+
+    // Phase 11.2.7: Get search query
+    const searchQuery = searchInput ? searchInput.value.trim().toLowerCase() : '';
+    if (searchQuery) {
+      console.log(`🔍 Search: ${searchQuery}`);
+    }
 
     // Phase 11.2.6: Collect all categories and update category filter dropdown
     if (categoryFilter) {
@@ -1107,6 +1134,17 @@ export function updatePresetList(presets) {
         const presetData = getPresetData(presetName);
         const presetCategory = presetData?.category || 'Uncategorized';
         const presetTags = presetData?.tags || [];
+
+        // Phase 11.2.7: Apply search filter (checks name, category, tags)
+        if (searchQuery) {
+          const nameMatch = presetName.toLowerCase().includes(searchQuery);
+          const categoryMatch = presetCategory.toLowerCase().includes(searchQuery);
+          const tagsMatch = presetTags.some(tag => tag.toLowerCase().includes(searchQuery));
+
+          if (!nameMatch && !categoryMatch && !tagsMatch) {
+            return; // Skip this preset
+          }
+        }
 
         // Apply category filter
         if (selectedCategory !== 'All' && presetCategory !== selectedCategory) {
