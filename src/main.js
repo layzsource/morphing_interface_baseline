@@ -30,6 +30,10 @@ import './hudRouter.js';
 import './audioRouter.js';
 import './presetRouter.js';
 
+// Phase 11.2.3: Initialize unified control binding system
+import { initDefaultBindings } from './controlBindings.js';
+initDefaultBindings();
+
 console.log("🔄 Build timestamp:", new Date().toISOString());
 
 // Phase 2.3.3R: Shadow Box failsafe fallback (disabled rendering, app stability restored)

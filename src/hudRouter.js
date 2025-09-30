@@ -547,20 +547,17 @@ onHUDUpdate((update) => {
     });
   }
 
-  // Phase 11.2.2: Per-layer color system routing
+  // Phase 11.2.3: Per-layer color system routing via unified binding system
   if (update.colorLayer !== undefined) {
     const { colorLayer, property, value } = update;
-    if (state.colorLayers[colorLayer]) {
-      state.colorLayers[colorLayer][property] = value;
-      console.log(`🎨 [${colorLayer}] ${property} = ${value}`);
 
-      // Import controlBindings for unified control logging
-      import('./controlBindings.js').then(({ updateControl }) => {
-        updateControl(`colorLayer.${colorLayer}.${property}`, value);
-      });
-    } else {
-      console.warn(`🎨 Invalid color layer: ${colorLayer}`);
-    }
+    // Map property names: HUD sends 'audioIntensity', binding system uses 'audioIntensity'
+    const mappedProperty = property; // Already aligned
+
+    // Route through unified binding system instead of direct state mutation
+    import('./controlBindings.js').then(({ applyBinding }) => {
+      applyBinding(colorLayer, mappedProperty, value, "HUD");
+    });
   }
 
   // Handle preset actions - these will need to be routed to the preset system

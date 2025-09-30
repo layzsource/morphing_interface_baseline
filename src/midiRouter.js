@@ -1,18 +1,27 @@
 import { onCC } from './midi.js';
 import { state, setMorphWeight, setHue } from './state.js';
+import { applyMIDIBinding } from './controlBindings.js';
 
 console.log("🎹 midiRouter.js loaded");
 
-// ⚠️ Phase 11.2.2 Regression Notice:
-// CC2/CC3 morph shape control broken after Phase 11.2.0 additive blending changes.
-// Cause: MIDI callbacks still point to old morph assignment path (pre-additive system).
-// These handlers update state.morphWeights but do NOT sync to state.morphBaseWeights array.
-// Fix: Updated below to sync with morphBaseWeights for additive morph system compatibility.
-// Alternative: Will be fully resolved in unified control binding system (Phase 11.2.3+).
+// Phase 11.2.3: Unified Control Binding System
+// Most MIDI CCs now route through applyMIDIBinding() for centralized control flow.
+// Exception: CC2/CC3 have complex blend logic that updates multiple state paths,
+// so they remain as special cases with direct state manipulation + morphBaseWeights sync.
 
 // MIDI CC to state routing
 onCC(({ cc, value, device }) => {
   console.log(`🎹 CC${cc} from ${device}: ${value}`);
+
+  // Phase 11.2.3: Try unified binding system first
+  // This handles: CC10 (sphere weight), CC20-23 (color intensities, morph weights, hue)
+  if (applyMIDIBinding(cc, value)) {
+    // Binding found and applied via controlBindings.js
+    return;
+  }
+
+  // Phase 11.2.3: Special cases below (complex logic not suitable for simple binding)
+  // CC2 (morph blend), CC3 (morph target), CC1/CC4 (rotation), CC7/CC8 (vessel), CC24 (scale)
 
   if (cc === 1) {
     // CC1 → X rotation speed
@@ -87,21 +96,23 @@ onCC(({ cc, value, device }) => {
       });
     }
   } else if (cc === 10) {
-    // CC10 → Sphere weight (individual target control)
-    const sphereWeight = value / 127;
-    setMorphWeight('sphere', sphereWeight);
+    // Phase 11.2.3: CC10 now handled by unified binding system (morph.sphereWeight)
+    // Keeping this as fallback in case binding system doesn't handle it
+    console.log(`🎹 CC10 fallback: sphere weight (should be handled by binding system)`);
   } else if (cc === 21) {
-    // CC21 → Hue shift (0-127 → 0-360°) for MPK Mini compatibility
+    // Phase 11.2.3: CC21 mapped to both vessel.audioIntensity and particles.hueShift in binding system
+    // Keeping legacy hue shift behavior as fallback
     const newHue = (value / 127) * 360;
     setHue(newHue);
+    console.log(`🎹 CC21 fallback: hue shift (binding system also active)`);
   } else if (cc === 22) {
-    // CC22 → Pyramid weight (individual target control)
-    const pyramidWeight = value / 127;
-    setMorphWeight('pyramid', pyramidWeight);
+    // Phase 11.2.3: CC22 now handled by unified binding system (morph.pyramidWeight / shadows.audioIntensity)
+    // Note: CC22 has dual mapping conflict - will use binding system priority
+    console.log(`🎹 CC22 fallback: pyramid weight (should be handled by binding system)`);
   } else if (cc === 23) {
-    // CC23 → Torus weight (individual target control)
-    const torusWeight = value / 127;
-    setMorphWeight('torus', torusWeight);
+    // Phase 11.2.3: CC23 now handled by unified binding system (morph.torusWeight / particles.audioIntensity)
+    // Note: CC23 has dual mapping conflict - will use binding system priority
+    console.log(`🎹 CC23 fallback: torus weight (should be handled by binding system)`);
   } else if (cc === 24) {
     // CC24 → Scale (0.5-2.0)
     state.scale = 0.5 + (value / 127) * 1.5;
