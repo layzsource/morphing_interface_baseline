@@ -770,6 +770,9 @@ export function skipPrev() {
   }
 }
 
+// Phase 11.4.1: Throttled progress updates
+let lastProgressUpdate = 0;
+
 // Called every frame (from geometry/main loop) alongside updateInterpolation()
 export function updateChain() {
   if (!morphChain.active) return;
@@ -777,7 +780,43 @@ export function updateChain() {
   // Phase 11.4.0: Don't update if paused
   if (morphChain.paused) return;
 
-  // If interpolation still running, nothing to do
+  // Phase 11.4.1: Emit smooth progress updates while interpolating (throttled to 100ms)
+  if (isInterpolating() && morphChain.stepStartTime) {
+    const now = performance.now();
+
+    if (now - lastProgressUpdate > 100) {
+      lastProgressUpdate = now;
+
+      const elapsed = now - morphChain.stepStartTime;
+      const duration = morphChain.duration;
+      const t = Math.min(elapsed / duration, 1);
+      const percent = Math.floor(t * 100);
+      const remainingMs = Math.max(duration - elapsed, 0);
+      const remainingSec = (remainingMs / 1000).toFixed(1);
+
+      const currentStep = morphChain.currentIndex + 1;
+      const totalSteps = morphChain.presets.length;
+
+      // Emit progress event for HUD
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent("chainProgress", {
+          detail: {
+            step: currentStep,
+            total: totalSteps,
+            percent,
+            remaining: remainingSec
+          }
+        }));
+      }
+
+      // Throttled console log (every 10%)
+      if (percent % 10 === 0 && percent > 0) {
+        console.log(`📊 Step ${currentStep}/${totalSteps} progress: ${percent}% (Remaining: ${remainingSec}s)`);
+      }
+    }
+  }
+
+  // If interpolation still running, nothing to do (continue)
   if (isInterpolating()) return;
 
   // If we just finished a hop, advance to next

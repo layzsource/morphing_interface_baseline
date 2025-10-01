@@ -458,7 +458,7 @@ function createHUDPanel() {
   progressFill.style.width = "0%";
   progressFill.style.height = "100%";
   progressFill.style.background = "#00ff00";
-  progressFill.style.transition = "width 0.2s linear"; // Phase 11.3.2: Smoother animation
+  progressFill.style.transition = "width 0.1s linear"; // Phase 11.4.1: Smooth 100ms updates
   progressBar.appendChild(progressFill);
   progressContainer.appendChild(progressLabel);
   progressContainer.appendChild(progressBar);
@@ -993,6 +993,25 @@ function createHUDPanel() {
     if (timeRemainingInterval) {
       clearInterval(timeRemainingInterval);
       timeRemainingInterval = null;
+    }
+  });
+
+  // Phase 11.4.1: Listen for smooth progress updates from presetRouter
+  window.addEventListener("chainProgress", (e) => {
+    const { step, total, percent, remaining } = e.detail;
+    const progressFill = document.getElementById("chainProgressFill");
+    const progressLabel = document.getElementById("chainProgressLabel");
+    const progressContainer = document.getElementById("chainProgressContainer");
+
+    if (progressFill && progressLabel && progressContainer) {
+      // Update progress bar width
+      progressFill.style.width = `${percent}%`;
+
+      // Update label with step/total, percent, and time remaining
+      progressLabel.textContent = `Step ${step}/${total} (${percent}%) — Remaining: ${remaining}s`;
+
+      // Ensure container is visible
+      progressContainer.style.display = "block";
     }
   });
 
