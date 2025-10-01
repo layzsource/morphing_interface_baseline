@@ -486,6 +486,46 @@ function createHUDPanel() {
   btnRow.appendChild(stopBtn);
   chainSection.appendChild(btnRow);
 
+  // Phase 11.4.0: Playback controls (pause/resume, skip)
+  const playbackRow = document.createElement("div");
+  playbackRow.style.cssText = 'display: flex; gap: 5px; margin-bottom: 8px;';
+
+  const pauseResumeBtn = document.createElement("button");
+  pauseResumeBtn.id = "chainPauseResumeBtn";
+  pauseResumeBtn.textContent = "⏸ Pause";
+  pauseResumeBtn.style.cssText = 'flex: 2; padding: 6px; background: #ffaa00; color: black; border: none; cursor: pointer; font-weight: bold; font-size: 11px;';
+  pauseResumeBtn.disabled = true;
+  pauseResumeBtn.style.opacity = "0.5";
+  pauseResumeBtn.style.cursor = "not-allowed";
+
+  const skipPrevBtn = document.createElement("button");
+  skipPrevBtn.id = "chainSkipPrevBtn";
+  skipPrevBtn.textContent = "⏮";
+  skipPrevBtn.style.cssText = 'flex: 1; padding: 6px; background: #6699ff; color: white; border: none; cursor: pointer; font-weight: bold; font-size: 11px;';
+  skipPrevBtn.disabled = true;
+  skipPrevBtn.style.opacity = "0.5";
+  skipPrevBtn.style.cursor = "not-allowed";
+
+  const skipNextBtn = document.createElement("button");
+  skipNextBtn.id = "chainSkipNextBtn";
+  skipNextBtn.textContent = "⏭";
+  skipNextBtn.style.cssText = 'flex: 1; padding: 6px; background: #6699ff; color: white; border: none; cursor: pointer; font-weight: bold; font-size: 11px;';
+  skipNextBtn.disabled = true;
+  skipNextBtn.style.opacity = "0.5";
+  skipNextBtn.style.cursor = "not-allowed";
+
+  playbackRow.appendChild(skipPrevBtn);
+  playbackRow.appendChild(pauseResumeBtn);
+  playbackRow.appendChild(skipNextBtn);
+  chainSection.appendChild(playbackRow);
+
+  // Phase 11.4.0: Time remaining display
+  const timeRemainingLabel = document.createElement("div");
+  timeRemainingLabel.id = "chainTimeRemaining";
+  timeRemainingLabel.textContent = "Remaining: --";
+  timeRemainingLabel.style.cssText = 'font-size: 10px; color: #aaa; margin-bottom: 8px; text-align: center;';
+  chainSection.appendChild(timeRemainingLabel);
+
   // Phase 11.3.1: Save chain section
   const saveChainRow = document.createElement("div");
   saveChainRow.style.display = "flex";
@@ -503,10 +543,42 @@ function createHUDPanel() {
   chainSection.appendChild(saveChainRow);
 
   // Phase 11.3.1: Saved chains list
+  const savedChainsHeader = document.createElement("div");
+  savedChainsHeader.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;';
+
   const savedChainsTitle = document.createElement("div");
   savedChainsTitle.textContent = "Saved Chains:";
-  savedChainsTitle.style.cssText = 'font-size: 10px; color: #aaa; margin-bottom: 5px;';
-  chainSection.appendChild(savedChainsTitle);
+  savedChainsTitle.style.cssText = 'font-size: 10px; color: #aaa;';
+
+  // Phase 11.4.0: Export/Import buttons
+  const chainIORow = document.createElement("div");
+  chainIORow.style.cssText = 'display: flex; gap: 5px;';
+
+  const exportChainsBtn = document.createElement("button");
+  exportChainsBtn.id = "exportChainsBtn";
+  exportChainsBtn.textContent = "💾";
+  exportChainsBtn.title = "Export chains";
+  exportChainsBtn.style.cssText = 'padding: 2px 6px; background: #4CAF50; color: white; border: none; cursor: pointer; font-size: 10px; border-radius: 3px;';
+
+  const importChainsBtn = document.createElement("button");
+  importChainsBtn.id = "importChainsBtn";
+  importChainsBtn.textContent = "📂";
+  importChainsBtn.title = "Import chains";
+  importChainsBtn.style.cssText = 'padding: 2px 6px; background: #2196F3; color: white; border: none; cursor: pointer; font-size: 10px; border-radius: 3px;';
+
+  const importChainsInput = document.createElement("input");
+  importChainsInput.type = "file";
+  importChainsInput.id = "importChainsInput";
+  importChainsInput.accept = ".json";
+  importChainsInput.style.display = "none";
+
+  chainIORow.appendChild(exportChainsBtn);
+  chainIORow.appendChild(importChainsBtn);
+  chainIORow.appendChild(importChainsInput);
+
+  savedChainsHeader.appendChild(savedChainsTitle);
+  savedChainsHeader.appendChild(chainIORow);
+  chainSection.appendChild(savedChainsHeader);
 
   const savedChainsList = document.createElement("div");
   savedChainsList.id = "savedChainsList";
@@ -617,6 +689,48 @@ function createHUDPanel() {
   stopBtn.addEventListener("click", () => {
     console.log("🔗 HUD stop chain");
     notifyHUDUpdate({ presetAction: "chain:stop" });
+  });
+
+  // Phase 11.4.0: Playback control buttons
+  pauseResumeBtn.addEventListener("click", () => {
+    const isPaused = pauseResumeBtn.textContent.includes("Resume");
+    if (isPaused) {
+      console.log("▶️ HUD resume chain");
+      notifyHUDUpdate({ presetAction: "chain:resume" });
+    } else {
+      console.log("⏸ HUD pause chain");
+      notifyHUDUpdate({ presetAction: "chain:pause" });
+    }
+  });
+
+  skipPrevBtn.addEventListener("click", () => {
+    console.log("⏮ HUD skip to previous preset");
+    notifyHUDUpdate({ presetAction: "chain:skipPrev" });
+  });
+
+  skipNextBtn.addEventListener("click", () => {
+    console.log("⏭ HUD skip to next preset");
+    notifyHUDUpdate({ presetAction: "chain:skipNext" });
+  });
+
+  // Phase 11.4.0: Export/Import chains buttons
+  exportChainsBtn.addEventListener("click", () => {
+    console.log("💾 HUD export chains");
+    notifyHUDUpdate({ presetAction: "chain:export" });
+  });
+
+  importChainsBtn.addEventListener("click", () => {
+    importChainsInput.click();
+  });
+
+  importChainsInput.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      console.log("📂 HUD import chains:", file.name);
+      notifyHUDUpdate({ presetAction: "chain:import", file });
+      // Reset input so same file can be imported again
+      importChainsInput.value = "";
+    }
   });
 
   // Phase 11.3.1: Save chain button
@@ -776,6 +890,110 @@ function createHUDPanel() {
 
   window.addEventListener("chainFinished", () => {
     showToast("🔗 Chain finished");
+  });
+
+  // Phase 11.4.0: Update UI state on chain events
+  window.addEventListener("chainStarted", () => {
+    // Enable playback controls
+    pauseResumeBtn.disabled = false;
+    pauseResumeBtn.style.opacity = "1";
+    pauseResumeBtn.style.cursor = "pointer";
+    pauseResumeBtn.textContent = "⏸ Pause";
+
+    skipPrevBtn.disabled = false;
+    skipPrevBtn.style.opacity = "1";
+    skipPrevBtn.style.cursor = "pointer";
+
+    skipNextBtn.disabled = false;
+    skipNextBtn.style.opacity = "1";
+    skipNextBtn.style.cursor = "pointer";
+
+    // Enable stop button
+    stopBtn.disabled = false;
+    stopBtn.style.opacity = "1";
+    stopBtn.style.cursor = "pointer";
+
+    // Disable start button
+    startBtn.disabled = true;
+    startBtn.style.opacity = "0.5";
+    startBtn.style.cursor = "not-allowed";
+  });
+
+  window.addEventListener("chainFinished", () => {
+    // Disable playback controls
+    pauseResumeBtn.disabled = true;
+    pauseResumeBtn.style.opacity = "0.5";
+    pauseResumeBtn.style.cursor = "not-allowed";
+    pauseResumeBtn.textContent = "⏸ Pause";
+
+    skipPrevBtn.disabled = true;
+    skipPrevBtn.style.opacity = "0.5";
+    skipPrevBtn.style.cursor = "not-allowed";
+
+    skipNextBtn.disabled = true;
+    skipNextBtn.style.opacity = "0.5";
+    skipNextBtn.style.cursor = "not-allowed";
+
+    // Disable stop button
+    stopBtn.disabled = true;
+    stopBtn.style.opacity = "0.5";
+    stopBtn.style.cursor = "not-allowed";
+
+    // Enable start button
+    startBtn.disabled = false;
+    startBtn.style.opacity = "1";
+    startBtn.style.cursor = "pointer";
+
+    // Clear time remaining
+    timeRemainingLabel.textContent = "Remaining: --";
+  });
+
+  window.addEventListener("chainPaused", () => {
+    pauseResumeBtn.textContent = "▶️ Resume";
+    showToast("⏸ Chain paused");
+  });
+
+  window.addEventListener("chainResumed", () => {
+    pauseResumeBtn.textContent = "⏸ Pause";
+    showToast("▶️ Chain resumed");
+  });
+
+  window.addEventListener("chainSkipped", (e) => {
+    const { direction, preset } = e.detail;
+    const emoji = direction === 'next' ? '⏭' : '⏮';
+    showToast(`${emoji} Skipped → ${preset}`);
+  });
+
+  // Phase 11.4.0: Update time remaining display (every 100ms)
+  let timeRemainingInterval = null;
+
+  window.addEventListener("chainStarted", () => {
+    if (timeRemainingInterval) clearInterval(timeRemainingInterval);
+
+    timeRemainingInterval = setInterval(() => {
+      import('./presetRouter.js').then(({ getChainProgress }) => {
+        const progress = getChainProgress();
+        if (progress) {
+          const remainingMs = progress.timeRemaining;
+          const minutes = Math.floor(remainingMs / 60000);
+          const seconds = Math.floor((remainingMs % 60000) / 1000);
+          timeRemainingLabel.textContent = `Remaining: ${minutes}m ${seconds}s`;
+        } else {
+          timeRemainingLabel.textContent = "Remaining: --";
+          if (timeRemainingInterval) {
+            clearInterval(timeRemainingInterval);
+            timeRemainingInterval = null;
+          }
+        }
+      });
+    }, 100);
+  });
+
+  window.addEventListener("chainFinished", () => {
+    if (timeRemainingInterval) {
+      clearInterval(timeRemainingInterval);
+      timeRemainingInterval = null;
+    }
   });
 
   // Update progress every 100ms

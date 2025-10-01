@@ -46,6 +46,36 @@ onHUDUpdate((update) => {
       deleteChain(update.chainName);
       return;
     }
+    // Phase 11.4.0: Chain export/import
+    if (update.presetAction === 'chain:export') {
+      exportChains();
+      return;
+    }
+    if (update.presetAction === 'chain:import') {
+      if (update.file) {
+        importChains(update.file);
+      } else {
+        console.warn("💾 [PresetRouter] Import chains missing file");
+      }
+      return;
+    }
+    // Phase 11.4.0: Chain playback controls
+    if (update.presetAction === 'chain:pause') {
+      pauseChain();
+      return;
+    }
+    if (update.presetAction === 'chain:resume') {
+      resumeChain();
+      return;
+    }
+    if (update.presetAction === 'chain:skipNext') {
+      skipNext();
+      return;
+    }
+    if (update.presetAction === 'chain:skipPrev') {
+      skipPrev();
+      return;
+    }
     // Regular preset actions
     handlePresetAction(update.presetAction, update.presetName, update.category, update.tags);
   }
@@ -579,9 +609,173 @@ function startInterpolationToPresetName(presetName, stepDurationMs) {
   state.interpolation.duration = prev;
 }
 
+// Phase 11.4.0: Pause/Resume Chain
+export function pauseChain() {
+  if (!morphChain.active || morphChain.paused) {
+    console.warn("⏸ Cannot pause: chain not active or already paused");
+    return;
+  }
+
+  morphChain.paused = true;
+  morphChain.pausedAt = performance.now();
+
+  // Calculate current progress
+  if (morphChain.stepStartTime) {
+    const elapsed = morphChain.pausedAt - morphChain.stepStartTime;
+    morphChain.pausedProgress = Math.min(elapsed / morphChain.duration, 1.0);
+  }
+
+  // Pause the interpolation
+  if (state.interpolation.active) {
+    state.interpolation.active = false;
+  }
+
+  const currentStep = morphChain.currentIndex + 1;
+  const totalSteps = morphChain.presets.length;
+  const progressPercent = Math.round((currentStep / totalSteps) * 100);
+  console.log(`⏸ Chain paused at Step ${currentStep}/${totalSteps} (${progressPercent}%)`);
+
+  // Emit event
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent("chainPaused", {
+      detail: {
+        currentStep,
+        totalSteps,
+        progress: progressPercent
+      }
+    }));
+  }
+}
+
+export function resumeChain() {
+  if (!morphChain.active || !morphChain.paused) {
+    console.warn("▶️ Cannot resume: chain not active or not paused");
+    return;
+  }
+
+  morphChain.paused = false;
+
+  // Adjust step start time to account for pause duration
+  if (morphChain.stepStartTime && morphChain.pausedAt) {
+    const pauseDuration = performance.now() - morphChain.pausedAt;
+    morphChain.stepStartTime += pauseDuration;
+  }
+
+  morphChain.pausedAt = null;
+
+  // Resume interpolation
+  if (morphChain.pausedProgress < 1.0) {
+    const currentPreset = morphChain.presets[morphChain.currentIndex];
+    const remainingDuration = morphChain.duration * (1 - morphChain.pausedProgress);
+
+    // Restart interpolation with remaining time
+    state.interpolation.active = true;
+    state.interpolation.startTime = performance.now() - (morphChain.duration * morphChain.pausedProgress);
+  }
+
+  console.log(`▶️ Chain resumed`);
+
+  // Emit event
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent("chainResumed", {
+      detail: { resumed: true }
+    }));
+  }
+}
+
+// Phase 11.4.0: Skip to Next/Previous Preset
+export function skipNext() {
+  if (!morphChain.active) {
+    console.warn("⏭ Cannot skip: chain not active");
+    return;
+  }
+
+  // Move to next index
+  const wasIndex = morphChain.currentIndex;
+  morphChain.currentIndex = (morphChain.currentIndex + 1) % morphChain.presets.length;
+
+  // If we wrapped around and loop is disabled, stop
+  if (morphChain.currentIndex === 0 && !morphChain.loop && wasIndex === morphChain.presets.length - 1) {
+    stopChain();
+    console.log("⏭ Skipped to end → Chain stopped (loop disabled)");
+    return;
+  }
+
+  const nextPreset = morphChain.presets[morphChain.currentIndex];
+  console.log(`⏭ Skipped → Next preset: ${nextPreset}`);
+
+  // Reset paused state if any
+  morphChain.paused = false;
+  morphChain.pausedAt = null;
+  morphChain.pausedProgress = 0;
+
+  // Start interpolation to next preset
+  startInterpolationToPresetName(nextPreset, morphChain.duration);
+
+  // Emit event
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent("chainSkipped", {
+      detail: {
+        direction: 'next',
+        preset: nextPreset,
+        currentStep: morphChain.currentIndex + 1,
+        totalSteps: morphChain.presets.length
+      }
+    }));
+  }
+}
+
+export function skipPrev() {
+  if (!morphChain.active) {
+    console.warn("⏮ Cannot skip: chain not active");
+    return;
+  }
+
+  // Move to previous index
+  const wasIndex = morphChain.currentIndex;
+  morphChain.currentIndex = morphChain.currentIndex - 1;
+
+  // Wrap around if at start and loop enabled
+  if (morphChain.currentIndex < 0) {
+    if (morphChain.loop) {
+      morphChain.currentIndex = morphChain.presets.length - 1;
+    } else {
+      morphChain.currentIndex = 0;
+      console.log("⏮ Already at first preset");
+      return;
+    }
+  }
+
+  const prevPreset = morphChain.presets[morphChain.currentIndex];
+  console.log(`⏮ Skipped → Previous preset: ${prevPreset}`);
+
+  // Reset paused state if any
+  morphChain.paused = false;
+  morphChain.pausedAt = null;
+  morphChain.pausedProgress = 0;
+
+  // Start interpolation to previous preset
+  startInterpolationToPresetName(prevPreset, morphChain.duration);
+
+  // Emit event
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent("chainSkipped", {
+      detail: {
+        direction: 'prev',
+        preset: prevPreset,
+        currentStep: morphChain.currentIndex + 1,
+        totalSteps: morphChain.presets.length
+      }
+    }));
+  }
+}
+
 // Called every frame (from geometry/main loop) alongside updateInterpolation()
 export function updateChain() {
   if (!morphChain.active) return;
+
+  // Phase 11.4.0: Don't update if paused
+  if (morphChain.paused) return;
 
   // If interpolation still running, nothing to do
   if (isInterpolating()) return;
@@ -770,5 +964,159 @@ function saveChainsToStorage(chains) {
 
 // Phase 11.3.1: Initialize saved chains on load
 getChainsFromStorage();
+
+// Phase 11.4.0: Get time remaining in current chain step
+export function getChainTimeRemaining() {
+  if (!morphChain.active || !morphChain.stepStartTime) {
+    return 0;
+  }
+
+  if (morphChain.paused) {
+    // Return remaining time at pause point
+    return Math.max(0, morphChain.duration * (1 - morphChain.pausedProgress));
+  }
+
+  const elapsed = performance.now() - morphChain.stepStartTime;
+  const remaining = Math.max(0, morphChain.duration - elapsed);
+  return remaining;
+}
+
+// Phase 11.4.0: Get current chain progress info
+export function getChainProgress() {
+  if (!morphChain.active) {
+    return null;
+  }
+
+  const currentStep = morphChain.currentIndex + 1;
+  const totalSteps = morphChain.presets.length;
+  const timeRemaining = getChainTimeRemaining();
+
+  // Calculate overall progress
+  let stepProgress = 0;
+  if (morphChain.stepStartTime && !morphChain.paused) {
+    const elapsed = performance.now() - morphChain.stepStartTime;
+    stepProgress = Math.min(elapsed / morphChain.duration, 1.0);
+  } else if (morphChain.paused) {
+    stepProgress = morphChain.pausedProgress;
+  }
+
+  return {
+    currentStep,
+    totalSteps,
+    stepProgress,
+    timeRemaining,
+    paused: morphChain.paused,
+    presetName: morphChain.presets[morphChain.currentIndex]
+  };
+}
+
+// Phase 11.4.0: Export/Import Chains
+export function exportChains() {
+  const chains = getChainsFromStorage();
+  const chainNames = Object.keys(chains);
+
+  if (chainNames.length === 0) {
+    console.warn("💾 No chains to export");
+    return;
+  }
+
+  const json = JSON.stringify(chains, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+
+  // Create download link
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `chains_${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  console.log(`💾 Chains exported: ${a.download} (${chainNames.length} chains)`);
+
+  // Emit CustomEvent
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('chainsExported', {
+      detail: { chainCount: chainNames.length, filename: a.download }
+    }));
+  }
+}
+
+export function importChains(file) {
+  const reader = new FileReader();
+
+  reader.onload = (e) => {
+    try {
+      const importedChains = JSON.parse(e.target.result);
+      let importCount = 0;
+      let overwriteCount = 0;
+
+      // Validate structure
+      if (typeof importedChains !== 'object' || importedChains === null) {
+        throw new Error('Invalid chain file format');
+      }
+
+      Object.keys(importedChains).forEach(name => {
+        const chainData = importedChains[name];
+
+        // Validate chain structure
+        if (!chainData.name || !Array.isArray(chainData.presets) || chainData.presets.length < 2) {
+          console.warn(`🔗 Skipping invalid chain: ${name}`);
+          return;
+        }
+
+        // Check if chain exists
+        const existingChain = getChainData(name);
+        if (existingChain) {
+          overwriteCount++;
+        } else {
+          importCount++;
+        }
+
+        // Save chain
+        saveChain(
+          chainData.name,
+          chainData.presets,
+          chainData.duration || 2000,
+          chainData.loop || false,
+          chainData.shuffle || false
+        );
+      });
+
+      console.log(`📂 Chains imported: ${importCount + overwriteCount} chains loaded (${importCount} new, ${overwriteCount} overwritten) from ${file.name}`);
+
+      // Refresh chain list in HUD
+      import('./hud.js').then(({ updateChainList }) => {
+        if (updateChainList) {
+          updateChainList(listChains());
+        }
+      });
+
+      // Emit CustomEvent
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('chainsImported', {
+          detail: {
+            filename: file.name,
+            totalCount: importCount + overwriteCount,
+            newCount: importCount,
+            overwriteCount: overwriteCount
+          }
+        }));
+      }
+
+    } catch (error) {
+      console.error(`💾 ❌ Failed to import chains from ${file.name}:`, error);
+      alert(`Failed to import chains: ${error.message}`);
+    }
+  };
+
+  reader.onerror = () => {
+    console.error(`💾 ❌ Failed to read file: ${file.name}`);
+    alert(`Failed to read file: ${file.name}`);
+  };
+
+  reader.readAsText(file);
+}
 
 console.log("💾 Preset routing configured");

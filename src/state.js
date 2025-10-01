@@ -192,7 +192,11 @@ export const morphChain = {
   savedChains: [],   // array of saved chain configs: { name, presets, duration, loop, shuffle }
   currentChainName: null,  // name of currently running saved chain (if any)
   // Phase 11.3.2: Progress tracking
-  stepStartTime: null  // performance.now() when current step started
+  stepStartTime: null,  // performance.now() when current step started
+  // Phase 11.4.0: Playback controls
+  paused: false,     // chain paused?
+  pausedAt: null,    // performance.now() when paused
+  pausedProgress: 0  // progress (0-1) when paused
 };
 
 // Utility function to normalize morph weights
