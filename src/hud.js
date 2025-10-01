@@ -1,3 +1,5 @@
+import { state } from './state.js';
+
 console.log("📟 hud.js loaded");
 
 let hudCallbacks = [];
@@ -156,10 +158,13 @@ function createHUDPanel() {
     if (presetName) {
       const category = categoryInput.value.trim() || 'Uncategorized';
       const tags = tagsInput.value.trim() ? tagsInput.value.split(',').map(t => t.trim()).filter(t => t.length > 0) : [];
+      console.log("💾 [HUD] Save button clicked:", { presetName, category, tags });
       notifyHUDUpdate({ presetAction: 'save', presetName: presetName, category: category, tags: tags });
       saveInput.value = '';
       categoryInput.value = 'Uncategorized';
       tagsInput.value = '';
+    } else {
+      console.warn("💾 [HUD] Save button clicked but preset name is empty");
     }
   });
 
@@ -277,6 +282,511 @@ function createHUDPanel() {
   actionContainer.appendChild(updateButton);
   actionContainer.appendChild(deleteButton);
   panel.appendChild(actionContainer);
+
+  // Phase 11.2.8: Interpolation controls
+  const interpolationContainer = document.createElement('div');
+  interpolationContainer.style.cssText = 'margin-bottom: 10px; padding: 8px; background: rgba(0, 100, 150, 0.1); border: 1px solid #0066aa; border-radius: 4px;';
+
+  const interpolationTitle = document.createElement('div');
+  interpolationTitle.textContent = '🎚️ Preset Interpolation';
+  interpolationTitle.style.cssText = 'margin-bottom: 5px; color: #00aaff; font-size: 11px; font-weight: bold;';
+
+  const interpolationToggleLabel = document.createElement('label');
+  interpolationToggleLabel.style.cssText = 'display: flex; align-items: center; margin-bottom: 5px; font-size: 11px; cursor: pointer;';
+
+  const interpolationToggle = document.createElement('input');
+  interpolationToggle.type = 'checkbox';
+  interpolationToggle.checked = state.interpolation.enabled;
+  interpolationToggle.style.cssText = 'margin-right: 8px;';
+
+  const interpolationStatus = document.createElement('span');
+  interpolationStatus.textContent = state.interpolation.enabled ? 'Enabled' : 'Disabled';
+  interpolationStatus.style.cssText = `color: ${state.interpolation.enabled ? '#00ff00' : '#ff6666'};`;
+
+  interpolationToggle.addEventListener('change', () => {
+    state.interpolation.enabled = interpolationToggle.checked;
+    interpolationStatus.textContent = interpolationToggle.checked ? 'Enabled' : 'Disabled';
+    interpolationStatus.style.color = interpolationToggle.checked ? '#00ff00' : '#ff6666';
+    console.log(`🎚️ Interpolation ${interpolationToggle.checked ? 'enabled' : 'disabled'}`);
+  });
+
+  interpolationToggleLabel.appendChild(interpolationToggle);
+  interpolationToggleLabel.appendChild(interpolationStatus);
+
+  const durationLabel = document.createElement('div');
+  durationLabel.textContent = `Duration: ${state.interpolation.duration}ms`;
+  durationLabel.style.cssText = 'margin-bottom: 3px; color: #aaa; font-size: 10px;';
+
+  const durationSlider = document.createElement('input');
+  durationSlider.type = 'range';
+  durationSlider.min = '500';
+  durationSlider.max = '10000';
+  durationSlider.step = '500';
+  durationSlider.value = state.interpolation.duration;
+  durationSlider.style.cssText = 'width: 100%; margin-bottom: 3px;';
+
+  durationSlider.addEventListener('input', () => {
+    const value = parseInt(durationSlider.value);
+    state.interpolation.duration = value;
+    durationLabel.textContent = `Duration: ${value}ms`;
+  });
+
+  interpolationContainer.appendChild(interpolationTitle);
+  interpolationContainer.appendChild(interpolationToggleLabel);
+  interpolationContainer.appendChild(durationLabel);
+  interpolationContainer.appendChild(durationSlider);
+  panel.appendChild(interpolationContainer);
+
+  // ---- Phase 11.3.0: Morph Chain UI ----
+  const chainSeparator = document.createElement('hr');
+  chainSeparator.style.cssText = 'border: 1px solid #555; margin: 15px 0;';
+  panel.appendChild(chainSeparator);
+
+  const chainSection = document.createElement("div");
+  chainSection.className = "panel-section";
+  chainSection.style.cssText = 'margin-bottom: 10px;';
+
+  const chainHeaderRow = document.createElement("div");
+  chainHeaderRow.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;';
+
+  const chainHeader = document.createElement("div");
+  chainHeader.className = "panel-title";
+  chainHeader.textContent = "🔗 Morph Chain";
+  chainHeader.style.cssText = 'color: #ff9900; font-size: 12px; font-weight: bold;';
+
+  // Phase 11.3.2: Status badge
+  const statusBadge = document.createElement("div");
+  statusBadge.id = "chainStatusBadge";
+  statusBadge.textContent = "⏹ Stopped";
+  statusBadge.style.cssText = 'padding: 3px 8px; background: #333; color: #888; border-radius: 3px; font-size: 9px; font-weight: bold;';
+
+  chainHeaderRow.appendChild(chainHeader);
+  chainHeaderRow.appendChild(statusBadge);
+  chainSection.appendChild(chainHeaderRow);
+
+  // Preset list as checkboxes
+  const chainList = document.createElement("div");
+  chainList.style.display = "flex";
+  chainList.style.flexDirection = "column";
+  chainList.style.gap = "6px";
+  chainList.style.maxHeight = "150px";
+  chainList.style.overflowY = "auto";
+  chainList.style.marginBottom = "8px";
+  chainList.style.padding = "5px";
+  chainList.style.background = "#222";
+  chainList.style.border = "1px solid #555";
+  chainSection.appendChild(chainList);
+
+  // Duration slider
+  const durRow = document.createElement("div");
+  durRow.style.display = "flex";
+  durRow.style.alignItems = "center";
+  durRow.style.gap = "8px";
+  durRow.style.marginBottom = "8px";
+  const durLabel = document.createElement("span");
+  durLabel.textContent = "Duration (ms):";
+  durLabel.style.fontSize = "10px";
+  durLabel.style.color = "#aaa";
+  const durInput = document.createElement("input");
+  durInput.type = "range";
+  durInput.min = "500";
+  durInput.max = "10000";
+  durInput.step = "500";
+  durInput.value = "2000";
+  durInput.style.flex = "1";
+  const durVal = document.createElement("span");
+  durVal.textContent = "2000";
+  durVal.style.fontSize = "10px";
+  durVal.style.color = "#fff";
+  durVal.style.minWidth = "45px";
+  durInput.addEventListener("input", () => durVal.textContent = durInput.value);
+  durRow.appendChild(durLabel);
+  durRow.appendChild(durInput);
+  durRow.appendChild(durVal);
+  chainSection.appendChild(durRow);
+
+  // Phase 11.3.1: Loop/Shuffle toggles
+  const optionsRow = document.createElement("div");
+  optionsRow.style.display = "flex";
+  optionsRow.style.gap = "15px";
+  optionsRow.style.marginBottom = "8px";
+  optionsRow.style.fontSize = "10px";
+
+  const loopLabel = document.createElement("label");
+  loopLabel.style.display = "flex";
+  loopLabel.style.alignItems = "center";
+  loopLabel.style.gap = "5px";
+  loopLabel.style.cursor = "pointer";
+  const loopCheckbox = document.createElement("input");
+  loopCheckbox.type = "checkbox";
+  loopCheckbox.id = "chainLoopToggle";
+  loopLabel.appendChild(loopCheckbox);
+  loopLabel.appendChild(document.createTextNode("🔁 Loop"));
+
+  const shuffleLabel = document.createElement("label");
+  shuffleLabel.style.display = "flex";
+  shuffleLabel.style.alignItems = "center";
+  shuffleLabel.style.gap = "5px";
+  shuffleLabel.style.cursor = "pointer";
+  const shuffleCheckbox = document.createElement("input");
+  shuffleCheckbox.type = "checkbox";
+  shuffleCheckbox.id = "chainShuffleToggle";
+  shuffleLabel.appendChild(shuffleCheckbox);
+  shuffleLabel.appendChild(document.createTextNode("🔀 Shuffle"));
+
+  optionsRow.appendChild(loopLabel);
+  optionsRow.appendChild(shuffleLabel);
+  chainSection.appendChild(optionsRow);
+
+  // Phase 11.3.1: Progress indicator
+  const progressContainer = document.createElement("div");
+  progressContainer.style.marginBottom = "8px";
+  const progressLabel = document.createElement("div");
+  progressLabel.textContent = "Progress: —";
+  progressLabel.id = "chainProgressLabel";
+  progressLabel.style.fontSize = "10px";
+  progressLabel.style.color = "#aaa";
+  progressLabel.style.marginBottom = "3px";
+  const progressBar = document.createElement("div");
+  progressBar.style.width = "100%";
+  progressBar.style.height = "8px";
+  progressBar.style.background = "#333";
+  progressBar.style.border = "1px solid #555";
+  progressBar.style.position = "relative";
+  const progressFill = document.createElement("div");
+  progressFill.id = "chainProgressFill";
+  progressFill.style.width = "0%";
+  progressFill.style.height = "100%";
+  progressFill.style.background = "#00ff00";
+  progressFill.style.transition = "width 0.2s linear"; // Phase 11.3.2: Smoother animation
+  progressBar.appendChild(progressFill);
+  progressContainer.appendChild(progressLabel);
+  progressContainer.appendChild(progressBar);
+  progressContainer.id = "chainProgressContainer"; // Phase 11.3.2: For visibility control
+  progressContainer.style.display = "none"; // Phase 11.3.2: Hidden by default
+  chainSection.appendChild(progressContainer);
+
+  // Start/Stop buttons
+  const btnRow = document.createElement("div");
+  btnRow.style.display = "flex";
+  btnRow.style.gap = "8px";
+  btnRow.style.marginBottom = "8px";
+  const startBtn = document.createElement("button");
+  startBtn.id = "chainStartBtn"; // Phase 11.3.2: For button state management
+  startBtn.textContent = "Start Chain";
+  startBtn.style.cssText = 'flex: 1; padding: 6px; background: #00ff00; color: black; border: none; cursor: pointer; font-weight: bold; font-size: 11px;';
+  const stopBtn = document.createElement("button");
+  stopBtn.id = "chainStopBtn"; // Phase 11.3.2: For button state management
+  stopBtn.textContent = "Stop";
+  stopBtn.style.cssText = 'flex: 1; padding: 6px; background: #ff6666; color: black; border: none; cursor: pointer; font-weight: bold; font-size: 11px;';
+  stopBtn.disabled = true; // Phase 11.3.2: Disabled by default
+  stopBtn.style.opacity = "0.5";
+  stopBtn.style.cursor = "not-allowed";
+  btnRow.appendChild(startBtn);
+  btnRow.appendChild(stopBtn);
+  chainSection.appendChild(btnRow);
+
+  // Phase 11.3.1: Save chain section
+  const saveChainRow = document.createElement("div");
+  saveChainRow.style.display = "flex";
+  saveChainRow.style.gap = "5px";
+  saveChainRow.style.marginBottom = "8px";
+  const saveChainInput = document.createElement("input");
+  saveChainInput.type = "text";
+  saveChainInput.placeholder = "Chain name...";
+  saveChainInput.style.cssText = 'flex: 1; padding: 4px; background: #333; color: white; border: 1px solid #555; font-size: 10px;';
+  const saveChainBtn = document.createElement("button");
+  saveChainBtn.textContent = "💾 Save Chain";
+  saveChainBtn.style.cssText = 'padding: 4px 8px; background: #ff9900; color: black; border: none; cursor: pointer; font-weight: bold; font-size: 10px;';
+  saveChainRow.appendChild(saveChainInput);
+  saveChainRow.appendChild(saveChainBtn);
+  chainSection.appendChild(saveChainRow);
+
+  // Phase 11.3.1: Saved chains list
+  const savedChainsTitle = document.createElement("div");
+  savedChainsTitle.textContent = "Saved Chains:";
+  savedChainsTitle.style.cssText = 'font-size: 10px; color: #aaa; margin-bottom: 5px;';
+  chainSection.appendChild(savedChainsTitle);
+
+  const savedChainsList = document.createElement("div");
+  savedChainsList.id = "savedChainsList";
+  savedChainsList.style.cssText = 'max-height: 100px; overflow-y: auto; background: #222; border: 1px solid #555; padding: 5px; margin-bottom: 8px;';
+  chainSection.appendChild(savedChainsList);
+
+  panel.appendChild(chainSection);
+
+  // Populate the checkbox list from current presets
+  function refreshChainList() {
+    chainList.innerHTML = "";
+    const names = window.__PRESET_NAMES__ ? window.__PRESET_NAMES__() : [];
+    if (names.length === 0) {
+      const emptyMsg = document.createElement("div");
+      emptyMsg.textContent = "No presets available";
+      emptyMsg.style.cssText = 'color: #888; font-size: 10px; padding: 5px;';
+      chainList.appendChild(emptyMsg);
+      return;
+    }
+    names.forEach(name => {
+      const row = document.createElement("label");
+      row.style.display = "flex";
+      row.style.alignItems = "center";
+      row.style.gap = "6px";
+      row.style.cursor = "pointer";
+      row.style.fontSize = "10px";
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.value = name;
+      row.appendChild(cb);
+      row.appendChild(document.createTextNode(name));
+      chainList.appendChild(row);
+    });
+  }
+
+  // Phase 11.3.1: Refresh saved chains list
+  function refreshSavedChainsList() {
+    savedChainsList.innerHTML = "";
+    // Import listChains dynamically to avoid circular dependency
+    import('./presetRouter.js').then(({ listChains, getChainData }) => {
+      const chainNames = listChains();
+      if (chainNames.length === 0) {
+        const emptyMsg = document.createElement("div");
+        emptyMsg.textContent = "No saved chains";
+        emptyMsg.style.cssText = 'color: #888; font-size: 9px; padding: 3px;';
+        savedChainsList.appendChild(emptyMsg);
+        return;
+      }
+      chainNames.forEach(name => {
+        const chainData = getChainData(name);
+        const row = document.createElement("div");
+        row.style.cssText = 'display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; font-size: 9px;';
+
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = `${name} (${chainData.presets.length})`;
+        nameSpan.style.cssText = 'flex: 1; color: #ccc;';
+        nameSpan.title = `Presets: ${chainData.presets.join(", ")}\nDuration: ${chainData.duration}ms\nLoop: ${chainData.loop}\nShuffle: ${chainData.shuffle}`;
+
+        const loadBtn = document.createElement("button");
+        loadBtn.textContent = "Load";
+        loadBtn.style.cssText = 'padding: 2px 6px; background: #00aaff; color: white; border: none; cursor: pointer; font-size: 8px; margin-right: 3px;';
+        loadBtn.addEventListener("click", () => {
+          console.log("🔗 Loading chain:", name);
+          notifyHUDUpdate({ presetAction: "chain:load", chainName: name });
+        });
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.textContent = "×";
+        deleteBtn.style.cssText = 'padding: 2px 6px; background: #ff6666; color: white; border: none; cursor: pointer; font-size: 8px;';
+        deleteBtn.addEventListener("click", () => {
+          if (confirm(`Delete chain "${name}"?`)) {
+            console.log("🔗 Deleting chain:", name);
+            notifyHUDUpdate({ presetAction: "chain:delete", chainName: name });
+            refreshSavedChainsList();
+          }
+        });
+
+        row.appendChild(nameSpan);
+        row.appendChild(loadBtn);
+        row.appendChild(deleteBtn);
+        savedChainsList.appendChild(row);
+      });
+    });
+  }
+
+  // Wire buttons
+  startBtn.addEventListener("click", () => {
+    const selected = [...chainList.querySelectorAll("input[type=checkbox]:checked")].map(x => x.value);
+
+    // Phase 11.3.2: Validate preset selection
+    if (selected.length === 0) {
+      alert("⚠️ No presets selected. Please select at least one preset before starting a chain.");
+      return;
+    }
+
+    const duration = Number(durInput.value) || 2000;
+    const loop = loopCheckbox.checked;
+    const shuffle = shuffleCheckbox.checked;
+    console.log("🔗 HUD start chain:", selected, duration, { loop, shuffle });
+    notifyHUDUpdate({
+      presetAction: "chain:start",
+      chainPresets: selected,
+      chainDuration: duration,
+      chainLoop: loop,
+      chainShuffle: shuffle
+    });
+  });
+  stopBtn.addEventListener("click", () => {
+    console.log("🔗 HUD stop chain");
+    notifyHUDUpdate({ presetAction: "chain:stop" });
+  });
+
+  // Phase 11.3.1: Save chain button
+  saveChainBtn.addEventListener("click", () => {
+    const chainName = saveChainInput.value.trim();
+    if (!chainName) {
+      console.warn("🔗 Chain name is empty");
+      return;
+    }
+    const selected = [...chainList.querySelectorAll("input[type=checkbox]:checked")].map(x => x.value);
+    if (selected.length < 2) {
+      console.warn("🔗 Need at least 2 presets to save a chain");
+      return;
+    }
+    const duration = Number(durInput.value) || 2000;
+    const loop = loopCheckbox.checked;
+    const shuffle = shuffleCheckbox.checked;
+    console.log("🔗 HUD save chain:", chainName, selected, { duration, loop, shuffle });
+    notifyHUDUpdate({
+      presetAction: "chain:save",
+      chainName: chainName,
+      chainPresets: selected,
+      chainDuration: duration,
+      chainLoop: loop,
+      chainShuffle: shuffle
+    });
+    saveChainInput.value = "";
+    setTimeout(refreshSavedChainsList, 100);
+  });
+
+  // Phase 11.3.2: Update progress indicator with continuous interpolation tracking
+  function updateChainProgress() {
+    const progressContainer = document.getElementById("chainProgressContainer");
+    const progressLabel = document.getElementById("chainProgressLabel");
+    const progressFill = document.getElementById("chainProgressFill");
+    const statusBadge = document.getElementById("chainStatusBadge");
+
+    if (!progressLabel || !progressFill || !progressContainer || !statusBadge) return;
+
+    if (!state.morphChain.active) {
+      // Hide progress container when not running
+      progressContainer.style.display = "none";
+      progressLabel.textContent = "Step —";
+      progressFill.style.width = "0%";
+
+      // Update status badge
+      statusBadge.textContent = "⏹ Stopped";
+      statusBadge.style.background = "#333";
+      statusBadge.style.color = "#888";
+
+      // Phase 11.3.2: Update button states
+      const startBtn = document.querySelector('#chainStartBtn');
+      const stopBtn = document.querySelector('#chainStopBtn');
+      if (startBtn && stopBtn) {
+        startBtn.disabled = false;
+        startBtn.style.opacity = "1";
+        startBtn.style.cursor = "pointer";
+
+        stopBtn.disabled = true;
+        stopBtn.style.opacity = "0.5";
+        stopBtn.style.cursor = "not-allowed";
+      }
+      return;
+    }
+
+    const { currentIndex, presets, duration, stepStartTime } = state.morphChain;
+    const totalSteps = presets.length;
+
+    if (!presets || totalSteps === 0) {
+      progressContainer.style.display = "none";
+      return;
+    }
+
+    // Time since this step began
+    const elapsed = performance.now() - (stepStartTime || performance.now());
+    const t = Math.min(elapsed / duration, 1.0);
+
+    // Overall progress = finished steps + current interpolation progress
+    const progress = (currentIndex + t) / totalSteps;
+
+    const percent = Math.round(progress * 100);
+    const step = Math.min(currentIndex + 1, totalSteps);
+
+    // ✅ No variable shadowing — directly modify DOM elements
+    progressFill.style.width = `${percent}%`;
+    progressLabel.textContent = `Step ${step}/${totalSteps} (${percent}%)`;
+    progressContainer.style.display = "block";
+
+    // Update status badge
+    statusBadge.textContent = "🟢 Running";
+    statusBadge.style.background = "#004400";
+    statusBadge.style.color = "#00ff00";
+
+    // Phase 11.3.2: Update button states
+    const startBtn = document.querySelector('#chainStartBtn');
+    const stopBtn = document.querySelector('#chainStopBtn');
+    if (startBtn && stopBtn) {
+      startBtn.disabled = true;
+      startBtn.style.opacity = "0.5";
+      startBtn.style.cursor = "not-allowed";
+
+      stopBtn.disabled = false;
+      stopBtn.style.opacity = "1";
+      stopBtn.style.cursor = "pointer";
+    }
+  }
+
+  // Phase 11.3.2: Toast notification system
+  const toastContainer = document.createElement("div");
+  toastContainer.id = "chainToastContainer";
+  toastContainer.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 10px; pointer-events: none;';
+  document.body.appendChild(toastContainer);
+
+  function showToast(message, duration = 3000) {
+    const toast = document.createElement("div");
+    toast.style.cssText = 'background: rgba(0, 0, 0, 0.9); color: white; padding: 12px 16px; border-radius: 4px; border-left: 4px solid #ff9900; font-size: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); max-width: 300px; pointer-events: auto; animation: slideInRight 0.3s ease;';
+    toast.textContent = message;
+    toastContainer.appendChild(toast);
+
+    setTimeout(() => {
+      toast.style.opacity = "0";
+      toast.style.transition = "opacity 0.3s ease";
+      setTimeout(() => toast.remove(), 300);
+    }, duration);
+  }
+
+  // Add CSS animation for toast
+  const toastStyle = document.createElement('style');
+  toastStyle.textContent = `
+    @keyframes slideInRight {
+      from {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+  `;
+  document.head.appendChild(toastStyle);
+
+  // Phase 11.3.2: Listen for chain events and show toasts
+  window.addEventListener("chainStarted", (e) => {
+    const { presets } = e.detail;
+    showToast(`🔗 Chain started: ${presets.join(" → ")}`);
+  });
+
+  window.addEventListener("chainStepComplete", (e) => {
+    const { next } = e.detail;
+    showToast(`✅ Step complete → Next: ${next}`);
+  });
+
+  window.addEventListener("chainLoopRestarted", () => {
+    showToast("🔁 Loop restarted");
+  });
+
+  window.addEventListener("chainFinished", () => {
+    showToast("🔗 Chain finished");
+  });
+
+  // Update progress every 100ms
+  setInterval(updateChainProgress, 100);
+
+  // Initial populate + whenever presets change, call refreshChainList()
+  refreshChainList();
+  refreshSavedChainsList();
+  document.addEventListener("presetsImported", refreshChainList);
+  document.addEventListener("presetSaved", refreshChainList);
+  document.addEventListener("presetDeleted", refreshChainList);
 
   // Phase 11.2.5: Import/Export buttons
   const importExportContainer = document.createElement('div');
