@@ -1,4 +1,5 @@
 import { state } from './state.js';
+import { initParticles } from './particles.js';
 
 console.log("💾 presets.js loaded");
 
@@ -18,6 +19,30 @@ export function savePreset(name, state, category = 'Uncategorized', tags = []) {
 
   const presets = getPresetsFromStorage();
 
+  // Phase 11.2.9: Safety check for colorLayers
+  if (!state.colorLayers) {
+    console.warn("⚠️ savePreset(): colorLayers missing in state", state);
+    return false;
+  }
+
+  // Phase 11.2.9: Helper to safely extract layer properties with defaults
+  const safeLayer = (layer) => {
+    if (layer === "geometry") {
+      return {
+        baseColor: state.colorLayers?.geometry?.baseColor ?? "#ffffff",
+        audioColor: state.colorLayers?.geometry?.audioColor ?? "#000000",
+        audioIntensity: state.colorLayers?.geometry?.audioIntensity ?? 1.0
+        // geometry has NO opacity property
+      };
+    }
+    return {
+      baseColor: state.colorLayers?.[layer]?.baseColor ?? "#ffffff",
+      audioColor: state.colorLayers?.[layer]?.audioColor ?? "#000000",
+      audioIntensity: state.colorLayers?.[layer]?.audioIntensity ?? 1.0,
+      opacity: state?.[layer]?.opacity ?? 1.0
+    };
+  };
+
   const presetData = {
     name,
     timestamp: new Date().toISOString(),
@@ -28,47 +53,56 @@ export function savePreset(name, state, category = 'Uncategorized', tags = []) {
     color: state.color,
     idleSpin: state.idleSpin,
     scale: state.scale,
+
+    // Phase 11.2.9: ColorLayers with safeLayer helper
+    colorLayers: {
+      geometry: safeLayer("geometry"),
+      vessel: safeLayer("vessel"),
+      shadows: safeLayer("shadows"),
+      particles: safeLayer("particles")
+    },
+
     vessel: {
-      opacity: state.vessel.opacity,
-      scale: state.vessel.scale,
-      color: state.vessel.color,
-      enabled: state.vessel.enabled,
-      spinEnabled: state.vessel.spinEnabled,   // NEW
-      spinSpeed: state.vessel.spinSpeed,       // NEW
-      layout: state.vessel.layout,             // NEW
-      layoutIndex: state.vessel.layoutIndex,   // NEW
-      audioSmoothing: state.vessel.audioSmoothing,  // NEW
-      hueShiftRange: state.vessel.hueShiftRange     // NEW
+      opacity: state.vessel?.opacity ?? 0.5,
+      scale: state.vessel?.scale ?? 1.0,
+      color: state.vessel?.color ?? '#00ff00',
+      enabled: state.vessel?.enabled ?? true,
+      spinEnabled: state.vessel?.spinEnabled ?? false,
+      spinSpeed: state.vessel?.spinSpeed ?? 0.0035,
+      layout: state.vessel?.layout ?? 'lattice',
+      layoutIndex: state.vessel?.layoutIndex ?? 0,
+      audioSmoothing: state.vessel?.audioSmoothing ?? 0.7,
+      hueShiftRange: state.vessel?.hueShiftRange ?? 20
     },
     shadows: {
-      enabled: state.shadows.enabled,
-      ground: state.shadows.ground,
-      backdrop: state.shadows.backdrop,
-      opacity: state.shadows.opacity,
-      color: state.shadows.color
+      enabled: state.shadows?.enabled ?? true,
+      ground: state.shadows?.ground ?? true,
+      backdrop: state.shadows?.backdrop ?? true,
+      opacity: state.shadows?.opacity ?? 0.25,
+      color: state.shadows?.color ?? '#000000'
     },
     sprites: {
-      enabled: state.sprites.enabled,
-      count: state.sprites.count
+      enabled: state.sprites?.enabled ?? true,
+      count: state.sprites?.count ?? 200
     },
     particles: {
-      enabled: state.particles.enabled,
-      count: state.particles.count,
-      layout: state.particles.layout,
-      hue: state.particles.hue,
-      size: state.particles.size,
-      opacity: state.particles.opacity,
-      organicMotion: state.particles.organicMotion,
-      organicStrength: state.particles.organicStrength || 0.2,  // Phase 4.2
-      audioReactiveHue: state.particles.audioReactiveHue,
-      velocity: state.particles.velocity,
-      orbitalSpeed: state.particles.orbitalSpeed || 0.05,  // Phase 4.2a: gentle default
-      motionSmoothness: state.particles.motionSmoothness,
-      spread: state.particlesMotion?.spread || 1.0,  // Legacy spread only
-      minCount: state.particles.minCount || 1000,    // Phase 4.4: adjusted ranges
-      maxCount: state.particles.maxCount || 10000,
-      minSize: state.particles.minSize || 0.005,
-      maxSize: state.particles.maxSize || 0.1
+      enabled: state.particles?.enabled ?? true,
+      count: state.particles?.count ?? 5000,
+      layout: state.particles?.layout ?? 'cube',
+      hue: state.particles?.hue ?? 0,
+      size: state.particles?.size ?? 0.02,
+      opacity: state.particles?.opacity ?? 0.5,
+      organicMotion: state.particles?.organicMotion ?? false,
+      organicStrength: state.particles?.organicStrength ?? 0.2,
+      audioReactiveHue: state.particles?.audioReactiveHue ?? false,
+      velocity: state.particles?.velocity ?? 0.05,
+      orbitalSpeed: state.particles?.orbitalSpeed ?? 0.05,
+      motionSmoothness: state.particles?.motionSmoothness ?? 0.5,
+      spread: state.particlesMotion?.spread ?? 1.0,
+      minCount: state.particles?.minCount ?? 1000,
+      maxCount: state.particles?.maxCount ?? 10000,
+      minSize: state.particles?.minSize ?? 0.005,
+      maxSize: state.particles?.maxSize ?? 0.1
     }
   };
 
@@ -195,12 +229,11 @@ export function loadPreset(name) {
     // Note: HUD sliders are now controlled via HUD update callbacks, no manual sync needed
 
     // Reinitialize particles with new layout
-    if (state.particles.enabled) {
-      import('./particles.js').then(({ reinitParticles }) => {
-        import('./geometry.js').then(({ scene }) => {
-          reinitParticles(scene);
-        });
-      });
+    if (state?.particles?.enabled) {
+      initParticles(state.particles);
+      console.log("✨ Particles reinitialized via initParticles");
+    } else if (!state?.particles) {
+      console.warn("⚠️ No state.particles found when loading preset");
     }
   } else {
     // Default to safe values for legacy presets (Phase 4.4: higher density/smaller particles)
@@ -222,6 +255,33 @@ export function loadPreset(name) {
       velocity: 0.5,
       spread: 1.0
     };
+  }
+
+  // Phase 11.2.9: Load colorLayers (with backward compatibility)
+  if (preset.colorLayers) {
+    if (preset.colorLayers.geometry) {
+      state.colorLayers.geometry.baseColor = preset.colorLayers.geometry.baseColor ?? '#00ff00';
+      state.colorLayers.geometry.audioColor = preset.colorLayers.geometry.audioColor ?? '#ff0000';
+      state.colorLayers.geometry.audioIntensity = preset.colorLayers.geometry.audioIntensity ?? 0.5;
+    }
+    if (preset.colorLayers.vessel) {
+      state.colorLayers.vessel.baseColor = preset.colorLayers.vessel.baseColor ?? '#00ff00';
+      state.colorLayers.vessel.audioColor = preset.colorLayers.vessel.audioColor ?? '#00ffff';
+      state.colorLayers.vessel.audioIntensity = preset.colorLayers.vessel.audioIntensity ?? 0.3;
+    }
+    if (preset.colorLayers.shadows) {
+      state.colorLayers.shadows.baseColor = preset.colorLayers.shadows.baseColor ?? '#000000';
+      state.colorLayers.shadows.audioColor = preset.colorLayers.shadows.audioColor ?? '#333333';
+      state.colorLayers.shadows.audioIntensity = preset.colorLayers.shadows.audioIntensity ?? 0.2;
+    }
+    if (preset.colorLayers.particles) {
+      state.colorLayers.particles.baseColor = preset.colorLayers.particles.baseColor ?? '#ffff00';
+      state.colorLayers.particles.audioColor = preset.colorLayers.particles.audioColor ?? '#ff00ff';
+      state.colorLayers.particles.audioIntensity = preset.colorLayers.particles.audioIntensity ?? 0.7;
+    }
+    console.log("💾 ColorLayers loaded from preset");
+  } else {
+    console.log("💾 Legacy preset: colorLayers not found, using defaults");
   }
 
   currentPresetName = name;
@@ -259,6 +319,11 @@ export function deletePreset(name) {
 export function listPresets() {
   const presets = getPresetsFromStorage();
   return Object.keys(presets).sort();
+}
+
+// Phase 11.3.0: Expose listPresets as window helper for HUD
+if (typeof window !== "undefined") {
+  window.__PRESET_NAMES__ = listPresets;
 }
 
 export function getCurrentPresetName() {

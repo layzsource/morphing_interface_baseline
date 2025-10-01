@@ -167,7 +167,32 @@ export const state = {
   debug: {
     showWireframe: false,
     showRibbon: false
+  },
+
+  // Phase 11.2.8: Preset interpolation system
+  interpolation: {
+    enabled: true,          // User toggle for interpolation
+    active: false,          // Currently interpolating
+    duration: 2000,         // Interpolation duration in ms
+    startTime: null,        // performance.now() when interpolation started
+    startState: null,       // Snapshot of state at interpolation start
+    targetState: null       // Target preset state to interpolate towards
   }
+};
+
+// Phase 11.3.0: Morph Chain
+export const morphChain = {
+  presets: [],       // array of preset names (strings)
+  currentIndex: 0,   // index into presets (target)
+  active: false,     // chain running?
+  duration: 2000,    // ms per step; mirrors interpolation.duration by default
+  // Phase 11.3.1: Enhanced features
+  loop: false,       // repeat chain continuously
+  shuffle: false,    // randomize order each run
+  savedChains: [],   // array of saved chain configs: { name, presets, duration, loop, shuffle }
+  currentChainName: null,  // name of currently running saved chain (if any)
+  // Phase 11.3.2: Progress tracking
+  stepStartTime: null  // performance.now() when current step started
 };
 
 // Utility function to normalize morph weights
@@ -306,6 +331,36 @@ export function blendColors(baseHex, audioHex, intensity, audioLevel) {
   };
 
   return rgbToHex(finalRGB);
+}
+
+// Phase 11.2.8: Interpolation helper functions
+// Linear interpolation between two values
+export function lerp(a, b, t) {
+  return a + (b - a) * t;
+}
+
+// Interpolate between two hex colors
+export function lerpColor(colorA, colorB, t) {
+  const rgbA = hexToRGB(colorA);
+  const rgbB = hexToRGB(colorB);
+
+  const lerpedRGB = {
+    r: lerp(rgbA.r, rgbB.r, t),
+    g: lerp(rgbA.g, rgbB.g, t),
+    b: lerp(rgbA.b, rgbB.b, t)
+  };
+
+  return rgbToHex(lerpedRGB);
+}
+
+// Interpolate between two arrays (for morphBaseWeights)
+export function lerpArray(arrA, arrB, t) {
+  return arrA.map((a, i) => lerp(a, arrB[i] || 0, t));
+}
+
+// Ease-in-out cubic easing function
+export function easeInOutCubic(t) {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
 console.log("🎯 State initialized:", state);

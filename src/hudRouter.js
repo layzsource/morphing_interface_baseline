@@ -560,10 +560,24 @@ onHUDUpdate((update) => {
     });
   }
 
-  // Handle preset actions - these will need to be routed to the preset system
+  // Handle preset actions - these will be routed to the preset system
   if (update.presetAction !== undefined) {
     // This will be handled by the preset router
-    console.log("📟 Preset action:", update.presetAction, update.presetName);
+    if (update.presetAction === 'chain:start') {
+      const loopMsg = update.chainLoop ? ' [LOOP]' : '';
+      const shuffleMsg = update.chainShuffle ? ' [SHUFFLE]' : '';
+      console.log(`📟 Chain action: start${loopMsg}${shuffleMsg}`, update.chainPresets, `(${update.chainDuration}ms)`);
+    } else if (update.presetAction === 'chain:stop') {
+      console.log("📟 Chain action: stop");
+    } else if (update.presetAction === 'chain:save') {
+      console.log("📟 Chain action: save", update.chainName, `(${update.chainPresets?.length || 0} presets)`);
+    } else if (update.presetAction === 'chain:load') {
+      console.log("📟 Chain action: load", update.chainName);
+    } else if (update.presetAction === 'chain:delete') {
+      console.log("📟 Chain action: delete", update.chainName);
+    } else {
+      console.log("📟 Preset action:", update.presetAction, update.presetName);
+    }
   }
 });
 

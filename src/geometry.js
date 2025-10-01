@@ -7,6 +7,7 @@ import { updateAudio, getEffectiveAudio } from './audio.js'; // Audio Gating Fix
 import { updateVessel, renderShadowProjection } from './vessel.js';
 import { getShadowBox } from './main.js'; // Phase 2.3.3
 import { createPostProcessing } from './postprocessing.js'; // Dual Trail System
+import { updateInterpolation, updateChain } from './presetRouter.js'; // Phase 11.2.8, 11.3.0
 
 console.log("🔺 geometry.js loaded");
 
@@ -336,6 +337,12 @@ export { morphMesh };
 // Main animation loop
 function animate() {
   requestAnimationFrame(animate);
+
+  // Phase 11.2.8: Update interpolation (modifies base state)
+  updateInterpolation();
+
+  // Phase 11.3.0: Update morph chain (layers on top of interpolation)
+  updateChain();
 
   // Calculate rotation speeds from state
   const rotX = (state.idleSpin ? 0.01 : 0) + state.rotationX;
