@@ -8,6 +8,7 @@ import { updateVessel, renderShadowProjection } from './vessel.js';
 import { getShadowBox } from './main.js'; // Phase 2.3.3
 import { createPostProcessing } from './postprocessing.js'; // Dual Trail System
 import { updateInterpolation, updateChain } from './presetRouter.js'; // Phase 11.2.8, 11.3.0
+import { updateVisual } from './visual.js'; // Phase 11.6.0
 
 console.log("🔺 geometry.js loaded");
 
@@ -325,7 +326,16 @@ function updateGeometryFromState() {
     }
   }
 
-  material.color.set(finalColor);
+  // Phase 11.6.0: Apply texture to morph if toggle ON
+  if (state.useTextureOnMorph && state.texture) {
+    material.map = state.texture;
+    material.color.set(0xffffff); // ensures texture visible
+    material.needsUpdate = true;
+  } else {
+    material.map = null;
+    material.color.set(finalColor);
+    material.needsUpdate = true;
+  }
 
   // Update lighting from state
   if (ambientLight) {
@@ -438,6 +448,9 @@ function animate() {
 
   // Update sprites
   updateSprites();
+
+  // Phase 11.6.0: Update background visual
+  updateVisual();
 
   // Update vessel (uses getEffectiveAudio() internally)
   updateVessel();

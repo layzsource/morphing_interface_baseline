@@ -1,4 +1,5 @@
 import { state } from './state.js';
+import * as THREE from 'three'; // Phase 11.6.0: for TextureLoader
 
 console.log("📟 hud.js loaded");
 
@@ -1549,6 +1550,51 @@ function createHUDPanel() {
   visualTitle.textContent = '🎨 Visual Polish';
   visualTitle.style.cssText = 'margin: 0 0 10px 0; color: #ff66ff; font-size: 12px;';
   tabContainers['Visual'].appendChild(visualTitle);
+
+  // Phase 11.6.0: Image Upload + Texture Toggle
+  const uploadInput = document.createElement("input");
+  uploadInput.type = "file";
+  uploadInput.accept = "image/*";
+  uploadInput.style.display = "none";
+
+  const uploadButton = document.createElement("button");
+  uploadButton.innerText = "Upload Image";
+  uploadButton.style.cssText = 'margin: 10px 0; padding: 8px 12px; background: #444; color: white; border: 1px solid #666; border-radius: 4px; cursor: pointer;';
+  uploadButton.onclick = () => uploadInput.click();
+
+  uploadInput.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const url = URL.createObjectURL(file);
+    const loader = new THREE.TextureLoader();
+    loader.load(
+      url,
+      (texture) => {
+        state.texture = texture;
+        console.log("🖼️ Image loaded →", file.name);
+      },
+      undefined,
+      (err) => console.error("❌ Texture load failed:", err)
+    );
+  });
+
+  const morphToggle = document.createElement("input");
+  morphToggle.type = "checkbox";
+  morphToggle.checked = state.useTextureOnMorph;
+  morphToggle.onchange = (e) => {
+    state.useTextureOnMorph = e.target.checked;
+    console.log("🎛️ Morph texture:", state.useTextureOnMorph ? "ON" : "OFF");
+  };
+
+  const morphLabel = document.createElement("label");
+  morphLabel.innerText = "Apply texture to morph shape";
+  morphLabel.style.cssText = 'display: block; margin: 10px 0; cursor: pointer;';
+  morphLabel.prepend(morphToggle);
+
+  tabContainers['Visual'].appendChild(uploadButton);
+  tabContainers['Visual'].appendChild(uploadInput);
+  tabContainers['Visual'].appendChild(morphLabel);
 
   // Ambient light intensity
   const ambientLightControl = createSliderControl('Ambient Intensity', 0.4, 0.0, 2.0, 0.1, (value) => {

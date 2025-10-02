@@ -23,6 +23,7 @@ import { initPresets, createDefaultPresets, listPresets, getCurrentPresetName } 
 import { initAudio, getAudioValues } from './audio.js';
 import { state } from './state.js';
 import { SHADOW_LAYER } from './constants.js'; // Phase 2.3.3
+import { initVisual, updateVisual } from './visual.js'; // Phase 11.6.0
 
 // Import the new router modules to set up the signal routing
 import './midiRouter.js';
@@ -96,6 +97,9 @@ initShadows(scene);
 initSprites(scene);
 
 initVessel(scene, renderer, camera);
+
+// Phase 11.6.0: Initialize background plane
+initVisual(scene);
 
 // Phase 2.3.3SS: Overwrite stub with real ShadowBox instance (currently failsafe/disabled)
 shadowBox = new ShadowBox(scene, renderer);
