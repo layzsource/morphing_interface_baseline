@@ -2583,6 +2583,88 @@ function createHUDPanel() {
   rainbowModeToggle.title = 'Apply rainbow hue shift per ring';
   tabContainers['Visual'].appendChild(rainbowModeToggle);
 
+  // Phase 11.7.36: Color Palette dropdown
+  const paletteLabel = document.createElement("label");
+  paletteLabel.textContent = "Color Palette";
+  paletteLabel.style.cssText = 'display: block; font-size: 11px; margin-top: 10px; margin-bottom: 4px; color: #ff66ff;';
+  tabContainers['Visual'].appendChild(paletteLabel);
+
+  const paletteDropdown = document.createElement("select");
+  paletteDropdown.style.cssText = 'width: 100%; padding: 6px; background: rgba(0,0,0,0.5); border: 1px solid #ff66ff; color: #ff66ff; border-radius: 4px; margin-bottom: 10px; font-size: 11px;';
+
+  const palettes = [
+    { value: 'Classic', label: '🎨 Classic (magenta/pink gradient)' },
+    { value: 'Warm', label: '🔥 Warm (orange/red/gold)' },
+    { value: 'Cool', label: '❄️ Cool (cyan/blue gradient)' },
+    { value: 'Neon', label: '⚡ Neon (vibrant pink/cyan/green)' },
+    { value: 'Earth', label: '🌍 Earth (brown/tan/beige)' },
+    { value: 'Rainbow', label: '🌈 Rainbow (ROYGBIV spectrum)' }
+  ];
+
+  palettes.forEach(palette => {
+    const option = document.createElement("option");
+    option.value = palette.value;
+    option.textContent = palette.label;
+    if (palette.value === 'Classic') option.selected = true;
+    paletteDropdown.appendChild(option);
+  });
+
+  paletteDropdown.addEventListener("change", () => {
+    const palette = paletteDropdown.value;
+    notifyHUDUpdate({ mandala: { palette: palette } });
+    console.log(`📟 HUD → Palette: ${palette}`);
+  });
+  paletteDropdown.title = 'Apply predefined color palette to all rings';
+  tabContainers['Visual'].appendChild(paletteDropdown);
+
+  // Phase 11.7.35: Interactive Mode toggle
+  const interactiveModeToggle = createToggleControl('Interactive Mode', false, (value) => {
+    notifyHUDUpdate({ mandala: { interactiveMode: value } });
+    console.log(`📟 HUD → Interactive mode: ${value ? 'ON' : 'OFF'}`);
+  });
+  interactiveModeToggle.title = 'Enable click/drag interaction with mandala';
+  tabContainers['Visual'].appendChild(interactiveModeToggle);
+
+  // Phase 11.7.35: Manual Rotation slider
+  const manualRotationControl = createSliderControl('Manual Rotation', 0, -180, 180, 5, (value) => {
+    const radians = (value * Math.PI) / 180;
+    notifyHUDUpdate({ mandala: { manualRotation: radians } });
+    console.log(`📟 HUD → Manual rotation: ${value}°`);
+  });
+  manualRotationControl.title = 'Manual rotation offset (-180° to 180°)';
+  tabContainers['Visual'].appendChild(manualRotationControl);
+
+  // Phase 11.7.35: Ring Selection dropdown
+  const ringSelectLabel = document.createElement("label");
+  ringSelectLabel.textContent = "Select Ring";
+  ringSelectLabel.style.cssText = 'display: block; font-size: 11px; margin-top: 10px; margin-bottom: 4px; color: #ff66ff;';
+  tabContainers['Visual'].appendChild(ringSelectLabel);
+
+  const ringSelectDropdown = document.createElement("select");
+  ringSelectDropdown.style.cssText = 'width: 100%; padding: 6px; background: rgba(0,0,0,0.5); border: 1px solid #ff66ff; color: #ff66ff; border-radius: 4px; margin-bottom: 10px; font-size: 11px;';
+
+  // None option + rings 0-7
+  const noneOption = document.createElement("option");
+  noneOption.value = "-1";
+  noneOption.textContent = "None (deselect)";
+  noneOption.selected = true;
+  ringSelectDropdown.appendChild(noneOption);
+
+  for (let i = 0; i < 8; i++) {
+    const option = document.createElement("option");
+    option.value = i.toString();
+    option.textContent = `Ring ${i} ${i === 0 ? '(center)' : ''}`;
+    ringSelectDropdown.appendChild(option);
+  }
+
+  ringSelectDropdown.addEventListener("change", () => {
+    const ringIndex = parseInt(ringSelectDropdown.value);
+    notifyHUDUpdate({ mandala: { selectedRing: ringIndex } });
+    console.log(`📟 HUD → Ring selected: ${ringIndex === -1 ? 'None' : ringIndex}`);
+  });
+  ringSelectDropdown.title = 'Select ring for interaction';
+  tabContainers['Visual'].appendChild(ringSelectDropdown);
+
   // Phase 11.7.29: Emoji Picker (radio buttons)
   const emojiPickerLabel = document.createElement("label");
   emojiPickerLabel.textContent = "Mandala Emoji";

@@ -24,6 +24,16 @@ const MUSICAL_SCALES = {
 // Circle of Fifths ordering (chromatic positions)
 const CIRCLE_OF_FIFTHS = [0, 7, 2, 9, 4, 11, 6, 1, 8, 3, 10, 5];
 
+// Phase 11.7.36: Color palettes for mandala rings
+const COLOR_PALETTES = {
+  Classic: ['#ff66ff', '#ff99ff', '#ffccff', '#ffddff', '#ffeeff', '#fff0ff', '#fff5ff', '#fffaff'],
+  Warm: ['#ff4500', '#ff6347', '#ff7f50', '#ffa07a', '#ffb347', '#ffc966', '#ffd700', '#ffe066'],
+  Cool: ['#00ffff', '#00e5ff', '#00ccff', '#00b3ff', '#0099ff', '#0080ff', '#0066ff', '#004dff'],
+  Neon: ['#ff00ff', '#ff00cc', '#ff0099', '#ff0066', '#00ffff', '#00ff99', '#00ff00', '#ccff00'],
+  Earth: ['#8b4513', '#a0522d', '#cd853f', '#daa520', '#d2b48c', '#f4a460', '#deb887', '#ffe4b5'],
+  Rainbow: ['#ff0000', '#ff7f00', '#ffff00', '#00ff00', '#0000ff', '#4b0082', '#9400d3', '#ff00ff']
+};
+
 export class MandalaController {
   constructor(scene, options = {}) {
     this.scene = scene;
@@ -51,6 +61,17 @@ export class MandalaController {
     this.globalScale = options.globalScale ?? 1.0; // Global scale multiplier (0.5-2.0)
     this.layout = options.layout ?? 'Classic'; // Layout preset: 'Classic' | 'Flower' | 'Spiral' | 'Dense'
     this.rainbowMode = options.rainbowMode ?? false; // Rainbow hue shift per ring
+
+    // Phase 11.7.35: Interactive controls
+    this.selectedRing = -1; // Currently selected ring index (-1 = none)
+    this.highlightRing = -1; // Ring to highlight on hover (-1 = none)
+    this.interactiveMode = options.interactiveMode ?? false; // Enable click/drag interaction
+    this.manualRotation = 0; // Manual rotation offset (radians)
+    this.liveSymmetryUpdate = options.liveSymmetryUpdate ?? true; // Update symmetry without reset
+
+    // Phase 11.7.36: Color palette system
+    this.palette = options.palette ?? 'Classic'; // Color palette name
+    this.ringColors = [...COLOR_PALETTES.Classic]; // Current ring colors (up to 8)
 
     // Ring-specific settings
     this.ringRadii = options.ringRadii ?? [0, 2, 4, 6, 8, 10, 12, 14]; // Up to 8 rings
@@ -122,6 +143,14 @@ export class MandalaController {
     state.emojiMandala.globalScale = this.globalScale;
     state.emojiMandala.layout = this.layout;
     state.emojiMandala.rainbowMode = this.rainbowMode;
+    // Phase 11.7.35: Interactive controls
+    state.emojiMandala.selectedRing = this.selectedRing;
+    state.emojiMandala.highlightRing = this.highlightRing;
+    state.emojiMandala.interactiveMode = this.interactiveMode;
+    state.emojiMandala.manualRotation = this.manualRotation;
+    // Phase 11.7.36: Color palette
+    state.emojiMandala.palette = this.palette;
+    state.emojiMandala.ringColors = this.ringColors;
   }
 
   // Update mandala (called every frame from particle system or main loop)
@@ -241,9 +270,16 @@ export class MandalaController {
   }
 
   // Set symmetry (2-12)
+  // Phase 11.7.35: Live update without reset if liveSymmetryUpdate enabled
   setSymmetry(n) {
     const oldSymmetry = this.symmetry;
     this.symmetry = Math.max(2, Math.min(12, Math.floor(n)));
+
+    // Phase 11.7.35: Live update flag
+    if (this.liveSymmetryUpdate) {
+      console.log(`🔄 Live symmetry update: ${oldSymmetry} → ${this.symmetry} (no reset)`);
+    }
+
     this.syncToState();
     console.log(`🎛️ Mandala update → rings=${this.rings} | symmetry=${this.symmetry} (was ${oldSymmetry}) | scale=${this.scale} (${this.mode}) | emoji=${this.emoji}`);
   }
@@ -484,6 +520,61 @@ export class MandalaController {
     this.rainbowMode = enabled;
     this.syncToState();
     console.log(`🌈 Mandala rainbow mode: ${enabled ? 'ON' : 'OFF'}`);
+  }
+
+  // Phase 11.7.35: Interactive ring selection
+  selectRing(ringIndex) {
+    const oldRing = this.selectedRing;
+    this.selectedRing = ringIndex;
+    this.syncToState();
+    if (ringIndex >= 0 && ringIndex < this.rings) {
+      console.log(`👆 Ring ${ringIndex} selected (was ${oldRing})`);
+    } else if (ringIndex === -1) {
+      console.log(`👆 Ring deselected (was ${oldRing})`);
+    }
+  }
+
+  // Phase 11.7.35: Highlight ring on hover
+  setHighlightRing(ringIndex) {
+    this.highlightRing = ringIndex;
+    this.syncToState();
+  }
+
+  // Phase 11.7.35: Toggle interactive mode
+  setInteractiveMode(enabled) {
+    this.interactiveMode = enabled;
+    this.syncToState();
+    console.log(`🖱️ Interactive mode: ${enabled ? 'ON' : 'OFF'}`);
+  }
+
+  // Phase 11.7.35: Set manual rotation (additive to auto rotation)
+  setManualRotation(radians) {
+    this.manualRotation = radians;
+    this.syncToState();
+  }
+
+  // Phase 11.7.35: Adjust manual rotation (drag interaction)
+  adjustManualRotation(delta) {
+    this.manualRotation += delta;
+    this.syncToState();
+    if (Math.abs(delta) > 0.01) {
+      console.log(`🔄 Manual rotation: ${(this.manualRotation * 180 / Math.PI).toFixed(1)}°`);
+    }
+  }
+
+  // Phase 11.7.36: Apply color palette
+  applyPalette(paletteName) {
+    if (!COLOR_PALETTES[paletteName]) {
+      console.warn(`🎨 Unknown palette: ${paletteName}, keeping current palette ${this.palette}`);
+      return;
+    }
+
+    const oldPalette = this.palette;
+    this.palette = paletteName;
+    this.ringColors = [...COLOR_PALETTES[paletteName]];
+    this.syncToState();
+
+    console.log(`🎨 Mandala palette applied → ${paletteName} (was ${oldPalette})`);
   }
 
   // Get current state snapshot

@@ -184,7 +184,13 @@ function handlePresetAction(action, presetName, category, tags) {
           baseRadius: state.emojiMandala.baseRadius ?? 1.0,
           globalScale: state.emojiMandala.globalScale ?? 1.0,
           layout: state.emojiMandala.layout ?? 'Classic',
-          rainbowMode: state.emojiMandala.rainbowMode ?? false
+          rainbowMode: state.emojiMandala.rainbowMode ?? false,
+          // Phase 11.7.35: Interactive controls
+          interactiveMode: state.emojiMandala.interactiveMode ?? false,
+          selectedRing: state.emojiMandala.selectedRing ?? -1,
+          manualRotation: state.emojiMandala.manualRotation ?? 0,
+          // Phase 11.7.36: Color palette
+          palette: state.emojiMandala.palette ?? 'Classic'
         }
       };
 
@@ -294,9 +300,18 @@ function handlePresetAction(action, presetName, category, tags) {
           state.emojiMandala.layout = preset.state.mandala.layout ?? 'Classic';
           state.emojiMandala.rainbowMode = preset.state.mandala.rainbowMode ?? false;
 
+          // Phase 11.7.35: Restore interactive controls
+          state.emojiMandala.interactiveMode = preset.state.mandala.interactiveMode ?? false;
+          state.emojiMandala.selectedRing = preset.state.mandala.selectedRing ?? -1;
+          state.emojiMandala.manualRotation = preset.state.mandala.manualRotation ?? 0;
+
+          // Phase 11.7.36: Restore color palette
+          state.emojiMandala.palette = preset.state.mandala.palette ?? 'Classic';
+
           const onOff = state.mandala.enabled ? 'ON' : 'OFF';
           const audioStatus = state.mandala.audioReactive ? 'ON' : 'OFF';
-          console.log(`💾 Preset → Mandala restored: ${onOff} | rings=${state.mandala.ringCount} | symmetry=${state.mandala.symmetry} | audioReactive=${audioStatus}`);
+          const palette = state.emojiMandala.palette;
+          console.log(`💾 Preset → Mandala restored: ${onOff} | rings=${state.mandala.ringCount} | symmetry=${state.mandala.symmetry} | audioReactive=${audioStatus} | palette=${palette}`);
         }
 
         state.presets.currentPresetName = presetName;
@@ -344,7 +359,13 @@ function handlePresetAction(action, presetName, category, tags) {
           baseRadius: state.emojiMandala.baseRadius ?? 1.0,
           globalScale: state.emojiMandala.globalScale ?? 1.0,
           layout: state.emojiMandala.layout ?? 'Classic',
-          rainbowMode: state.emojiMandala.rainbowMode ?? false
+          rainbowMode: state.emojiMandala.rainbowMode ?? false,
+          // Phase 11.7.35: Interactive controls
+          interactiveMode: state.emojiMandala.interactiveMode ?? false,
+          selectedRing: state.emojiMandala.selectedRing ?? -1,
+          manualRotation: state.emojiMandala.manualRotation ?? 0,
+          // Phase 11.7.36: Color palette
+          palette: state.emojiMandala.palette ?? 'Classic'
         }
       };
 

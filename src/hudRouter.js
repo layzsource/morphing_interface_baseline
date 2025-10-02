@@ -699,6 +699,20 @@ onHUDUpdate((update) => {
       if (mandala.rainbowMode !== undefined) {
         controller.setRainbowMode(mandala.rainbowMode);
       }
+      // Phase 11.7.35: Interactive controls routing
+      if (mandala.interactiveMode !== undefined) {
+        controller.setInteractiveMode(mandala.interactiveMode);
+      }
+      if (mandala.selectedRing !== undefined) {
+        controller.selectRing(mandala.selectedRing);
+      }
+      if (mandala.manualRotation !== undefined) {
+        controller.setManualRotation(mandala.manualRotation);
+      }
+      // Phase 11.7.36: Color palette routing
+      if (mandala.palette !== undefined) {
+        controller.applyPalette(mandala.palette);
+      }
     }
   }
 });
