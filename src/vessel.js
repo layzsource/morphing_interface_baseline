@@ -1,8 +1,7 @@
 import * as THREE from 'three';
-import { state, blendColors } from './state.js'; // Phase 11.2.1: Import blendColors
+import { state, blendColors, getEffectiveAudio } from './state.js'; // Phase 11.4.3: Import stable audio gate
 import { morphMesh } from './geometry.js';
 import { SHADOW_LAYER } from './constants.js'; // Phase 2.3.3
-import { getEffectiveAudio } from './audio.js'; // Audio Gating Fix
 
 console.log("🚢 vessel.js loaded");
 

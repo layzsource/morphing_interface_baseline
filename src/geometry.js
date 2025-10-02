@@ -1,15 +1,18 @@
 import * as THREE from 'three';
-import { state, blendColors } from './state.js'; // Phase 11.2.1: Import blendColors
+import { state, blendColors, getEffectiveAudio } from './state.js'; // Phase 11.4.3: Import stable audio gate
 import { updateShadows } from './shadows.js';
 import { updateSprites } from './sprites.js';
 import { updateParticles } from './particles.js';
-import { updateAudio, getEffectiveAudio } from './audio.js'; // Audio Gating Fix
+import { updateAudio } from './audio.js'; // Audio system
 import { updateVessel, renderShadowProjection } from './vessel.js';
 import { getShadowBox } from './main.js'; // Phase 2.3.3
 import { createPostProcessing } from './postprocessing.js'; // Dual Trail System
 import { updateInterpolation, updateChain } from './presetRouter.js'; // Phase 11.2.8, 11.3.0
 
 console.log("🔺 geometry.js loaded");
+
+// Phase 11.4.3: One-time audio gate logging flag
+let geometryAudioGateLogged = false;
 
 // Scene lighting references
 let ambientLight = null;
@@ -209,8 +212,17 @@ function updateMorphTargets(state) {
     state.morphWeights.torus || 0
   ];
 
-  // Audio Gating Fix: Get audio data through centralized gating
+  // Phase 11.4.3: Get audio data through stable gate
   const audioData = getEffectiveAudio();
+
+  // Phase 11.4.3B: Freeze check - log once when clamped to base
+  if (!state.audioReactive && !geometryAudioGateLogged) {
+    console.log("🎵 Geometry morph clamped to base (audio OFF)");
+    geometryAudioGateLogged = true;
+  } else if (state.audioReactive && geometryAudioGateLogged) {
+    // Reset flag when audio reactive is turned back on
+    geometryAudioGateLogged = false;
+  }
 
   // Phase 11.2: Calculate audio deltas for each morph target (stored in state for reuse)
   const audioWeights = [
@@ -224,16 +236,39 @@ function updateMorphTargets(state) {
   state.morphAudioWeights = audioWeights;
 
   // Phase 11.2: Additive morphing - base + (audio * gain)
+  // Phase 11.4.3C: Gated morph weight application
   const gain = state.audio.sensitivity || 1.0;
+
+  // Phase 11.4.3D: Trace log when audio OFF (before applying clamp)
+  if (!state.audioReactive && Math.random() < 0.05) {
+    console.log("🛑 Geometry clamp check", {
+      baseWeights: baseWeights.slice(0, 4),
+      audioWeights: audioWeights.slice(0, 4),
+      influences_before: Array.from(morphMesh.morphTargetInfluences).slice(0, 4)
+    });
+  }
+
   for (let i = 0; i < morphMesh.morphTargetInfluences.length; i++) {
     const baseWeight = baseWeights[i] || 0;
     if (state.audioReactive) {
       // Additive: final = base + (audio * gain)
       morphMesh.morphTargetInfluences[i] = clamp(baseWeight + (audioWeights[i] * gain), 0, 1);
+
+      // Phase 11.4.3C: Reset one-time log when audio turns back on
+      if (geometryAudioGateLogged) {
+        geometryAudioGateLogged = false;
+      }
     } else {
       // Audio off: use base only
       morphMesh.morphTargetInfluences[i] = baseWeight;
     }
+  }
+
+  // Phase 11.4.3D: Trace log after clamp applied
+  if (!state.audioReactive && Math.random() < 0.05) {
+    console.log("✅ Geometry after clamp", {
+      influences_after: Array.from(morphMesh.morphTargetInfluences).slice(0, 4)
+    });
   }
 
   // Phase 11.2: Debug logging with base + audio breakdown

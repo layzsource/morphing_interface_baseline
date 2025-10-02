@@ -18,6 +18,7 @@ export const state = {
   // Phase 11.2: Additive audio morphing (base + audio modulation)
   morphBaseWeights: [0.0, 1.0, 0.0, 0.0],  // [sphere, cube, pyramid, torus] - persistent manual values
   morphAudioWeights: [0.0, 0.0, 0.0, 0.0], // Audio modulation deltas (applied additively)
+  morphBaseFrozen: false,                   // Phase 11.4.3E: Freeze flag - prevents morphBaseWeights updates when audio OFF
 
   // Visual properties
   color: "#00ff00",  // Current geometry color (legacy)
@@ -215,6 +216,19 @@ export function normalizeMorphWeights() {
 
 // Utility function to set individual morph weight
 export function setMorphWeight(target, weight) {
+  // Phase 11.4.3E: Freeze morphBaseWeights when audio OFF
+  if (!state.audioReactive) {
+    // 🚫 Audio OFF — freeze morphBaseWeights (no overwrites)
+    if (!state.morphBaseFrozen) {
+      console.log("🛑 Audio OFF — morphBaseWeights frozen at", state.morphBaseWeights);
+      state.morphBaseFrozen = true;
+    }
+    return; // Skip updating while frozen
+  }
+
+  // 🎵 Audio ON — allow updates + normalization
+  state.morphBaseFrozen = false;
+
   if (state.morphState.targets.includes(target)) {
     state.morphWeights[target] = Math.max(0, Math.min(1, weight));
     normalizeMorphWeights();
@@ -223,6 +237,8 @@ export function setMorphWeight(target, weight) {
     const targetIndex = ['sphere', 'cube', 'pyramid', 'torus'].indexOf(target);
     if (targetIndex >= 0) {
       state.morphBaseWeights[targetIndex] = state.morphWeights[target];
+      // Phase 11.4.3D: Trace morphBaseWeights update
+      console.log("📦 morphBaseWeights updated (setMorphWeight)", state.morphBaseWeights);
     }
   } else {
     console.warn(`🎯 Invalid morph target: ${target}`);
@@ -231,6 +247,19 @@ export function setMorphWeight(target, weight) {
 
 // Utility function to set all morph weights at once
 export function setMorphWeights(weights) {
+  // Phase 11.4.3E: Freeze morphBaseWeights when audio OFF
+  if (!state.audioReactive) {
+    // 🚫 Audio OFF — freeze morphBaseWeights (no overwrites)
+    if (!state.morphBaseFrozen) {
+      console.log("🛑 Audio OFF — morphBaseWeights frozen at", state.morphBaseWeights);
+      state.morphBaseFrozen = true;
+    }
+    return; // Skip updating while frozen
+  }
+
+  // 🎵 Audio ON — allow updates + normalization
+  state.morphBaseFrozen = false;
+
   state.morphState.targets.forEach(target => {
     if (weights[target] !== undefined) {
       state.morphWeights[target] = Math.max(0, Math.min(1, weights[target]));
@@ -245,6 +274,8 @@ export function setMorphWeights(weights) {
     state.morphWeights.pyramid || 0,
     state.morphWeights.torus || 0
   ];
+  // Phase 11.4.3D: Trace morphBaseWeights update
+  console.log("📦 morphBaseWeights updated (setMorphWeights)", state.morphBaseWeights);
 }
 
 // Utility function to get current morph weights
@@ -392,6 +423,8 @@ export function resetToBaseline() {
 
   // Reset morph weights
   state.morphBaseWeights = [...BASELINE.morphBaseWeights];
+  // Phase 11.4.3D: Trace morphBaseWeights update
+  console.log("📦 morphBaseWeights updated (resetToBaseline)", state.morphBaseWeights);
 
   // Reset color layers
   state.colorLayers = JSON.parse(JSON.stringify(BASELINE.colorLayers));
@@ -405,8 +438,20 @@ export function resetToBaseline() {
 }
 
 // ---- Phase 11.4.2S: stable audio gate -------------------------------
+// ---- Phase 11.4.3: Added debug logging for audio gate validation ----
+let lastAudioReactiveLog = true; // Track state changes
+
 export function getEffectiveAudio() {
   const { audioReactive, audio } = state;
+
+  // Phase 11.4.3: Debug log when audioReactive changes to OFF
+  if (!audioReactive && lastAudioReactiveLog !== false) {
+    console.log("🎵 Audio-reactive OFF — returning zero weights");
+    lastAudioReactiveLog = false;
+  } else if (audioReactive && lastAudioReactiveLog !== true) {
+    console.log("🎵 Audio-reactive ON — resuming audio response");
+    lastAudioReactiveLog = true;
+  }
 
   if (!audioReactive) {
     return { bass: 0, mid: 0, treble: 0, level: 0 };

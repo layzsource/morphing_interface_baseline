@@ -7,6 +7,13 @@ console.log("📟 hudRouter.js loaded");
 
 // HUD updates to state routing
 onHUDUpdate((update) => {
+  // Phase 11.4.1: Handle reset action
+  if (update.type === 'app:reset') {
+    console.log("📟 HUD action: app:reset");
+    // Reset is handled in presetRouter.js
+    return;
+  }
+
   if (update.idleSpin !== undefined) {
     state.idleSpin = update.idleSpin;
   }
@@ -575,6 +582,8 @@ onHUDUpdate((update) => {
       console.log("📟 Chain action: load", update.chainName);
     } else if (update.presetAction === 'chain:delete') {
       console.log("📟 Chain action: delete", update.chainName);
+    } else if (update.presetAction === 'chain:reset') {
+      console.log("📟 Chain action: reset");
     } else {
       console.log("📟 Preset action:", update.presetAction, update.presetName);
     }

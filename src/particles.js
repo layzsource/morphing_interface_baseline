@@ -4,7 +4,7 @@
 
 import * as THREE from 'three';
 import { SHADOW_LAYER } from './constants.js'; // Phase 2.3.3
-import { getEffectiveAudio } from './audio.js'; // Audio Gating Fix
+import { getEffectiveAudio } from './state.js'; // Phase 11.4.3: Stable audio gate
 
 export class ParticleSystem {
   constructor(scene, count = 5000) {

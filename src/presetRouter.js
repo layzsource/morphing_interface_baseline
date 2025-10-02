@@ -1,12 +1,67 @@
 import { onHUDUpdate } from './hud.js';
-import { state, setMorphWeights, setColor, setHue, lerp, lerpColor, lerpArray, easeInOutCubic, morphChain } from './state.js';
+import { state, setMorphWeights, setColor, setHue, lerp, lerpColor, lerpArray, easeInOutCubic, morphChain, resetToBaseline } from './state.js';
 import { savePreset, loadPreset, deletePreset, listPresets, getPresetData } from './presets.js';
 import { applyDirectUpdate } from './controlBindings.js'; // Phase 11.2.3+
 
 console.log("💾 presetRouter.js loaded");
 
+// Phase 11.4.1: Stop helpers
+// Phase 11.4.2: Enhanced restart fix - full state cleanup
+export function stopInterpolation() {
+  if (state.interpolation?.active) {
+    state.interpolation.active = false;
+    state.interpolation.startTime = null;
+    state.interpolation.startState = null;
+    state.interpolation.targetState = null;
+    console.log("🎚️ Interpolation stopped cleanly");
+  }
+}
+
+// Phase 11.4.1: Reset chain to clean state
+export function resetChain() {
+  console.log("♻️ Chain reset to beginning");
+  morphChain.active = false;
+  morphChain.paused = false;
+  morphChain.currentIndex = 0;
+  morphChain.pausedAt = null;
+  morphChain.pausedProgress = 0;
+  morphChain.presets = [];
+  morphChain.duration = 2000;
+  morphChain.loop = false;
+  morphChain.shuffle = false;
+  morphChain.stepStartTime = null;
+  morphChain.currentChainName = null;
+
+  // Stop interpolation
+  stopInterpolation();
+
+  // Emit reset event
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('chainReset'));
+  }
+}
+
+// Phase 11.4.1: Reset handler
+function handleReset() {
+  stopInterpolation();
+  stopChain();
+  resetToBaseline();
+  console.log("♻️ Reset to baseline");
+
+  // Emit reset event
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('appReset', { detail: { ok: true } }));
+  }
+}
+
 // Handle preset actions from HUD
 onHUDUpdate((update) => {
+  // Phase 11.4.1: Handle reset
+  if (update.type === 'app:reset') {
+    handleReset();
+    return;
+  }
+
   if (update.presetAction !== undefined) {
     // Phase 11.3.0/11.3.1: Handle chain actions separately (they don't use presetName)
     if (update.presetAction === 'chain:start') {
@@ -74,6 +129,11 @@ onHUDUpdate((update) => {
     }
     if (update.presetAction === 'chain:skipPrev') {
       skipPrev();
+      return;
+    }
+    // Phase 11.4.1 Prep: Chain reset
+    if (update.presetAction === 'chain:reset') {
+      resetChain();
       return;
     }
     // Regular preset actions
@@ -404,6 +464,7 @@ function importPresets(file) {
 }
 
 // Phase 11.2.8: Start preset interpolation
+// Phase 11.4.2: Enhanced restart capability
 export function startInterpolation(targetPresetName) {
   if (!state.interpolation.enabled) {
     // Interpolation disabled, load directly
@@ -419,6 +480,11 @@ export function startInterpolation(targetPresetName) {
     console.warn(`💾 Cannot interpolate: preset "${targetPresetName}" not found`);
     return;
   }
+
+  // Phase 11.4.2: Clean restart - ensure no stale state
+  state.interpolation.active = false;
+  state.interpolation.startState = null;
+  state.interpolation.targetState = null;
 
   // Capture current base state as starting point
   state.interpolation.startState = {
@@ -452,6 +518,7 @@ export function startInterpolation(targetPresetName) {
   state.interpolation.startTime = performance.now();
 
   console.log(`🎚️ Interpolation started → ${targetPresetName} (duration: ${state.interpolation.duration}ms)`);
+  console.log(`🎚️ Interpolation restarted cleanly`);
 }
 
 // Phase 11.2.8: Update interpolation (called from animation loop)
@@ -474,6 +541,14 @@ export function updateInterpolation() {
       target.morphWeights.torus || 0
     ];
     state.morphBaseWeights = lerpArray(start.morphBaseWeights, targetWeights, t);
+
+    // Phase 11.4.3D: Trace interpolation writes
+    if (Math.random() < 0.05) {
+      console.log("🔄 Interpolation write", {
+        t: t.toFixed(2),
+        morphBaseWeights: state.morphBaseWeights.slice(0, 4).map(v => v.toFixed(2))
+      });
+    }
   }
 
   // Interpolate geometry transforms
@@ -535,6 +610,10 @@ export function startChain(presetNames = [], durationMs = 2000, options = {}) {
     return;
   }
 
+  // Phase 11.4.1 Prep: Always reset chain state before starting
+  resetChain();
+  console.log("🔗 Starting new chain...");
+
   // Phase 11.3.1: Apply shuffle if enabled
   let orderedPresets = presetNames.slice();
   if (options.shuffle || morphChain.shuffle) {
@@ -583,11 +662,26 @@ function shuffleArray(array) {
   return shuffled;
 }
 
+// Phase 11.4.1: Canonical stopChain()
 export function stopChain() {
-  morphChain.active = false;
-  morphChain.currentChainName = null;
+  if (!morphChain.active) return;
+
   console.log("🔗 Chain stopped.");
+  morphChain.active = false;
+  morphChain.currentIndex = 0;
+  morphChain.currentChainName = null;
+
+  // Ensure interpolation halts cleanly
+  stopInterpolation();
+
+  // Dispatch event for HUD / listeners
+  window.dispatchEvent(
+    new CustomEvent("chainStopped", {
+      detail: { reason: "manual stop" }
+    })
+  );
 }
+
 
 // wrapper that leverages existing interpolation capture using a preset name
 function startInterpolationToPresetName(presetName, stepDurationMs) {

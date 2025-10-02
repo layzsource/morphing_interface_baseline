@@ -115,13 +115,13 @@ export function getAudioValues() {
   return { ...audioValues };
 }
 
-// Audio Gating Fix: Centralized gated access to audio data
+// Phase 11.4.1: Audio Gating - Centralized gated access to audio data
 export function getEffectiveAudio() {
-  // Always gate through HUD toggle (state.audio.enabled)
-  if (!state.audio.enabled || !isAudioEnabled) {
-    return { bass: 0, mid: 0, treble: 0, isEnabled: false };
+  // Gate through both audio.enabled AND audioReactive toggle
+  if (!state.audio.enabled || !state.audioReactive || !isAudioEnabled) {
+    return { bass: 0, mid: 0, treble: 0, level: 0, isEnabled: false };
   }
-  return audioValues;
+  return { ...audioValues, level: audioValues.bass || 0 }; // Add level field for compatibility
 }
 
 export function isAudioActive() {

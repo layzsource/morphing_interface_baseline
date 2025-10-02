@@ -1,7 +1,6 @@
 // src/shadows.js
 import * as THREE from 'three';
-import { state, blendColors } from './state.js'; // Phase 11.2.1: Import blendColors
-import { getEffectiveAudio } from './audio.js'; // Audio Gating Fix
+import { state, blendColors, getEffectiveAudio } from './state.js'; // Phase 11.4.3: Import stable audio gate
 
 console.log("🌑 shadows.js loaded");
 

@@ -4,6 +4,8 @@ import { getEffectiveAudio, state } from './state.js';
 
 let spriteGroup;
 let spriteScene;
+// Phase 11.4.3: One-time audio gate logging flag
+let spritesAudioGateLogged = false;
 
 export function initSprites(scene) {
   spriteScene = scene;
@@ -41,24 +43,34 @@ export function updateSprites() {
 
   if (!state.sprites.enabled) return;
 
-  // Phase 11.4.2S: Use stable audio gate
+  // Phase 11.4.3: Use stable audio gate
   const { bass, mid, treble, level } = getEffectiveAudio();
   const audioLevel = (bass + mid + treble) / 3;
 
-  // One-time log
-  if (!state.__spritesAudioGateNotified) {
-    console.log("🎵 Sprites now use getEffectiveAudio() gate");
-    state.__spritesAudioGateNotified = true;
+  // Phase 11.4.3B: Freeze check - log once when clamped
+  if (!state.audioReactive && !spritesAudioGateLogged) {
+    console.log("🎵 Sprites update clamped to base (audio OFF)");
+    spritesAudioGateLogged = true;
+  } else if (state.audioReactive && spritesAudioGateLogged) {
+    // Reset flag when audio reactive is turned back on
+    spritesAudioGateLogged = false;
   }
 
   spriteGroup.children.forEach((sprite, i) => {
     const angle = Date.now() * 0.001 + i;
-    sprite.position.x = Math.sin(angle) * (2 + state.morphWeights.sphere * 3);
-    sprite.position.y = Math.cos(angle) * (2 + state.morphWeights.cube * 3);
-    sprite.position.z = Math.sin(angle * 0.5) * (2 + state.morphWeights.pyramid * 3);
+
+    // Phase 11.4.3B: Only apply morph-based scaling when audio reactive
+    const sphereWeight = state.audioReactive ? state.morphWeights.sphere : 0;
+    const cubeWeight = state.audioReactive ? state.morphWeights.cube : 0;
+    const pyramidWeight = state.audioReactive ? state.morphWeights.pyramid : 0;
+
+    sprite.position.x = Math.sin(angle) * (2 + sphereWeight * 3);
+    sprite.position.y = Math.cos(angle) * (2 + cubeWeight * 3);
+    sprite.position.z = Math.sin(angle * 0.5) * (2 + pyramidWeight * 3);
 
     sprite.material.color.set(state.color);
-    sprite.material.opacity = 0.2 + audioLevel * 0.8;
+    // Phase 11.4.3B: Base opacity when audio off, modulated when on
+    sprite.material.opacity = state.audioReactive ? (0.2 + audioLevel * 0.8) : 0.2;
   });
 }
 

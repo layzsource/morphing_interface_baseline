@@ -482,8 +482,17 @@ function createHUDPanel() {
   stopBtn.disabled = true; // Phase 11.3.2: Disabled by default
   stopBtn.style.opacity = "0.5";
   stopBtn.style.cursor = "not-allowed";
+
+  // Phase 11.4.1 Prep: Reset Chain button
+  const resetChainBtn = document.createElement("button");
+  resetChainBtn.id = "chainResetBtn";
+  resetChainBtn.textContent = "🔄";
+  resetChainBtn.title = "Reset Chain";
+  resetChainBtn.style.cssText = 'flex: 0.5; padding: 6px; background: #ffaa00; color: black; border: none; cursor: pointer; font-weight: bold; font-size: 11px;';
+
   btnRow.appendChild(startBtn);
   btnRow.appendChild(stopBtn);
+  btnRow.appendChild(resetChainBtn);
   chainSection.appendChild(btnRow);
 
   // Phase 11.4.0: Playback controls (pause/resume, skip)
@@ -584,6 +593,16 @@ function createHUDPanel() {
   savedChainsList.id = "savedChainsList";
   savedChainsList.style.cssText = 'max-height: 100px; overflow-y: auto; background: #222; border: 1px solid #555; padding: 5px; margin-bottom: 8px;';
   chainSection.appendChild(savedChainsList);
+
+  // Phase 11.4.1: Reset button
+  const resetBtn = document.createElement('button');
+  resetBtn.textContent = '♻️ Reset';
+  resetBtn.style.cssText = 'width: 100%; margin-top: 8px; background: #222; color: #fff; border: 1px solid #444; padding: 6px; cursor: pointer; font-size: 11px; font-weight: bold;';
+  resetBtn.addEventListener('click', () => {
+    console.log("♻️ HUD reset clicked");
+    notifyHUDUpdate({ type: 'app:reset' });
+  });
+  chainSection.appendChild(resetBtn);
 
   panel.appendChild(chainSection);
 
@@ -691,6 +710,12 @@ function createHUDPanel() {
     notifyHUDUpdate({ presetAction: "chain:stop" });
   });
 
+  // Phase 11.4.1 Prep: Reset Chain button
+  resetChainBtn.addEventListener("click", () => {
+    console.log("🔄 HUD reset chain");
+    notifyHUDUpdate({ presetAction: "chain:reset" });
+  });
+
   // Phase 11.4.0: Playback control buttons
   pauseResumeBtn.addEventListener("click", () => {
     const isPaused = pauseResumeBtn.textContent.includes("Resume");
@@ -762,6 +787,7 @@ function createHUDPanel() {
   });
 
   // Phase 11.3.2: Update progress indicator with continuous interpolation tracking
+  // Phase 11.4.3: Added defensive guard for state.morphChain
   function updateChainProgress() {
     const progressContainer = document.getElementById("chainProgressContainer");
     const progressLabel = document.getElementById("chainProgressLabel");
@@ -770,7 +796,10 @@ function createHUDPanel() {
 
     if (!progressLabel || !progressFill || !progressContainer || !statusBadge) return;
 
-    if (!state.morphChain.active) {
+    const chain = state.morphChain;
+
+    // Phase 11.4.3: Defensive guard - bail early if no chain or not active
+    if (!chain || !chain.active) {
       // Hide progress container when not running
       progressContainer.style.display = "none";
       progressLabel.textContent = "Step —";
@@ -796,7 +825,8 @@ function createHUDPanel() {
       return;
     }
 
-    const { currentIndex, presets, duration, stepStartTime } = state.morphChain;
+    // Phase 11.4.3: Safe to use chain properties after guard
+    const { currentIndex, presets, duration, stepStartTime } = chain;
     const totalSteps = presets.length;
 
     if (!presets || totalSteps === 0) {
@@ -908,10 +938,14 @@ function createHUDPanel() {
     skipNextBtn.style.opacity = "1";
     skipNextBtn.style.cursor = "pointer";
 
-    // Enable stop button
+    // Enable stop and reset buttons
     stopBtn.disabled = false;
     stopBtn.style.opacity = "1";
     stopBtn.style.cursor = "pointer";
+
+    resetChainBtn.disabled = false;
+    resetChainBtn.style.opacity = "1";
+    resetChainBtn.style.cursor = "pointer";
 
     // Disable start button
     startBtn.disabled = true;
@@ -934,10 +968,14 @@ function createHUDPanel() {
     skipNextBtn.style.opacity = "0.5";
     skipNextBtn.style.cursor = "not-allowed";
 
-    // Disable stop button
+    // Disable stop and reset buttons
     stopBtn.disabled = true;
     stopBtn.style.opacity = "0.5";
     stopBtn.style.cursor = "not-allowed";
+
+    resetChainBtn.disabled = true;
+    resetChainBtn.style.opacity = "0.5";
+    resetChainBtn.style.cursor = "not-allowed";
 
     // Enable start button
     startBtn.disabled = false;
@@ -962,6 +1000,72 @@ function createHUDPanel() {
     const { direction, preset } = e.detail;
     const emoji = direction === 'next' ? '⏭' : '⏮';
     showToast(`${emoji} Skipped → ${preset}`);
+  });
+
+  // Phase 11.4.1: Chain reset and stopped events
+  window.addEventListener("chainReset", () => {
+    showToast("♻️ Chain reset to start");
+
+    // Disable all playback controls
+    pauseResumeBtn.disabled = true;
+    pauseResumeBtn.style.opacity = "0.5";
+    pauseResumeBtn.style.cursor = "not-allowed";
+    pauseResumeBtn.textContent = "⏸ Pause";
+
+    skipPrevBtn.disabled = true;
+    skipPrevBtn.style.opacity = "0.5";
+    skipPrevBtn.style.cursor = "not-allowed";
+
+    skipNextBtn.disabled = true;
+    skipNextBtn.style.opacity = "0.5";
+    skipNextBtn.style.cursor = "not-allowed";
+
+    stopBtn.disabled = true;
+    stopBtn.style.opacity = "0.5";
+    stopBtn.style.cursor = "not-allowed";
+
+    resetChainBtn.disabled = true;
+    resetChainBtn.style.opacity = "0.5";
+    resetChainBtn.style.cursor = "not-allowed";
+
+    // Enable start button
+    startBtn.disabled = false;
+    startBtn.style.opacity = "1";
+    startBtn.style.cursor = "pointer";
+  });
+
+  window.addEventListener("chainStopped", () => {
+    showToast("⏹ Chain stopped");
+
+    // Disable all playback controls (same as chainFinished)
+    pauseResumeBtn.disabled = true;
+    pauseResumeBtn.style.opacity = "0.5";
+    pauseResumeBtn.style.cursor = "not-allowed";
+    pauseResumeBtn.textContent = "⏸ Pause";
+
+    skipPrevBtn.disabled = true;
+    skipPrevBtn.style.opacity = "0.5";
+    skipPrevBtn.style.cursor = "not-allowed";
+
+    skipNextBtn.disabled = true;
+    skipNextBtn.style.opacity = "0.5";
+    skipNextBtn.style.cursor = "not-allowed";
+
+    stopBtn.disabled = true;
+    stopBtn.style.opacity = "0.5";
+    stopBtn.style.cursor = "not-allowed";
+
+    resetChainBtn.disabled = true;
+    resetChainBtn.style.opacity = "0.5";
+    resetChainBtn.style.cursor = "not-allowed";
+
+    // Enable start button
+    startBtn.disabled = false;
+    startBtn.style.opacity = "1";
+    startBtn.style.cursor = "pointer";
+
+    // Clear progress and time
+    timeRemainingLabel.textContent = "Remaining: --";
   });
 
   // Phase 11.4.0: Update time remaining display (every 100ms)
