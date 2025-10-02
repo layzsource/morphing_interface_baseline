@@ -11,7 +11,7 @@ export function initPresets() {
   console.log("💾 Presets system initialized");
 }
 
-export function savePreset(name, state, category = 'Uncategorized', tags = []) {
+export function savePreset(name, stateOverride, category = 'Uncategorized', tags = []) {
   if (!name || typeof name !== 'string') {
     console.warn('💾 Invalid preset name:', name);
     return false;
@@ -19,9 +19,10 @@ export function savePreset(name, state, category = 'Uncategorized', tags = []) {
 
   const presets = getPresetsFromStorage();
 
-  // Phase 11.2.9: Safety check for colorLayers
+  // Phase 11.5.1: colorLayers should always come from global state, not overrides
+  // Default presets (lines 378+) don't include colorLayers in their overrides
   if (!state.colorLayers) {
-    console.warn("⚠️ savePreset(): colorLayers missing in state", state);
+    console.warn("⚠️ savePreset(): colorLayers missing in global state");
     return false;
   }
 

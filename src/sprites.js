@@ -59,10 +59,22 @@ export function updateSprites() {
   spriteGroup.children.forEach((sprite, i) => {
     const angle = Date.now() * 0.001 + i;
 
-    // Phase 11.4.3B: Only apply morph-based scaling when audio reactive
-    const sphereWeight = state.audioReactive ? state.morphWeights.sphere : 0;
-    const cubeWeight = state.audioReactive ? state.morphWeights.cube : 0;
-    const pyramidWeight = state.audioReactive ? state.morphWeights.pyramid : 0;
+    // Phase 11.5.1: Use morphBaseWeights (stable) + audio deltas when ON, base only when OFF
+    let sphereWeight = 0;
+    let cubeWeight = 0;
+    let pyramidWeight = 0;
+
+    if (state.audioReactive && state.morphAudioWeights) {
+      // Audio ON: use base + audio deltas (matches geometry.js additive system)
+      sphereWeight = (state.morphBaseWeights?.[0] || 0) + (state.morphAudioWeights[0] || 0);
+      cubeWeight = (state.morphBaseWeights?.[1] || 0) + (state.morphAudioWeights[1] || 0);
+      pyramidWeight = (state.morphBaseWeights?.[2] || 0) + (state.morphAudioWeights[2] || 0);
+    } else {
+      // Audio OFF: use base only (no audio modulation)
+      sphereWeight = state.morphBaseWeights?.[0] || 0;
+      cubeWeight = state.morphBaseWeights?.[1] || 0;
+      pyramidWeight = state.morphBaseWeights?.[2] || 0;
+    }
 
     sprite.position.x = Math.sin(angle) * (2 + sphereWeight * 3);
     sprite.position.y = Math.cos(angle) * (2 + cubeWeight * 3);
