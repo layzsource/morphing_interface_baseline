@@ -45,6 +45,13 @@ export class MandalaController {
     this.radiusPulse = 0; // Current radius pulse amount
     this.anglePulse = 0; // Current angle twist amount
 
+    // Phase 11.7.34: Visual polish parameters
+    this.ringSpacing = options.ringSpacing ?? 1.0; // Ring spacing multiplier (0.2-2.0)
+    this.baseRadius = options.baseRadius ?? 1.0; // Base radius multiplier (0.5-3.0)
+    this.globalScale = options.globalScale ?? 1.0; // Global scale multiplier (0.5-2.0)
+    this.layout = options.layout ?? 'Classic'; // Layout preset: 'Classic' | 'Flower' | 'Spiral' | 'Dense'
+    this.rainbowMode = options.rainbowMode ?? false; // Rainbow hue shift per ring
+
     // Ring-specific settings
     this.ringRadii = options.ringRadii ?? [0, 2, 4, 6, 8, 10, 12, 14]; // Up to 8 rings
     this.ringRotationSpeeds = options.ringRotationSpeeds ?? [0, 0.01, 0.015, 0.02, 0.025, 0.03, 0.035, 0.04];
@@ -109,10 +116,17 @@ export class MandalaController {
     state.emojiMandala.mandalaSensitivity = this.mandalaSensitivity;
     state.emojiMandala.radiusPulse = this.radiusPulse;
     state.emojiMandala.anglePulse = this.anglePulse;
+    // Phase 11.7.34: Visual polish
+    state.emojiMandala.ringSpacing = this.ringSpacing;
+    state.emojiMandala.baseRadius = this.baseRadius;
+    state.emojiMandala.globalScale = this.globalScale;
+    state.emojiMandala.layout = this.layout;
+    state.emojiMandala.rainbowMode = this.rainbowMode;
   }
 
   // Update mandala (called every frame from particle system or main loop)
   // Phase 11.7.30: Enhanced audio reactivity for ring expansion, symmetry pulse, emoji size
+  // Phase 11.7.34: Add gradient opacity, rainbow mode, audio glow
   update(audioLevel = 0) {
     const audioData = state?.audio || { bass: 0, mid: 0, treble: 0, level: 0 };
     const bass = audioData.bass ?? 0;
@@ -133,18 +147,43 @@ export class MandalaController {
       // Emoji Size: scale = 0.5 + audioLevel * sensitivity
       const emojiScale = 0.5 + (level * sensitivity);
 
+      // Phase 11.7.34: Audio-reactive glow (outermost ring opacity pulse)
+      const glowIntensity = 0.5 + (level * sensitivity * 0.5); // 0.5-1.0 opacity
+
       // Phase 11.7.30: Log audio reactivity state (2% sample rate)
       if (Math.random() < 0.02) {
-        console.log(`🔊 AudioLevel=${level.toFixed(2)} → rings expanded x${(1 + this.radiusPulse).toFixed(2)}, symmetry pulse ${this.anglePulse.toFixed(3)}, emoji scale x${emojiScale.toFixed(2)}`);
+        console.log(`🔊 AudioLevel=${level.toFixed(2)} → rings expanded x${(1 + this.radiusPulse).toFixed(2)}, symmetry pulse ${this.anglePulse.toFixed(3)}, emoji scale x${emojiScale.toFixed(2)}, glow=${glowIntensity.toFixed(2)}`);
       }
 
-      // Store emoji scale for particle system to read
+      // Store emoji scale and glow for particle system to read
       state.emojiMandala.emojiScale = emojiScale;
+      state.emojiMandala.glowIntensity = glowIntensity;
     } else {
       // Reset pulses when audio off
       this.radiusPulse = 0;
       this.anglePulse = 0;
       state.emojiMandala.emojiScale = 1.0; // Default scale
+      state.emojiMandala.glowIntensity = 1.0; // Default opacity
+    }
+
+    // Phase 11.7.34: Calculate gradient opacity per ring (outer rings = lower alpha)
+    const ringOpacities = [];
+    for (let i = 0; i < this.rings; i++) {
+      const opacityFactor = 1.0 - (i / this.rings) * 0.5; // 1.0 → 0.5 gradient
+      ringOpacities.push(opacityFactor);
+    }
+    state.emojiMandala.ringOpacities = ringOpacities;
+
+    // Phase 11.7.34: Rainbow mode - calculate hue shift per ring
+    if (this.rainbowMode) {
+      const ringHues = [];
+      for (let i = 0; i < this.rings; i++) {
+        const hue = (i / this.rings) * 360; // 0-360° spread across rings
+        ringHues.push(hue);
+      }
+      state.emojiMandala.ringHues = ringHues;
+    } else {
+      state.emojiMandala.ringHues = null; // Disable rainbow
     }
 
     // Scale sequencing
@@ -374,6 +413,77 @@ export class MandalaController {
     this.mandalaSensitivity = Math.max(0, Math.min(2.0, sensitivity));
     this.syncToState();
     console.log(`🎵 Mandala sensitivity: ${(this.mandalaSensitivity * 100).toFixed(0)}% (was ${(oldSensitivity * 100).toFixed(0)}%)`);
+  }
+
+  // Phase 11.7.34: Layout preset functions
+  applyClassic() {
+    this.layout = 'Classic';
+    this.ringSpacing = 1.0;
+    this.baseRadius = 1.0;
+    this.symmetry = 6;
+    this.syncToState();
+    console.log(`🎨 Mandala layout set → Classic (rings=${this.rings} | symmetry=${this.symmetry})`);
+  }
+
+  applyFlower() {
+    this.layout = 'Flower';
+    this.ringSpacing = 0.8;
+    this.baseRadius = 1.2;
+    this.symmetry = 8;
+    // Alternating radii for flower effect
+    this.ringRadii = [0, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5];
+    this.syncToState();
+    console.log(`🎨 Mandala layout set → Flower (rings=${this.rings} | symmetry=${this.symmetry})`);
+  }
+
+  applySpiral() {
+    this.layout = 'Spiral';
+    this.ringSpacing = 1.0;
+    this.baseRadius = 1.0;
+    this.spiralOffset = Math.PI * 137.5 / 180; // Golden angle (137.5°)
+    this.syncToState();
+    console.log(`🎨 Mandala layout set → Spiral (rings=${this.rings} | symmetry=${this.symmetry})`);
+  }
+
+  applyDense() {
+    this.layout = 'Dense';
+    this.ringSpacing = 0.5;
+    this.baseRadius = 0.8;
+    this.rings = Math.min(this.rings * 2, 8); // Double ring count, max 8
+    this.symmetry = 12;
+    this.syncToState();
+    console.log(`🎨 Mandala layout set → Dense (rings=${this.rings} | symmetry=${this.symmetry})`);
+  }
+
+  // Phase 11.7.34: Set ring spacing
+  setRingSpacing(spacing) {
+    const oldSpacing = this.ringSpacing;
+    this.ringSpacing = Math.max(0.2, Math.min(2.0, spacing));
+    this.syncToState();
+    console.log(`🎨 Ring spacing: ${this.ringSpacing.toFixed(2)} (was ${oldSpacing.toFixed(2)})`);
+  }
+
+  // Phase 11.7.34: Set base radius
+  setBaseRadius(radius) {
+    const oldRadius = this.baseRadius;
+    this.baseRadius = Math.max(0.5, Math.min(3.0, radius));
+    this.syncToState();
+    console.log(`🎨 Base radius: ${this.baseRadius.toFixed(2)} (was ${oldRadius.toFixed(2)})`);
+  }
+
+  // Phase 11.7.34: Set global scale
+  setGlobalScale(scale) {
+    const oldScale = this.globalScale;
+    this.globalScale = Math.max(0.5, Math.min(2.0, scale));
+    this.syncToState();
+    console.log(`🎨 Global scale: ${this.globalScale.toFixed(2)} (was ${oldScale.toFixed(2)})`);
+  }
+
+  // Phase 11.7.34: Toggle rainbow mode
+  setRainbowMode(enabled) {
+    this.rainbowMode = enabled;
+    this.syncToState();
+    console.log(`🌈 Mandala rainbow mode: ${enabled ? 'ON' : 'OFF'}`);
   }
 
   // Get current state snapshot

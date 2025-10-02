@@ -2519,6 +2519,70 @@ function createHUDPanel() {
   mandalaSensitivityControl.title = 'Audio reactivity strength (0-200%)';
   tabContainers['Visual'].appendChild(mandalaSensitivityControl);
 
+  // Phase 11.7.34: Mandala Layout Preset Dropdown
+  const layoutPresetLabel = document.createElement("label");
+  layoutPresetLabel.textContent = "Mandala Layout Preset";
+  layoutPresetLabel.style.cssText = 'display: block; font-size: 11px; margin-top: 10px; margin-bottom: 4px; color: #ff66ff;';
+  tabContainers['Visual'].appendChild(layoutPresetLabel);
+
+  const layoutPresetDropdown = document.createElement("select");
+  layoutPresetDropdown.style.cssText = 'width: 100%; padding: 6px; background: rgba(0,0,0,0.5); border: 1px solid #ff66ff; color: #ff66ff; border-radius: 4px; margin-bottom: 10px; font-size: 11px;';
+
+  const layoutPresets = [
+    { value: 'Classic', label: '🎨 Classic (evenly spaced, symmetry=6)' },
+    { value: 'Flower', label: '🌸 Flower (alternating radii, symmetry=8)' },
+    { value: 'Spiral', label: '🌀 Spiral (golden angle rotation)' },
+    { value: 'Dense', label: '🔷 Dense (doubled rings, symmetry=12)' }
+  ];
+
+  layoutPresets.forEach(preset => {
+    const option = document.createElement("option");
+    option.value = preset.value;
+    option.textContent = preset.label;
+    if (preset.value === 'Classic') option.selected = true;
+    layoutPresetDropdown.appendChild(option);
+  });
+
+  layoutPresetDropdown.addEventListener("change", () => {
+    const preset = layoutPresetDropdown.value;
+    notifyHUDUpdate({ mandala: { layoutPreset: preset } });
+    console.log(`📟 HUD → Mandala layout preset: ${preset}`);
+  });
+  layoutPresetDropdown.title = 'Apply predefined mandala layout configuration';
+  tabContainers['Visual'].appendChild(layoutPresetDropdown);
+
+  // Phase 11.7.34: Ring Spacing slider
+  const ringSpacingControl = createSliderControl('Ring Spacing', 1.0, 0.2, 2.0, 0.1, (value) => {
+    notifyHUDUpdate({ mandala: { ringSpacing: value } });
+    console.log(`📟 HUD → Ring spacing = ${value.toFixed(1)}`);
+  });
+  ringSpacingControl.title = 'Distance multiplier between rings (0.2-2.0)';
+  tabContainers['Visual'].appendChild(ringSpacingControl);
+
+  // Phase 11.7.34: Base Radius slider
+  const baseRadiusControl = createSliderControl('Base Radius', 1.0, 0.5, 3.0, 0.1, (value) => {
+    notifyHUDUpdate({ mandala: { baseRadius: value } });
+    console.log(`📟 HUD → Base radius = ${value.toFixed(1)}`);
+  });
+  baseRadiusControl.title = 'Base radius multiplier (0.5-3.0)';
+  tabContainers['Visual'].appendChild(baseRadiusControl);
+
+  // Phase 11.7.34: Global Scale slider
+  const globalScaleControl = createSliderControl('Global Scale', 1.0, 0.5, 2.0, 0.1, (value) => {
+    notifyHUDUpdate({ mandala: { globalScale: value } });
+    console.log(`📟 HUD → Global scale = ${value.toFixed(1)}`);
+  });
+  globalScaleControl.title = 'Overall mandala scale (0.5-2.0)';
+  tabContainers['Visual'].appendChild(globalScaleControl);
+
+  // Phase 11.7.34: Rainbow Mode toggle
+  const rainbowModeToggle = createToggleControl('Rainbow Mode', false, (value) => {
+    notifyHUDUpdate({ mandala: { rainbowMode: value } });
+    console.log(`📟 HUD → Rainbow mode: ${value ? 'ON' : 'OFF'}`);
+  });
+  rainbowModeToggle.title = 'Apply rainbow hue shift per ring';
+  tabContainers['Visual'].appendChild(rainbowModeToggle);
+
   // Phase 11.7.29: Emoji Picker (radio buttons)
   const emojiPickerLabel = document.createElement("label");
   emojiPickerLabel.textContent = "Mandala Emoji";

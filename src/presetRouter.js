@@ -178,7 +178,13 @@ function handlePresetAction(action, presetName, category, tags) {
           enabled: state.mandala.enabled,
           ringCount: state.mandala.ringCount,
           symmetry: state.mandala.symmetry,
-          audioReactive: state.mandala.audioReactive
+          audioReactive: state.mandala.audioReactive,
+          // Phase 11.7.34: Visual polish parameters
+          ringSpacing: state.emojiMandala.ringSpacing ?? 1.0,
+          baseRadius: state.emojiMandala.baseRadius ?? 1.0,
+          globalScale: state.emojiMandala.globalScale ?? 1.0,
+          layout: state.emojiMandala.layout ?? 'Classic',
+          rainbowMode: state.emojiMandala.rainbowMode ?? false
         }
       };
 
@@ -281,6 +287,13 @@ function handlePresetAction(action, presetName, category, tags) {
           state.emojiMandala.rings = state.mandala.ringCount;
           state.emojiMandala.symmetry = state.mandala.symmetry;
 
+          // Phase 11.7.34: Restore visual polish parameters
+          state.emojiMandala.ringSpacing = preset.state.mandala.ringSpacing ?? 1.0;
+          state.emojiMandala.baseRadius = preset.state.mandala.baseRadius ?? 1.0;
+          state.emojiMandala.globalScale = preset.state.mandala.globalScale ?? 1.0;
+          state.emojiMandala.layout = preset.state.mandala.layout ?? 'Classic';
+          state.emojiMandala.rainbowMode = preset.state.mandala.rainbowMode ?? false;
+
           const onOff = state.mandala.enabled ? 'ON' : 'OFF';
           const audioStatus = state.mandala.audioReactive ? 'ON' : 'OFF';
           console.log(`💾 Preset → Mandala restored: ${onOff} | rings=${state.mandala.ringCount} | symmetry=${state.mandala.symmetry} | audioReactive=${audioStatus}`);
@@ -325,7 +338,13 @@ function handlePresetAction(action, presetName, category, tags) {
           enabled: state.mandala.enabled,
           ringCount: state.mandala.ringCount,
           symmetry: state.mandala.symmetry,
-          audioReactive: state.mandala.audioReactive
+          audioReactive: state.mandala.audioReactive,
+          // Phase 11.7.34: Visual polish parameters
+          ringSpacing: state.emojiMandala.ringSpacing ?? 1.0,
+          baseRadius: state.emojiMandala.baseRadius ?? 1.0,
+          globalScale: state.emojiMandala.globalScale ?? 1.0,
+          layout: state.emojiMandala.layout ?? 'Classic',
+          rainbowMode: state.emojiMandala.rainbowMode ?? false
         }
       };
 

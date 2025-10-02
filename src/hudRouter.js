@@ -678,6 +678,27 @@ onHUDUpdate((update) => {
       if (mandala.mandalaSensitivity !== undefined) {
         controller.setMandalaSensitivity(mandala.mandalaSensitivity);
       }
+      // Phase 11.7.34: Visual polish routing
+      if (mandala.layoutPreset !== undefined) {
+        // Apply layout preset via controller methods
+        const preset = mandala.layoutPreset;
+        if (preset === 'Classic') controller.applyClassic();
+        else if (preset === 'Flower') controller.applyFlower();
+        else if (preset === 'Spiral') controller.applySpiral();
+        else if (preset === 'Dense') controller.applyDense();
+      }
+      if (mandala.ringSpacing !== undefined) {
+        controller.setRingSpacing(mandala.ringSpacing);
+      }
+      if (mandala.baseRadius !== undefined) {
+        controller.setBaseRadius(mandala.baseRadius);
+      }
+      if (mandala.globalScale !== undefined) {
+        controller.setGlobalScale(mandala.globalScale);
+      }
+      if (mandala.rainbowMode !== undefined) {
+        controller.setRainbowMode(mandala.rainbowMode);
+      }
     }
   }
 });
