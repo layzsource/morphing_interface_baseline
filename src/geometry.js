@@ -14,6 +14,10 @@ console.log("🔺 geometry.js loaded");
 // Phase 11.4.3: One-time audio gate logging flag
 let geometryAudioGateLogged = false;
 
+// Phase 11.5.2: Debug throttle
+let __geomFrame = 0;
+const __GEOM_LOG_EVERY = 300; // ~5s at ~60fps
+
 // Scene lighting references
 let ambientLight = null;
 let directionalLight = null;
@@ -212,6 +216,9 @@ function updateMorphTargets(state) {
     state.morphWeights.torus || 0
   ];
 
+  // Phase 11.5.1: Deep trace for audio bleed detection
+  const prevInfluences = morphMesh.morphTargetInfluences.slice();
+
   // Phase 11.4.3: Get audio data through stable gate
   const audioData = getEffectiveAudio();
 
@@ -239,8 +246,8 @@ function updateMorphTargets(state) {
   // Phase 11.4.3C: Gated morph weight application
   const gain = state.audio.sensitivity || 1.0;
 
-  // Phase 11.4.3D: Trace log when audio OFF (before applying clamp)
-  if (!state.audioReactive && Math.random() < 0.05) {
+  // Phase 11.5.2: Throttled trace log when audio OFF (before applying clamp)
+  if (!state.audioReactive && (__geomFrame++ % __GEOM_LOG_EVERY) === 0) {
     console.log("🛑 Geometry clamp check", {
       baseWeights: baseWeights.slice(0, 4),
       audioWeights: audioWeights.slice(0, 4),
@@ -264,11 +271,22 @@ function updateMorphTargets(state) {
     }
   }
 
-  // Phase 11.4.3D: Trace log after clamp applied
-  if (!state.audioReactive && Math.random() < 0.05) {
-    console.log("✅ Geometry after clamp", {
-      influences_after: Array.from(morphMesh.morphTargetInfluences).slice(0, 4)
-    });
+  // Phase 11.5.2: Throttled bleed detection (audio OFF)
+  if (!state.audioReactive) {
+    const changed = prevInfluences.some((prev, i) =>
+      Math.abs(prev - morphMesh.morphTargetInfluences[i]) > 0.001
+    );
+
+    if (changed && (__geomFrame % __GEOM_LOG_EVERY) === 0) {
+      console.log("🔴 Geometry bleed detected (audio OFF)", {
+        prevInfluences: prevInfluences.slice(0, 4).map(v => v.toFixed(3)),
+        newInfluences: Array.from(morphMesh.morphTargetInfluences).slice(0, 4).map(v => v.toFixed(3)),
+        baseWeights: baseWeights.slice(0, 4).map(v => v.toFixed(3)),
+        audioData: audioData,
+        interpolationActive: state.interpolation?.active,
+        chainActive: state.morphChain?.active
+      });
+    }
   }
 
   // Phase 11.2: Debug logging with base + audio breakdown
@@ -369,9 +387,24 @@ export function getMorphState() {
 
 export { morphMesh };
 
+// Phase 11.5.1: Performance monitoring for long-session lag detection
+let frameCount = 0;
+let lastFpsLog = performance.now();
+
 // Main animation loop
 function animate() {
   requestAnimationFrame(animate);
+
+  // Phase 11.5.1: Log FPS every 5 seconds to detect degradation
+  frameCount++;
+  const now = performance.now();
+  if (now - lastFpsLog > 5000) {
+    const fps = (frameCount / (now - lastFpsLog)) * 1000;
+    const memUsed = performance.memory ? (performance.memory.usedJSHeapSize / 1048576).toFixed(1) : 'N/A';
+    console.log(`📊 FPS: ${fps.toFixed(1)} | Mem: ${memUsed}MB | Particles: ${state.particlesCount}`);
+    frameCount = 0;
+    lastFpsLog = now;
+  }
 
   // Phase 11.2.8: Update interpolation (modifies base state)
   updateInterpolation();

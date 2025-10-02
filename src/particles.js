@@ -20,14 +20,22 @@ export class ParticleSystem {
     this.opacity         = 1.0;
     this.organicStrength = 0.2;
 
-    // Phase 11.4.2S: Per-particle drift with speed modulation
+    // Phase 11.5.2: Lightweight organic drift (sine+cos jitter, per-axis amp)
     this.driftOffsets = [];
     for (let i = 0; i < this.count; i++) {
       this.driftOffsets.push({
+        // random phase per axis
         x: Math.random() * Math.PI * 2,
         y: Math.random() * Math.PI * 2,
         z: Math.random() * Math.PI * 2,
-        s: 0.6 + Math.random() * 0.8
+        // speed scalar
+        s: 0.6 + Math.random() * 0.8,
+        // per-axis amplitude jitter (kept small; multiplied later by organic strength)
+        ax: 0.6 + Math.random() * 0.8,
+        ay: 0.6 + Math.random() * 0.8,
+        az: 0.6 + Math.random() * 0.8,
+        // second-octave contribution (adds wobble)
+        a2: 0.3 + Math.random() * 0.5
       });
     }
 
@@ -344,17 +352,31 @@ export class ParticleSystem {
       let ty = this.targets[ti + 1];
       let tz = this.targets[ti + 2];
 
-      // Phase 11.4.2S: Per-axis organic drift with independent frequencies
+      // Phase 11.5.2: Layered jitter (sine + cosine + 2nd octave), per-axis amp
       if (this.organicStrength > 0 && this.driftOffsets.length) {
-        const driftScale = this.organicStrength * 0.02;
         const off = this.driftOffsets[i];
+
         const fx = 0.18 * off.s;
         const fy = 0.23 * off.s;
         const fz = 0.15 * off.s;
 
-        tx += Math.sin(t * fx + off.x) * driftScale;
-        ty += Math.sin(t * fy + off.y) * driftScale;
-        tz += Math.sin(t * fz + off.z) * driftScale;
+        // base scale tuned down slightly; amplitudes come from ax/ay/az
+        const driftScale = this.organicStrength * 0.018;
+
+        // primary (slow) layer
+        const dx1 = Math.sin(t * fx + off.x) * off.ax;
+        const dy1 = Math.cos(t * fy + off.y) * off.ay; // cosine to desync phase families
+        const dz1 = Math.sin(t * fz + off.z) * off.az;
+
+        // secondary (faster) layer — subtle wobble
+        const dx2 = Math.sin(t * fx * 2.3 + off.x * 1.7) * off.a2;
+        const dy2 = Math.sin(t * fy * 2.1 + off.y * 1.3) * off.a2;
+        const dz2 = Math.cos(t * fz * 2.4 + off.z * 1.9) * off.a2;
+
+        // combine and scale
+        tx += (dx1 + 0.4 * dx2) * driftScale;
+        ty += (dy1 + 0.4 * dy2) * driftScale;
+        tz += (dz1 + 0.4 * dz2) * driftScale;
 
         // Phase 11.4.2S: One-time drift active log
         if (!this._driftNotified) {
