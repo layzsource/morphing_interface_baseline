@@ -1592,9 +1592,26 @@ function createHUDPanel() {
   morphLabel.style.cssText = 'display: block; margin: 10px 0; cursor: pointer;';
   morphLabel.prepend(morphToggle);
 
+  // Phase 11.6.1: Background image toggle
+  const bgToggle = document.createElement('input');
+  bgToggle.type = 'checkbox';
+  bgToggle.id = 'useBackgroundImage';
+  bgToggle.checked = state.useBackgroundImage;
+  bgToggle.onchange = () => {
+    state.useBackgroundImage = bgToggle.checked;
+    console.log(`🎛️ Background image: ${state.useBackgroundImage ? 'ON' : 'OFF'}`);
+  };
+
+  const bgLabel = document.createElement('label');
+  bgLabel.htmlFor = 'useBackgroundImage';
+  bgLabel.innerText = 'Show as background';
+  bgLabel.style.cssText = 'display: block; margin: 10px 0; cursor: pointer;';
+  bgLabel.prepend(bgToggle);
+
   tabContainers['Visual'].appendChild(uploadButton);
   tabContainers['Visual'].appendChild(uploadInput);
   tabContainers['Visual'].appendChild(morphLabel);
+  tabContainers['Visual'].appendChild(bgLabel);
 
   // Ambient light intensity
   const ambientLightControl = createSliderControl('Ambient Intensity', 0.4, 0.0, 2.0, 0.1, (value) => {

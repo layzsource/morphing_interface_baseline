@@ -28,6 +28,7 @@ export const state = {
   // Phase 11.6.0: Image texture system
   texture: null,            // THREE.Texture loaded from image
   useTextureOnMorph: false,  // Toggle to apply texture to morph shape
+  useBackgroundImage: false, // Phase 11.6.1: Toggle to show image as background
 
   // Phase 11.2.1: Per-layer color system (base + audio additive)
   colorLayers: {

@@ -18,12 +18,13 @@ export function initVisual(scene) {
 export function updateVisual() {
   if (!backgroundMesh) return;
 
-  if (state.texture) {
+  // Phase 11.6.1: Only show texture when both texture exists AND toggle is ON
+  if (state.useBackgroundImage && state.texture) {
     backgroundMesh.material.map = state.texture;
-    backgroundMesh.material.needsUpdate = true;
+    backgroundMesh.material.color.set(0xffffff); // white base for texture visibility
   } else {
     backgroundMesh.material.map = null;
-    backgroundMesh.material.color.set(0x111111);
-    backgroundMesh.material.needsUpdate = true;
+    backgroundMesh.material.color.set(0x111111); // dark gray fallback
   }
+  backgroundMesh.material.needsUpdate = true;
 }
