@@ -452,6 +452,42 @@ function animate() {
   // Phase 11.6.0: Update background visual
   updateVisual();
 
+  // Phase 11.7.3: Update emoji particles (always update if present, safe audio fallback)
+  if (window.emojiParticles) {
+    const audioLevel = state?.audio?.level ?? 0;
+    window.emojiParticles.update(audioLevel);
+  }
+
+  // Phase 11.7.15: Update emoji stream manager (multi-stream support)
+  if (window.emojiStreamManager) {
+    const audioLevel = state?.audio?.level ?? 0;
+    window.emojiStreamManager.update(audioLevel);
+  }
+
+  // Phase 11.7.16: Update emoji sequencer (beat-based choreography)
+  if (window.emojiSequencer) {
+    window.emojiSequencer.update();
+  }
+
+  // Phase 11.7.24/11.7.25/11.7.30: Update mandala controller (first-class scene citizen)
+  // Phase 11.7.30: Pass audio level for ring expansion, symmetry pulse, emoji size reactivity
+  if (window.mandalaController) {
+    const audioLevel = state?.audio?.level ?? 0;
+
+    // Phase 11.7.30: Log mandala audio reactivity state on toggle (one-time)
+    if (state.mandala?.audioReactive && !window.__mandalaAudioLoggedOn) {
+      console.log("🔊 Mandala audioReactive=ON");
+      window.__mandalaAudioLoggedOn = true;
+      window.__mandalaAudioLoggedOff = false;
+    } else if (!state.mandala?.audioReactive && !window.__mandalaAudioLoggedOff) {
+      console.log("🔇 Mandala audioReactive=OFF");
+      window.__mandalaAudioLoggedOff = true;
+      window.__mandalaAudioLoggedOn = false;
+    }
+
+    window.mandalaController.update(audioLevel);
+  }
+
   // Update vessel (uses getEffectiveAudio() internally)
   updateVessel();
 

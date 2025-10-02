@@ -1,5 +1,7 @@
 let midiAccess = null;
 let ccCallbacks = [];
+let noteCallbacks = []; // Phase 11.7.23: Note on/off callbacks
+let pitchBendCallbacks = []; // Phase 11.7.23: Pitch bend callbacks
 let isInitialized = false;
 
 export function initMIDI(callback) {
@@ -34,6 +36,16 @@ export function onCC(callback) {
   ccCallbacks.push(callback);
 }
 
+// Phase 11.7.23: Register note callbacks
+export function onNote(callback) {
+  noteCallbacks.push(callback);
+}
+
+// Phase 11.7.23: Register pitch bend callbacks
+export function onPitchBend(callback) {
+  pitchBendCallbacks.push(callback);
+}
+
 export function getMIDIDeviceCount() {
   if (!midiAccess) return 0;
   return Array.from(midiAccess.inputs.values()).length;
@@ -60,16 +72,48 @@ function setupMIDIDevices() {
 }
 
 function handleMIDIMessage(event) {
-  const [status, cc, value] = event.data;
+  const [status, data1, data2] = event.data;
+  const device = event.target.name || 'Unknown Device';
+  const messageType = status & 0xF0;
 
-  if ((status & 0xF0) === 0xB0) {
-    const device = event.target.name || 'Unknown Device';
-
+  // CC messages (0xB0)
+  if (messageType === 0xB0) {
     ccCallbacks.forEach(callback => {
       try {
-        callback({ cc, value, device });
+        callback({ cc: data1, value: data2, device });
       } catch (error) {
         console.error('🎹 Error in CC callback:', error);
+      }
+    });
+  }
+
+  // Phase 11.7.23: Note On (0x90) and Note Off (0x80)
+  else if (messageType === 0x90 || messageType === 0x80) {
+    const noteOn = messageType === 0x90 && data2 > 0;
+    const note = data1;
+    const velocity = data2;
+
+    noteCallbacks.forEach(callback => {
+      try {
+        callback({ note, velocity, noteOn, device });
+      } catch (error) {
+        console.error('🎹 Error in note callback:', error);
+      }
+    });
+  }
+
+  // Phase 11.7.23: Pitch Bend (0xE0)
+  else if (messageType === 0xE0) {
+    // Pitch bend is 14-bit: combine data1 (LSB) and data2 (MSB)
+    const bendValue = (data2 << 7) | data1;
+    // Normalize to -1.0 to +1.0 (8192 is center)
+    const normalizedBend = (bendValue - 8192) / 8192;
+
+    pitchBendCallbacks.forEach(callback => {
+      try {
+        callback({ value: normalizedBend, rawValue: bendValue, device });
+      } catch (error) {
+        console.error('🎹 Error in pitch bend callback:', error);
       }
     });
   }

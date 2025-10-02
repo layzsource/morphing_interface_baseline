@@ -104,7 +104,22 @@ export function savePreset(name, stateOverride, category = 'Uncategorized', tags
       maxCount: state.particles?.maxCount ?? 10000,
       minSize: state.particles?.minSize ?? 0.005,
       maxSize: state.particles?.maxSize ?? 0.1
-    }
+    },
+
+    // Phase 11.7.15: Emoji Mixer streams
+    emojiStreams: state.emojiStreams ?? [],
+
+    // Phase 11.7.16: Emoji Sequencer
+    emojiSequencer: {
+      enabled: state.emojiSequencer?.enabled ?? false,
+      bpm: state.emojiSequencer?.bpm ?? 120,
+      patterns: state.emojiSequencer?.patterns ?? {},
+      timelineLength: state.emojiSequencer?.timelineLength ?? 16
+    },
+
+    // Phase 11.7.17: Emoji Pattern Banks
+    emojiBanks: state.emojiBanks ?? [null, null, null, null, null, null, null, null],
+    currentBank: state.currentBank ?? null
   };
 
   presets[name] = presetData;
@@ -283,6 +298,77 @@ export function loadPreset(name) {
     console.log("💾 ColorLayers loaded from preset");
   } else {
     console.log("💾 Legacy preset: colorLayers not found, using defaults");
+  }
+
+  // Phase 11.7.15: Load emoji streams
+  if (preset.emojiStreams) {
+    state.emojiStreams = preset.emojiStreams;
+    if (window.emojiStreamManager) {
+      window.emojiStreamManager.loadStreams(preset.emojiStreams);
+      console.log(`🎨 Loaded ${preset.emojiStreams.length} emoji streams`);
+    }
+    // Rebuild HUD UI
+    if (window.rebuildEmojiMixerUI) {
+      window.rebuildEmojiMixerUI();
+    }
+  } else {
+    state.emojiStreams = [];
+    if (window.rebuildEmojiMixerUI) {
+      window.rebuildEmojiMixerUI();
+    }
+  }
+
+  // Phase 11.7.16: Load emoji sequencer
+  if (preset.emojiSequencer) {
+    state.emojiSequencer = {
+      enabled: preset.emojiSequencer.enabled ?? false,
+      bpm: preset.emojiSequencer.bpm ?? 120,
+      patterns: preset.emojiSequencer.patterns ?? {},
+      timelineLength: preset.emojiSequencer.timelineLength ?? 16,
+      currentBeat: 0 // Always reset to 0 on load
+    };
+    if (window.emojiSequencer) {
+      window.emojiSequencer.loadFromState(state.emojiSequencer);
+      console.log(`🎶 Sequencer loaded: ${state.emojiSequencer.bpm} BPM, ${state.emojiSequencer.timelineLength} beats`);
+    }
+    // Rebuild sequencer grid
+    if (window.rebuildSequencerGrid) {
+      window.rebuildSequencerGrid();
+    }
+  } else {
+    // Default sequencer state for legacy presets
+    state.emojiSequencer = {
+      enabled: false,
+      bpm: 120,
+      currentBeat: 0,
+      patterns: {},
+      timelineLength: 16
+    };
+    if (window.rebuildSequencerGrid) {
+      window.rebuildSequencerGrid();
+    }
+  }
+
+  // Phase 11.7.17: Load emoji pattern banks
+  if (preset.emojiBanks) {
+    state.emojiBanks = preset.emojiBanks;
+    state.currentBank = preset.currentBank ?? null;
+    if (window.emojiBankManager) {
+      window.emojiBankManager.loadBanksFromState(preset.emojiBanks);
+      const loadedCount = state.emojiBanks.filter(b => b !== null).length;
+      console.log(`💾 Loaded ${loadedCount} pattern banks`);
+    }
+    // Update bank button states
+    if (window.updateBankButtonStates) {
+      window.updateBankButtonStates();
+    }
+  } else {
+    // Default banks for legacy presets
+    state.emojiBanks = [null, null, null, null, null, null, null, null];
+    state.currentBank = null;
+    if (window.updateBankButtonStates) {
+      window.updateBankButtonStates();
+    }
   }
 
   currentPresetName = name;

@@ -1460,6 +1460,1253 @@ function createHUDPanel() {
   });
   tabContainers['Visual'].appendChild(motionSmoothnessControl);
 
+  // Phase 11.7: Particle Motion Debug Controls (unique naming to avoid collisions)
+  const particleDensityDebugControl = createSliderControl('Density (Debug)', 2000, 500, 4000, 100, (value) => {
+    state.particleDensity = value;
+    console.log(`🎛️ Particle density: ${value}`);
+  });
+  particleDensityDebugControl.title = 'Particle density (500-4000)';
+  tabContainers['Visual'].appendChild(particleDensityDebugControl);
+
+  const particleSizeDebugControl = createSliderControl('Size (Debug)', 0.1, 0.05, 1.0, 0.05, (value) => {
+    state.particleSize = value;
+    console.log(`🎛️ Particle size: ${value}`);
+  });
+  particleSizeDebugControl.title = 'Particle size (0.05-1.0)';
+  tabContainers['Visual'].appendChild(particleSizeDebugControl);
+
+  const particleMotionStrengthControl = createSliderControl('Motion Strength', 0.5, 0.0, 1.0, 0.1, (value) => {
+    state.particleMotionStrength = value;
+    console.log(`🎛️ Particle motion strength: ${value}`);
+  });
+  particleMotionStrengthControl.title = 'Global drift strength multiplier';
+  tabContainers['Visual'].appendChild(particleMotionStrengthControl);
+
+  const particleAudioJitterControl = createToggleControl('Audio Jitter', true, (value) => {
+    state.useAudioJitter = value;
+    console.log(`🎛️ Audio jitter: ${value ? 'ON' : 'OFF'}`);
+  });
+  particleAudioJitterControl.title = 'Add velocity bursts on FFT peaks';
+  tabContainers['Visual'].appendChild(particleAudioJitterControl);
+
+  // === Phase 11.7.1: Emoji Particles ===
+  const emojiParticlesLabel = document.createElement("h4");
+  emojiParticlesLabel.textContent = "🍕 Emoji Particles";
+  emojiParticlesLabel.style.cssText = 'margin: 15px 0 10px 0; color: #00ffff; font-size: 12px;';
+  tabContainers['Visual'].appendChild(emojiParticlesLabel);
+
+  // Phase 11.7.2: Emoji picker dropdown
+  const emojiPicker = document.createElement("select");
+  emojiPicker.id = "emojiPicker";
+  emojiPicker.style.cssText = 'margin-left: 8px; padding: 2px 4px; background: #1a1a1a; color: #00ffff; border: 1px solid #333; border-radius: 3px;';
+  ["🍕","🌶️","🍄","⭐","🎵","💫"].forEach(emoji => {
+    const option = document.createElement("option");
+    option.value = emoji;
+    option.textContent = emoji;
+    emojiPicker.appendChild(option);
+  });
+  emojiPicker.disabled = true; // disabled until toggle ON
+
+  const emojiParticlesToggle = createToggleControl('Enable Emoji Particles', false, async (value) => {
+    state.useEmojiParticles = value;
+    if (value) {
+      // Phase 11.7.3: Disable default ParticleSystem (hard swap)
+      const { getParticleSystemInstance } = await import('./particles.js');
+      const { scene } = await import('./geometry.js');
+      const particleSystem = getParticleSystemInstance();
+      if (particleSystem && particleSystem.points) {
+        scene.remove(particleSystem.points);
+        console.log("✨ Default ParticleSystem disabled");
+      }
+
+      // Enable emoji particles
+      if (!window.emojiParticles) {
+        const { EmojiParticles } = await import('./particles.js');
+        window.emojiParticles = new EmojiParticles(scene, 500, emojiPicker.value);
+        console.log(`🍕 EmojiParticles enabled with ${emojiPicker.value}`);
+      }
+      emojiPicker.disabled = false;
+
+    } else {
+      // Phase 11.7.3: Restore default ParticleSystem
+      const { getParticleSystemInstance } = await import('./particles.js');
+      const { scene } = await import('./geometry.js');
+      const particleSystem = getParticleSystemInstance();
+      if (particleSystem && particleSystem.points) {
+        scene.add(particleSystem.points);
+        console.log("✨ Default ParticleSystem restored");
+      }
+
+      // Dispose emoji particles
+      if (window.emojiParticles) {
+        window.emojiParticles.dispose();
+        window.emojiParticles = null;
+        console.log("🍕 EmojiParticles disabled");
+      }
+      emojiPicker.disabled = true;
+    }
+  });
+  emojiParticlesToggle.title = 'Toggle audio-reactive emoji particles';
+
+  // Phase 11.7.2: Picker change event → swap emoji
+  emojiPicker.addEventListener("change", (e) => {
+    if (window.emojiParticles) {
+      window.emojiParticles.swapEmoji(e.target.value);
+    }
+  });
+
+  // Add toggle and picker to same line
+  const emojiContainer = document.createElement("div");
+  emojiContainer.style.cssText = 'display: flex; align-items: center; margin-bottom: 8px;';
+  emojiContainer.appendChild(emojiParticlesToggle);
+  emojiContainer.appendChild(emojiPicker);
+  tabContainers['Visual'].appendChild(emojiContainer);
+
+  // Phase 11.7.4: Emoji Count Slider
+  // Phase 11.7.10: Emoji count slider (up to 2000 with instanced rendering)
+  const emojiCountControl = createSliderControl('Emoji Count', 50, 10, 2000, 50, async (value) => {
+    if (window.emojiParticles) {
+      const currentEmoji = window.emojiParticles.emoji;
+      const currentLayout = window.emojiParticles.layout;
+      const currentReactivity = window.emojiParticles.audioReactivity;
+      const { scene } = await import('./geometry.js');
+      window.emojiParticles.dispose();
+      const { EmojiParticles } = await import('./particles.js');
+      window.emojiParticles = new EmojiParticles(scene, value, currentEmoji);
+      window.emojiParticles.setLayout(currentLayout);
+      window.emojiParticles.setAudioReactivity(currentReactivity);
+      console.log(`🍕 Emoji instanced count set to ${value}`);
+    }
+  });
+  emojiCountControl.title = 'Number of emoji particles (10-2000, instanced rendering)';
+  tabContainers['Visual'].appendChild(emojiCountControl);
+
+  // Phase 11.7.5: Emoji Layout Dropdown
+  const emojiLayoutLabel = document.createElement("label");
+  emojiLayoutLabel.textContent = "Layout";
+  emojiLayoutLabel.style.cssText = 'display: block; margin-top: 8px; margin-bottom: 4px; color: #999; font-size: 11px;';
+  tabContainers['Visual'].appendChild(emojiLayoutLabel);
+
+  const emojiLayoutDropdown = document.createElement("select");
+  emojiLayoutDropdown.id = "emojiLayout";
+  emojiLayoutDropdown.style.cssText = 'width: 100%; padding: 4px; background: #1a1a1a; color: #00ffff; border: 1px solid #333; border-radius: 3px;';
+
+  const layoutOptions = [
+    { value: "cube", label: "Cube" },
+    { value: "sphere", label: "Sphere" },
+    { value: "orbit", label: "Orbit" },
+    { value: "random", label: "Random" },
+    { value: "spiral", label: "Spiral 🌀" },
+    { value: "wave", label: "Wave Grid 🌊" },
+    { value: "burst", label: "Burst 💥" }
+  ];
+
+  layoutOptions.forEach(opt => {
+    const option = document.createElement("option");
+    option.value = opt.value;
+    option.textContent = opt.label;
+    emojiLayoutDropdown.appendChild(option);
+  });
+
+  emojiLayoutDropdown.addEventListener("change", (e) => {
+    if (window.emojiParticles) {
+      window.emojiParticles.setLayout(e.target.value);
+    }
+  });
+
+  tabContainers['Visual'].appendChild(emojiLayoutDropdown);
+
+  // Phase 11.7.8: Audio Reactivity Slider
+  const emojiAudioReactivityControl = createSliderControl('Audio Reactivity', 1.0, 0, 2, 0.1, (value) => {
+    if (window.emojiParticles) {
+      window.emojiParticles.setAudioReactivity(value);
+    }
+  });
+  emojiAudioReactivityControl.title = 'Multiplier for audio-reactive scale/rotation (0-2x)';
+  tabContainers['Visual'].appendChild(emojiAudioReactivityControl);
+
+  // Phase 11.7.11: Signal Linking Toggle
+  const emojiSignalLinkingControl = createToggleControl('Link to Morph/Audio', false, (value) => {
+    if (window.emojiParticles) {
+      window.emojiParticles.setSignalLinking(value);
+    }
+  });
+  emojiSignalLinkingControl.title = 'Link emoji particles to morph weights and audio bands (bass→expansion, mid→rotation, treble→sparkle)';
+  tabContainers['Visual'].appendChild(emojiSignalLinkingControl);
+
+  // Phase 11.7.12: Emoji Set Selection
+  const emojiSetLabel = document.createElement("label");
+  emojiSetLabel.textContent = "Emoji Set";
+  emojiSetLabel.style.cssText = 'display: block; margin-top: 8px; margin-bottom: 4px; color: #999; font-size: 11px;';
+  tabContainers['Visual'].appendChild(emojiSetLabel);
+
+  const emojiSetDropdown = document.createElement("select");
+  emojiSetDropdown.id = "emojiSet";
+  emojiSetDropdown.style.cssText = 'width: 100%; padding: 4px; background: #1a1a1a; color: #00ffff; border: 1px solid #333; border-radius: 3px;';
+
+  const emojiSets = [
+    { value: "", label: "Single Emoji" },
+    { value: "pizza", label: "🍕 Pizza" },
+    { value: "cosmos", label: "⭐ Cosmos" },
+    { value: "myth", label: "🦁 Myth" },
+    { value: "ocean", label: "🌊 Ocean" },
+    { value: "nature", label: "🌲 Nature" },
+    { value: "tech", label: "💻 Tech" }
+  ];
+
+  emojiSets.forEach(set => {
+    const option = document.createElement("option");
+    option.value = set.value;
+    option.textContent = set.label;
+    emojiSetDropdown.appendChild(option);
+  });
+
+  emojiSetDropdown.addEventListener("change", (e) => {
+    if (window.emojiParticles && e.target.value) {
+      window.emojiParticles.loadEmojiSet(e.target.value);
+    }
+  });
+
+  tabContainers['Visual'].appendChild(emojiSetDropdown);
+
+  // Phase 11.7.12: Auto-Cycle Toggle
+  const emojiAutoCycleControl = createToggleControl('Auto-Cycle Set', false, (value) => {
+    if (window.emojiParticles) {
+      window.emojiParticles.setAutoCycle(value, 4000);
+    }
+  });
+  emojiAutoCycleControl.title = 'Automatically cycle through emojis in the selected set (4s interval)';
+  tabContainers['Visual'].appendChild(emojiAutoCycleControl);
+
+  // Phase 11.7.12: Story Mode Toggle
+  const emojiStoryModeControl = createToggleControl('Story Mode', false, (value) => {
+    if (window.emojiParticles) {
+      const sequence = ["pizza", "cosmos", "myth"];
+      window.emojiParticles.setStoryMode(value, sequence);
+    }
+  });
+  emojiStoryModeControl.title = 'Enable narrative sequence: Pizza → Cosmos → Myth (use CC31 or manual advance)';
+  tabContainers['Visual'].appendChild(emojiStoryModeControl);
+
+  // === Phase 11.7.13: Beat Sync & Sequencing ===
+  const beatSyncLabel = document.createElement("h4");
+  beatSyncLabel.textContent = "🥁 Beat Sync";
+  beatSyncLabel.style.cssText = 'margin: 15px 0 10px 0; color: #00ffff; font-size: 12px;';
+  tabContainers['Visual'].appendChild(beatSyncLabel);
+
+  // BPM Input
+  const bpmControl = createSliderControl('BPM', 120, 60, 200, 1, (value) => {
+    if (window.emojiParticles) {
+      window.emojiParticles.setBPM(value);
+    }
+  });
+  bpmControl.title = 'Tempo in beats per minute for pulse/sequencer sync';
+  tabContainers['Visual'].appendChild(bpmControl);
+
+  // Beat Sync Toggle
+  const beatSyncToggle = createToggleControl('Enable Beat Sync', false, (value) => {
+    if (window.emojiParticles) {
+      window.emojiParticles.setBeatSync(value);
+    }
+  });
+  beatSyncToggle.title = 'Pulse emojis on beat (scale/opacity)';
+  tabContainers['Visual'].appendChild(beatSyncToggle);
+
+  // Subdivision Dropdown
+  const subdivisionLabel = document.createElement("label");
+  subdivisionLabel.textContent = "Subdivision";
+  subdivisionLabel.style.cssText = 'display: block; margin-top: 8px; margin-bottom: 4px; color: #999; font-size: 11px;';
+  tabContainers['Visual'].appendChild(subdivisionLabel);
+
+  const subdivisionDropdown = document.createElement("select");
+  subdivisionDropdown.style.cssText = 'width: 100%; padding: 4px; background: #1a1a1a; color: #00ffff; border: 1px solid #333; border-radius: 3px;';
+  [
+    { value: 4, label: "Quarter Notes (1/4)" },
+    { value: 8, label: "Eighth Notes (1/8)" },
+    { value: 16, label: "Sixteenth Notes (1/16)" }
+  ].forEach(opt => {
+    const option = document.createElement("option");
+    option.value = opt.value;
+    option.textContent = opt.label;
+    subdivisionDropdown.appendChild(option);
+  });
+  subdivisionDropdown.addEventListener("change", (e) => {
+    if (window.emojiParticles) {
+      window.emojiParticles.setSubdivision(parseInt(e.target.value));
+    }
+  });
+  tabContainers['Visual'].appendChild(subdivisionDropdown);
+
+  // Onset Detection Toggle
+  const onsetDetectionToggle = createToggleControl('Onset Detection', false, (value) => {
+    if (window.emojiParticles) {
+      window.emojiParticles.setOnsetDetection(value);
+    }
+  });
+  onsetDetectionToggle.title = 'Auto-detect beats from audio RMS spikes';
+  tabContainers['Visual'].appendChild(onsetDetectionToggle);
+
+  // Sequencer Toggle
+  const sequencerToggle = createToggleControl('Sequencer Mode', false, (value) => {
+    if (window.emojiParticles) {
+      const defaultSequence = ["🍕", "🌶️", "🍄", "🧄"];
+      window.emojiParticles.setSequencer(value, defaultSequence);
+    }
+  });
+  sequencerToggle.title = 'Step through emoji sequence on each beat (🍕 → 🌶️ → 🍄 → 🧄)';
+  tabContainers['Visual'].appendChild(sequencerToggle);
+
+  // === Phase 11.7.15: Emoji Mixer (Multiple Streams) ===
+  const emojiMixerLabel = document.createElement("h4");
+  emojiMixerLabel.textContent = "🎨 Emoji Mixer";
+  emojiMixerLabel.style.cssText = 'margin: 15px 0 10px 0; color: #00ffff; font-size: 12px;';
+  tabContainers['Visual'].appendChild(emojiMixerLabel);
+
+  // Container for all emoji streams
+  const emojiStreamsContainer = document.createElement("div");
+  emojiStreamsContainer.id = "emojiStreamsContainer";
+  emojiStreamsContainer.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px;';
+  tabContainers['Visual'].appendChild(emojiStreamsContainer);
+
+  // Function to create a stream row
+  function createEmojiStreamRow(emoji = "🍕", count = 100, enabled = true) {
+    const row = document.createElement("div");
+    row.style.cssText = 'display: flex; align-items: center; gap: 6px; padding: 4px; background: rgba(0,0,0,0.3); border-radius: 4px;';
+
+    // Emoji input
+    const emojiInput = document.createElement("input");
+    emojiInput.type = "text";
+    emojiInput.value = emoji;
+    emojiInput.maxLength = 2;
+    emojiInput.style.cssText = 'width: 40px; font-size: 20px; text-align: center; background: rgba(255,255,255,0.1); border: 1px solid #00ffff; color: white; padding: 2px;';
+
+    // Count slider
+    const countSlider = document.createElement("input");
+    countSlider.type = "range";
+    countSlider.min = 10;
+    countSlider.max = 500;
+    countSlider.value = count;
+    countSlider.style.cssText = 'flex: 1; min-width: 80px;';
+
+    // Count label
+    const countLabel = document.createElement("span");
+    countLabel.textContent = count;
+    countLabel.style.cssText = 'font-size: 10px; color: #00ffff; min-width: 30px;';
+
+    // Toggle checkbox
+    const toggle = document.createElement("input");
+    toggle.type = "checkbox";
+    toggle.checked = enabled;
+    toggle.style.cssText = 'width: 16px; height: 16px;';
+
+    // Remove button
+    const removeBtn = document.createElement("button");
+    removeBtn.textContent = "✕";
+    removeBtn.style.cssText = 'width: 24px; height: 24px; background: rgba(255,0,0,0.3); border: 1px solid red; color: red; cursor: pointer; border-radius: 4px; font-size: 12px;';
+
+    // Event handlers
+    emojiInput.addEventListener("input", () => {
+      const oldEmoji = row.dataset.emoji;
+      const newEmoji = emojiInput.value;
+      if (oldEmoji && newEmoji && oldEmoji !== newEmoji && window.emojiStreamManager) {
+        // Remove old stream and add new one
+        window.emojiStreamManager.removeStream(oldEmoji);
+        window.emojiStreamManager.addStream(newEmoji, parseInt(countSlider.value), toggle.checked);
+        row.dataset.emoji = newEmoji;
+        syncStateFromManager();
+      }
+    });
+
+    countSlider.addEventListener("input", () => {
+      countLabel.textContent = countSlider.value;
+      if (window.emojiStreamManager && row.dataset.emoji) {
+        window.emojiStreamManager.updateStreamCount(row.dataset.emoji, parseInt(countSlider.value));
+        syncStateFromManager();
+      }
+    });
+
+    toggle.addEventListener("change", () => {
+      if (window.emojiStreamManager && row.dataset.emoji) {
+        window.emojiStreamManager.toggleStream(row.dataset.emoji, toggle.checked);
+        syncStateFromManager();
+      }
+    });
+
+    removeBtn.addEventListener("click", () => {
+      if (window.emojiStreamManager && row.dataset.emoji) {
+        window.emojiStreamManager.removeStream(row.dataset.emoji);
+        row.remove();
+        syncStateFromManager();
+        // Phase 11.7.16: Rebuild sequencer grid when streams change
+        if (window.rebuildSequencerGrid) {
+          window.rebuildSequencerGrid();
+        }
+      }
+    });
+
+    row.dataset.emoji = emoji;
+    row.appendChild(emojiInput);
+    row.appendChild(countSlider);
+    row.appendChild(countLabel);
+    row.appendChild(toggle);
+    row.appendChild(removeBtn);
+
+    return row;
+  }
+
+  // Function to sync state from manager
+  function syncStateFromManager() {
+    if (window.emojiStreamManager) {
+      state.emojiStreams = window.emojiStreamManager.getStreamsArray();
+    }
+  }
+
+  // Add Stream button
+  const addStreamBtn = document.createElement("button");
+  addStreamBtn.textContent = "+ Add Emoji Stream";
+  addStreamBtn.style.cssText = 'padding: 8px; background: rgba(0,255,255,0.2); border: 1px solid #00ffff; color: #00ffff; cursor: pointer; border-radius: 4px; font-size: 11px; margin-bottom: 10px;';
+  addStreamBtn.addEventListener("click", () => {
+    const defaultEmojis = ["🍕", "🌶️", "🍄", "⭐", "🌙", "🦁", "🌊", "🌲", "💻", "🔥"];
+    const usedEmojis = Array.from(emojiStreamsContainer.querySelectorAll('[data-emoji]')).map(el => el.dataset.emoji);
+    const availableEmoji = defaultEmojis.find(e => !usedEmojis.includes(e)) || "🎨";
+
+    const row = createEmojiStreamRow(availableEmoji, 100, true);
+    emojiStreamsContainer.appendChild(row);
+
+    // Add to manager
+    if (window.emojiStreamManager) {
+      window.emojiStreamManager.addStream(availableEmoji, 100, true);
+      syncStateFromManager();
+      // Phase 11.7.16: Rebuild sequencer grid when streams change
+      if (window.rebuildSequencerGrid) {
+        window.rebuildSequencerGrid();
+      }
+    }
+  });
+  tabContainers['Visual'].appendChild(addStreamBtn);
+
+  // Function to rebuild emoji mixer UI from state
+  function rebuildEmojiMixerUI() {
+    // Clear existing rows
+    emojiStreamsContainer.innerHTML = '';
+
+    // Rebuild from state
+    if (state.emojiStreams && state.emojiStreams.length > 0) {
+      state.emojiStreams.forEach(({ emoji, count, enabled }) => {
+        const row = createEmojiStreamRow(emoji, count, enabled);
+        emojiStreamsContainer.appendChild(row);
+      });
+    }
+  }
+
+  // Expose rebuild function globally for preset loading
+  window.rebuildEmojiMixerUI = rebuildEmojiMixerUI;
+
+  // Initialize with default stream if state has streams
+  rebuildEmojiMixerUI();
+
+  // === Phase 11.7.16: Emoji Sequencer & Timeline ===
+  const emojiSequencerLabel = document.createElement("h4");
+  emojiSequencerLabel.textContent = "🎶 Emoji Sequencer";
+  emojiSequencerLabel.style.cssText = 'margin: 15px 0 10px 0; color: #00ffff; font-size: 12px;';
+  tabContainers['Visual'].appendChild(emojiSequencerLabel);
+
+  // Sequencer enable toggle
+  const sequencerEnableToggle = createToggleControl('Enable Sequencer', false, (value) => {
+    if (window.emojiSequencer) {
+      window.emojiSequencer.setEnabled(value);
+      state.emojiSequencer.enabled = value;
+    }
+  });
+  sequencerEnableToggle.title = 'Enable beat-based emoji sequencing';
+  tabContainers['Visual'].appendChild(sequencerEnableToggle);
+
+  // BPM control
+  const sequencerBPMControl = createSliderControl('Sequencer BPM', 120, 60, 200, 1, (value) => {
+    if (window.emojiSequencer) {
+      window.emojiSequencer.setBPM(value);
+      state.emojiSequencer.bpm = value;
+    }
+  });
+  sequencerBPMControl.title = 'Beats per minute for sequencer';
+  tabContainers['Visual'].appendChild(sequencerBPMControl);
+
+  // Timeline length control
+  const timelineLengthControl = createSliderControl('Timeline Length', 16, 4, 32, 1, (value) => {
+    if (window.emojiSequencer) {
+      window.emojiSequencer.setTimelineLength(value);
+      state.emojiSequencer.timelineLength = value;
+      rebuildSequencerGrid();
+    }
+  });
+  timelineLengthControl.title = 'Number of beats in the timeline';
+  tabContainers['Visual'].appendChild(timelineLengthControl);
+
+  // Timeline grid container
+  const timelineGridContainer = document.createElement("div");
+  timelineGridContainer.id = "timelineGridContainer";
+  timelineGridContainer.style.cssText = 'margin: 10px 0; padding: 8px; background: rgba(0,0,0,0.4); border-radius: 4px; overflow-x: auto; max-height: 300px; overflow-y: auto;';
+  tabContainers['Visual'].appendChild(timelineGridContainer);
+
+  // Function to build timeline grid
+  function rebuildSequencerGrid() {
+    if (!window.emojiSequencer) return;
+
+    const container = document.getElementById("timelineGridContainer");
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    const emojis = Array.from(window.emojiStreamManager.streams.keys());
+    if (emojis.length === 0) {
+      container.innerHTML = '<div style="color: #888; font-size: 11px; padding: 10px;">Add emoji streams to use sequencer</div>';
+      return;
+    }
+
+    const timelineLength = window.emojiSequencer.timelineLength;
+
+    // Header row with beat numbers
+    const headerRow = document.createElement("div");
+    headerRow.style.cssText = 'display: flex; margin-bottom: 4px; padding-left: 40px;';
+    for (let beat = 0; beat < timelineLength; beat++) {
+      const beatLabel = document.createElement("div");
+      beatLabel.textContent = beat + 1;
+      beatLabel.style.cssText = 'width: 24px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #666; margin-right: 2px;';
+      headerRow.appendChild(beatLabel);
+    }
+    container.appendChild(headerRow);
+
+    // Emoji rows
+    emojis.forEach(emoji => {
+      const row = document.createElement("div");
+      row.style.cssText = 'display: flex; align-items: center; margin-bottom: 4px;';
+
+      // Emoji label
+      const emojiLabel = document.createElement("div");
+      emojiLabel.textContent = emoji;
+      emojiLabel.style.cssText = 'width: 30px; font-size: 18px; text-align: center; margin-right: 10px;';
+      row.appendChild(emojiLabel);
+
+      // Beat toggles
+      const pattern = window.emojiSequencer.getPattern(emoji);
+      for (let beat = 0; beat < timelineLength; beat++) {
+        const beatBtn = document.createElement("button");
+        beatBtn.textContent = "●";
+        beatBtn.dataset.emoji = emoji;
+        beatBtn.dataset.beat = beat;
+        beatBtn.style.cssText = `
+          width: 24px;
+          height: 24px;
+          margin-right: 2px;
+          border: 1px solid #00ffff;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 14px;
+          padding: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.1s;
+        `;
+
+        // Set initial state
+        const isActive = pattern[beat] === 1;
+        beatBtn.style.background = isActive ? 'rgba(0,255,255,0.6)' : 'rgba(0,0,0,0.3)';
+        beatBtn.style.color = isActive ? '#000' : '#00ffff';
+
+        beatBtn.addEventListener("click", () => {
+          const newState = window.emojiSequencer.toggleBeat(emoji, beat);
+          beatBtn.style.background = newState ? 'rgba(0,255,255,0.6)' : 'rgba(0,0,0,0.3)';
+          beatBtn.style.color = newState ? '#000' : '#00ffff';
+
+          // Sync to state
+          state.emojiSequencer.patterns[emoji] = window.emojiSequencer.getPattern(emoji);
+        });
+
+        row.appendChild(beatBtn);
+      }
+
+      container.appendChild(row);
+    });
+  }
+
+  // Expose rebuild function
+  window.rebuildSequencerGrid = rebuildSequencerGrid;
+
+  // Build initial grid
+  rebuildSequencerGrid();
+
+  // Reset button
+  const resetSequencerBtn = document.createElement("button");
+  resetSequencerBtn.textContent = "↺ Reset to Beat 1";
+  resetSequencerBtn.style.cssText = 'padding: 6px 12px; background: rgba(0,255,255,0.2); border: 1px solid #00ffff; color: #00ffff; cursor: pointer; border-radius: 4px; font-size: 11px; margin-top: 8px;';
+  resetSequencerBtn.addEventListener("click", () => {
+    if (window.emojiSequencer) {
+      window.emojiSequencer.reset();
+    }
+  });
+  tabContainers['Visual'].appendChild(resetSequencerBtn);
+
+  // === Phase 11.7.17: Emoji Pattern Banks ===
+  const emojiBanksLabel = document.createElement("h4");
+  emojiBanksLabel.textContent = "💾 Pattern Banks";
+  emojiBanksLabel.style.cssText = 'margin: 15px 0 10px 0; color: #00ffff; font-size: 12px;';
+  tabContainers['Visual'].appendChild(emojiBanksLabel);
+
+  // Bank buttons grid (2 rows of 4)
+  const banksGridContainer = document.createElement("div");
+  banksGridContainer.style.cssText = 'display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px;';
+
+  // Create 8 bank buttons
+  const bankButtons = [];
+  for (let i = 0; i < 8; i++) {
+    const bankBtn = document.createElement("button");
+    bankBtn.textContent = `${i + 1}`;
+    bankBtn.dataset.bankIndex = i;
+    bankBtn.style.cssText = `
+      padding: 12px 8px;
+      background: rgba(0,0,0,0.4);
+      border: 1px solid #666;
+      color: #666;
+      cursor: pointer;
+      border-radius: 4px;
+      font-size: 16px;
+      font-weight: bold;
+      transition: all 0.2s;
+      position: relative;
+    `;
+
+    // Load bank on click
+    bankBtn.addEventListener("click", () => {
+      if (window.emojiBankManager) {
+        const success = window.emojiBankManager.loadBank(i);
+        if (success) {
+          state.currentBank = i;
+          // Rebuild UI
+          if (window.rebuildEmojiMixerUI) window.rebuildEmojiMixerUI();
+          if (window.rebuildSequencerGrid) window.rebuildSequencerGrid();
+          updateBankButtonStates();
+        }
+      }
+    });
+
+    // Right-click to save
+    bankBtn.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+      if (window.emojiBankManager) {
+        window.emojiBankManager.saveBank(i);
+        state.emojiBanks = window.emojiBankManager.saveBanksToState();
+        updateBankButtonStates();
+      }
+    });
+
+    bankButtons.push(bankBtn);
+    banksGridContainer.appendChild(bankBtn);
+  }
+
+  tabContainers['Visual'].appendChild(banksGridContainer);
+
+  // Function to update bank button states
+  function updateBankButtonStates() {
+    if (!window.emojiBankManager) return;
+
+    bankButtons.forEach((btn, index) => {
+      const isEmpty = window.emojiBankManager.isBankEmpty(index);
+      const isCurrent = state.currentBank === index;
+
+      if (isEmpty) {
+        btn.style.background = 'rgba(0,0,0,0.4)';
+        btn.style.borderColor = '#666';
+        btn.style.color = '#666';
+        btn.title = `Bank ${index + 1}: Empty\nLeft-click to load\nRight-click to save current pattern`;
+      } else {
+        const bank = window.emojiBankManager.getBank(index);
+        const emojiList = bank.streams.map(s => s.emoji).join('');
+
+        btn.style.background = isCurrent ? 'rgba(0,255,255,0.4)' : 'rgba(0,255,0,0.2)';
+        btn.style.borderColor = isCurrent ? '#00ffff' : '#00ff00';
+        btn.style.color = isCurrent ? '#00ffff' : '#00ff00';
+        btn.title = `Bank ${index + 1}: ${bank.name}\n${emojiList}\nLeft-click to load\nRight-click to save current pattern`;
+      }
+    });
+  }
+
+  // Expose update function
+  window.updateBankButtonStates = updateBankButtonStates;
+
+  // Initial update
+  updateBankButtonStates();
+
+  // Save/Clear controls row
+  const bankControlsRow = document.createElement("div");
+  bankControlsRow.style.cssText = 'display: flex; gap: 6px; margin-top: 8px;';
+
+  // Save to current bank button
+  const saveToBankBtn = document.createElement("button");
+  saveToBankBtn.textContent = "💾 Save to Selected";
+  saveToBankBtn.style.cssText = 'flex: 1; padding: 6px; background: rgba(0,255,0,0.2); border: 1px solid #00ff00; color: #00ff00; cursor: pointer; border-radius: 4px; font-size: 11px;';
+  saveToBankBtn.addEventListener("click", () => {
+    if (state.currentBank !== null && window.emojiBankManager) {
+      window.emojiBankManager.saveBank(state.currentBank);
+      state.emojiBanks = window.emojiBankManager.saveBanksToState();
+      updateBankButtonStates();
+    } else {
+      console.warn("💾 No bank selected");
+    }
+  });
+  saveToBankBtn.title = 'Save current emoji mix + sequencer to selected bank';
+  bankControlsRow.appendChild(saveToBankBtn);
+
+  // Clear bank button
+  const clearBankBtn = document.createElement("button");
+  clearBankBtn.textContent = "✕ Clear Selected";
+  clearBankBtn.style.cssText = 'flex: 1; padding: 6px; background: rgba(255,0,0,0.2); border: 1px solid red; color: red; cursor: pointer; border-radius: 4px; font-size: 11px;';
+  clearBankBtn.addEventListener("click", () => {
+    if (state.currentBank !== null && window.emojiBankManager) {
+      window.emojiBankManager.clearBank(state.currentBank);
+      state.emojiBanks = window.emojiBankManager.saveBanksToState();
+      updateBankButtonStates();
+    }
+  });
+  clearBankBtn.title = 'Clear selected bank';
+  bankControlsRow.appendChild(clearBankBtn);
+
+  tabContainers['Visual'].appendChild(bankControlsRow);
+
+  // Info text
+  const bankInfoText = document.createElement("div");
+  bankInfoText.textContent = "Left-click: Load | Right-click: Quick Save";
+  bankInfoText.style.cssText = 'font-size: 10px; color: #888; margin-top: 6px; text-align: center;';
+  tabContainers['Visual'].appendChild(bankInfoText);
+
+  // === Phase 11.7.18: Emoji Physics & Interaction ===
+  const emojiPhysicsLabel = document.createElement("h4");
+  emojiPhysicsLabel.textContent = "🌐 Emoji Physics";
+  emojiPhysicsLabel.style.cssText = 'margin: 15px 0 10px 0; color: #00ffff; font-size: 12px;';
+  tabContainers['Visual'].appendChild(emojiPhysicsLabel);
+
+  // Physics mode dropdown
+  const physicsModeLabel = document.createElement("label");
+  physicsModeLabel.textContent = "Physics Mode";
+  physicsModeLabel.style.cssText = 'display: block; font-size: 11px; margin-bottom: 4px; color: #00ffff;';
+  tabContainers['Visual'].appendChild(physicsModeLabel);
+
+  const physicsModeDropdown = document.createElement("select");
+  physicsModeDropdown.style.cssText = 'width: 100%; padding: 6px; background: rgba(0,0,0,0.5); border: 1px solid #00ffff; color: #00ffff; border-radius: 4px; margin-bottom: 10px; font-size: 11px;';
+
+  const physicsModes = [
+    { value: 'none', label: 'None (Static)' },
+    { value: 'gravity', label: 'Gravity (Fall Down)' },
+    { value: 'orbit', label: 'Orbit Attraction (Pull to Center)' },
+    { value: 'repulsion', label: 'Repulsion (Scatter Away)' }
+  ];
+
+  physicsModes.forEach(mode => {
+    const option = document.createElement("option");
+    option.value = mode.value;
+    option.textContent = mode.label;
+    physicsModeDropdown.appendChild(option);
+  });
+
+  physicsModeDropdown.addEventListener("change", () => {
+    const mode = physicsModeDropdown.value;
+    state.emojiPhysics.mode = mode;
+
+    // Apply to all streams
+    if (window.emojiStreamManager) {
+      window.emojiStreamManager.setPhysicsMode(mode);
+    }
+
+    // Apply to single emoji particles if active
+    if (window.emojiParticles) {
+      window.emojiParticles.setPhysicsMode(mode);
+    }
+
+    console.log(`🌐 Emoji physics mode: ${mode}`);
+  });
+  tabContainers['Visual'].appendChild(physicsModeDropdown);
+
+  // Collision toggle
+  const collisionToggle = createToggleControl('Enable Collisions', true, (value) => {
+    state.emojiPhysics.collisionEnabled = value;
+  });
+  collisionToggle.title = 'Emojis bounce off each other gently';
+  tabContainers['Visual'].appendChild(collisionToggle);
+
+  // Audio modulation toggle
+  const audioModToggle = createToggleControl('Audio Modulation', true, (value) => {
+    state.emojiPhysics.audioModulation = value;
+  });
+  audioModToggle.title = 'Gravity affected by bass, repulsion by treble';
+  tabContainers['Visual'].appendChild(audioModToggle);
+
+  // Mouse interaction toggle
+  const mouseInteractionToggle = createToggleControl('Mouse Swirl', false, (value) => {
+    state.emojiPhysics.mouseInteraction = value;
+  });
+  mouseInteractionToggle.title = 'Drag mouse to create swirl forces';
+  tabContainers['Visual'].appendChild(mouseInteractionToggle);
+
+  // Gravity strength slider
+  const gravityStrengthControl = createSliderControl('Gravity Strength', 0.01, 0.001, 0.05, 0.001, (value) => {
+    state.emojiPhysics.gravityStrength = value;
+  });
+  gravityStrengthControl.title = 'Downward acceleration force';
+  tabContainers['Visual'].appendChild(gravityStrengthControl);
+
+  // Orbit strength slider
+  const orbitStrengthControl = createSliderControl('Orbit Strength', 0.005, 0.001, 0.02, 0.001, (value) => {
+    state.emojiPhysics.orbitStrength = value;
+  });
+  orbitStrengthControl.title = 'Attraction force toward center';
+  tabContainers['Visual'].appendChild(orbitStrengthControl);
+
+  // Repulsion strength slider
+  const repulsionStrengthControl = createSliderControl('Repulsion Strength', 0.02, 0.001, 0.1, 0.001, (value) => {
+    state.emojiPhysics.repulsionStrength = value;
+  });
+  repulsionStrengthControl.title = 'Force pushing emojis away from center';
+  tabContainers['Visual'].appendChild(repulsionStrengthControl);
+
+  // === Phase 11.7.19: Emoji Particle Fusion & Clusters ===
+  const emojiFusionLabel = document.createElement("h4");
+  emojiFusionLabel.textContent = "⚡ Emoji Fusion & Clusters";
+  emojiFusionLabel.style.cssText = 'margin: 15px 0 10px 0; color: #ff00ff; font-size: 12px;';
+  tabContainers['Visual'].appendChild(emojiFusionLabel);
+
+  // Fusion enabled toggle
+  const fusionToggle = createToggleControl('Enable Fusion', false, (value) => {
+    state.emojiFusion.enabled = value;
+    if (value) {
+      console.log(`⚡ Fusion enabled (threshold ${state.emojiFusion.threshold.toFixed(1)})`);
+    } else {
+      console.log("⚡ Fusion disabled");
+    }
+  });
+  fusionToggle.title = 'Particles merge into clusters when overlapping';
+  tabContainers['Visual'].appendChild(fusionToggle);
+
+  // Fusion threshold slider
+  const fusionThresholdControl = createSliderControl('Fusion Threshold', 1.0, 0.1, 2.0, 0.1, (value) => {
+    state.emojiFusion.threshold = value;
+    console.log(`⚡ Fusion threshold = ${value.toFixed(1)}`);
+  });
+  fusionThresholdControl.title = 'Distance threshold for fusion (smaller = more fusions)';
+  tabContainers['Visual'].appendChild(fusionThresholdControl);
+
+  // === Phase 11.7.20: Emoji Constellations & Symbolic Geometry ===
+  const emojiConstellationLabel = document.createElement("h4");
+  emojiConstellationLabel.textContent = "🌌 Emoji Constellations";
+  emojiConstellationLabel.style.cssText = 'margin: 15px 0 10px 0; color: #ffaa00; font-size: 12px;';
+  tabContainers['Visual'].appendChild(emojiConstellationLabel);
+
+  // Constellation type dropdown
+  const constellationTypeLabel = document.createElement("label");
+  constellationTypeLabel.textContent = "Constellation Pattern";
+  constellationTypeLabel.style.cssText = 'display: block; font-size: 11px; margin-bottom: 4px; color: #ffaa00;';
+  tabContainers['Visual'].appendChild(constellationTypeLabel);
+
+  const constellationTypeDropdown = document.createElement("select");
+  constellationTypeDropdown.style.cssText = 'width: 100%; padding: 6px; background: rgba(0,0,0,0.5); border: 1px solid #ffaa00; color: #ffaa00; border-radius: 4px; margin-bottom: 10px; font-size: 11px;';
+
+  const constellationTypes = [
+    { value: 'None', label: 'None (Free Motion)' },
+    { value: 'Line', label: 'Line' },
+    { value: 'Triangle', label: 'Triangle' },
+    { value: 'Star', label: '5-Point Star ⭐' },
+    { value: 'Spiral', label: 'Golden Spiral 🌀' },
+    { value: 'CircleOf5ths', label: 'Circle of 5ths 🎵' },
+    { value: 'Platonic', label: 'Platonic Solid (Icosahedron)' },
+    { value: 'Custom', label: 'Custom Pattern (JSON)' }
+  ];
+
+  constellationTypes.forEach(type => {
+    const option = document.createElement("option");
+    option.value = type.value;
+    option.textContent = type.label;
+    constellationTypeDropdown.appendChild(option);
+  });
+
+  constellationTypeDropdown.addEventListener("change", () => {
+    const type = constellationTypeDropdown.value;
+    state.emojiConstellations.type = type;
+    state.emojiConstellations.rotation = 0; // Reset rotation
+
+    console.log(`🌌 Emoji constellation set: ${type}`);
+  });
+  tabContainers['Visual'].appendChild(constellationTypeDropdown);
+
+  // Constellation scale slider
+  const constellationScaleControl = createSliderControl('Constellation Scale', 5.0, 1.0, 15.0, 0.5, (value) => {
+    state.emojiConstellations.scale = value;
+    console.log(`🌌 Constellation scale: ${value.toFixed(1)}`);
+  });
+  constellationScaleControl.title = 'Size of the constellation pattern';
+  tabContainers['Visual'].appendChild(constellationScaleControl);
+
+  // Rotation speed slider
+  const rotationSpeedControl = createSliderControl('Rotation Speed', 0.01, 0, 0.1, 0.005, (value) => {
+    state.emojiConstellations.rotationSpeed = value;
+    console.log(`🌌 Rotation speed: ${value.toFixed(3)}`);
+  });
+  rotationSpeedControl.title = 'Speed of constellation rotation';
+  tabContainers['Visual'].appendChild(rotationSpeedControl);
+
+  // Audio sync toggle
+  const audioSyncToggle = createToggleControl('Audio Sync Rotation', true, (value) => {
+    state.emojiConstellations.audioSync = value;
+    console.log(`🌌 Audio sync: ${value ? 'ON' : 'OFF'}`);
+  });
+  audioSyncToggle.title = 'Rotation modulated by audio level';
+  tabContainers['Visual'].appendChild(audioSyncToggle);
+
+  // Beat sync toggle for constellations
+  const constellationBeatSyncToggle = createToggleControl('Beat Sync Pulse', false, (value) => {
+    state.emojiConstellations.beatSync = value;
+    console.log(`🌌 Beat sync pulse: ${value ? 'ON' : 'OFF'}`);
+  });
+  constellationBeatSyncToggle.title = 'Constellation pulses with sequencer beats';
+  tabContainers['Visual'].appendChild(constellationBeatSyncToggle);
+
+  // Custom pattern JSON upload
+  const customPatternLabel = document.createElement("label");
+  customPatternLabel.textContent = "Upload Custom Pattern (JSON)";
+  customPatternLabel.style.cssText = 'display: block; font-size: 11px; margin-top: 10px; margin-bottom: 4px; color: #ffaa00;';
+  tabContainers['Visual'].appendChild(customPatternLabel);
+
+  const customPatternInput = document.createElement("input");
+  customPatternInput.type = "file";
+  customPatternInput.accept = ".json";
+  customPatternInput.style.cssText = 'width: 100%; padding: 4px; background: rgba(0,0,0,0.5); border: 1px solid #ffaa00; color: #ffaa00; border-radius: 4px; margin-bottom: 10px; font-size: 11px;';
+
+  customPatternInput.addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const pattern = JSON.parse(text);
+
+      if (!pattern.positions || !Array.isArray(pattern.positions)) {
+        console.error("❌ Invalid pattern format. Expected { positions: [{x, y, z?}, ...] }");
+        return;
+      }
+
+      state.emojiConstellations.customPattern = pattern;
+      state.emojiConstellations.type = 'Custom';
+      constellationTypeDropdown.value = 'Custom';
+
+      console.log(`🌌 Loaded custom constellation → ${file.name}`);
+      console.log(`   ${pattern.positions.length} positions loaded`);
+    } catch (error) {
+      console.error("❌ Failed to load pattern JSON:", error.message);
+    }
+  });
+  tabContainers['Visual'].appendChild(customPatternInput);
+
+  // === Phase 11.7.21: Emoji Mandalas & Layered Symmetry ===
+  const emojiMandalaLabel = document.createElement("h4");
+  emojiMandalaLabel.textContent = "🌀 Emoji Mandalas";
+  emojiMandalaLabel.style.cssText = 'margin: 15px 0 10px 0; color: #ff66ff; font-size: 12px;';
+  tabContainers['Visual'].appendChild(emojiMandalaLabel);
+
+  // Mandala mode toggle
+  // Phase 11.7.31: Sync to both state.mandala and state.emojiMandala
+  const mandalaToggle = createToggleControl('Enable Mandala Mode', false, (value) => {
+    state.mandala.enabled = value;
+    state.emojiMandala.enabled = value;
+    notifyHUDUpdate({ mandalaEnabled: value });
+    console.log(`🎛️ Mandala: ${value ? 'ON' : 'OFF'}`);
+  });
+  mandalaToggle.title = 'Radial symmetry mandala pattern';
+  tabContainers['Visual'].appendChild(mandalaToggle);
+
+  // Ring count slider
+  // Phase 11.7.29: Updated range to 3-12
+  // Phase 11.7.31: Sync to state.mandala and use mandalaRings event
+  const ringCountControl = createSliderControl('Rings', 6, 3, 12, 1, (value) => {
+    state.mandala.ringCount = value;
+    state.emojiMandala.rings = value;
+    notifyHUDUpdate({ mandalaRings: value });
+    console.log(`🎛️ Mandala rings: ${value}`);
+  });
+  ringCountControl.title = 'Number of concentric rings (3-12)';
+  tabContainers['Visual'].appendChild(ringCountControl);
+
+  // Phase 11.7.26: Layout mode dropdown
+  const layoutModeLabel = document.createElement("label");
+  layoutModeLabel.textContent = "Layout Mode";
+  layoutModeLabel.style.cssText = 'display: block; font-size: 11px; margin-bottom: 4px; color: #ff66ff;';
+  tabContainers['Visual'].appendChild(layoutModeLabel);
+
+  const layoutModeDropdown = document.createElement("select");
+  layoutModeDropdown.style.cssText = 'width: 100%; padding: 6px; background: rgba(0,0,0,0.5); border: 1px solid #ff66ff; color: #ff66ff; border-radius: 4px; margin-bottom: 10px; font-size: 11px;';
+
+  const layoutModes = [
+    { value: 'radial', label: '⭕ Radial (Concentric)' },
+    { value: 'spiral', label: '🌀 Spiral (Fibonacci)' },
+    { value: 'grid', label: '🔲 Grid (Lattice)' }
+  ];
+
+  layoutModes.forEach(mode => {
+    const option = document.createElement("option");
+    option.value = mode.value;
+    option.textContent = mode.label;
+    if (mode.value === 'radial') option.selected = true;
+    layoutModeDropdown.appendChild(option);
+  });
+
+  layoutModeDropdown.addEventListener("change", () => {
+    const mode = layoutModeDropdown.value;
+    // Phase 11.7.26: Route through HUD update system to MandalaController
+    notifyHUDUpdate({ mandala: { layoutMode: mode } });
+    // Phase 11.7.29: Add console log
+    const emoji = mode === 'spiral' ? '🌀' : mode === 'grid' ? '🔲' : '⭕';
+    console.log(`📟 HUD → Mandala layout set to ${mode.charAt(0).toUpperCase() + mode.slice(1)} ${emoji}`);
+  });
+  layoutModeDropdown.title = 'Mandala geometry layout pattern';
+  tabContainers['Visual'].appendChild(layoutModeDropdown);
+
+  // Symmetry slider
+  // Phase 11.7.29: Changed from dropdown to slider (2-12 range for HUD simplicity)
+  // Phase 11.7.31: Sync to state.mandala and use mandalaSymmetry event
+  const symmetryControl = createSliderControl('Symmetry', 6, 2, 12, 1, (value) => {
+    state.mandala.symmetry = value;
+    state.emojiMandala.symmetry = value;
+    notifyHUDUpdate({ mandalaSymmetry: value });
+    console.log(`🎛️ Mandala symmetry: ${value}`);
+  });
+  symmetryControl.title = 'Symmetry fold count (2-12 spokes)';
+  tabContainers['Visual'].appendChild(symmetryControl);
+
+  // Rotation speed slider
+  const mandalaRotSpeedControl = createSliderControl('Rotation Speed', 0.02, 0, 0.1, 0.005, (value) => {
+    // Phase 11.7.25: Route through HUD update system to MandalaController
+    notifyHUDUpdate({ mandala: { rotationSpeed: value } });
+  });
+  mandalaRotSpeedControl.title = 'Base rotation speed';
+  tabContainers['Visual'].appendChild(mandalaRotSpeedControl);
+
+  // Audio modulation toggle
+  const mandalaAudioModToggle = createToggleControl('Audio Speed Boost', true, (value) => {
+    // Phase 11.7.25: Route through HUD update system to MandalaController
+    notifyHUDUpdate({ mandala: { audioModulation: value } });
+  });
+  mandalaAudioModToggle.title = 'Audio increases rotation speed';
+  tabContainers['Visual'].appendChild(mandalaAudioModToggle);
+
+  // Layered audio toggle
+  const layeredAudioToggle = createToggleControl('Layered Audio (Bass/Mid/Treble)', true, (value) => {
+    // Phase 11.7.25: Route through HUD update system to MandalaController
+    notifyHUDUpdate({ mandala: { layeredAudio: value } });
+  });
+  layeredAudioToggle.title = 'Inner rings→bass, middle→mids, outer→treble';
+  tabContainers['Visual'].appendChild(layeredAudioToggle);
+
+  // Phase 11.7.27/11.7.29: Mandala audio-reactive toggle
+  const mandalaAudioReactiveToggle = createToggleControl('Audio-Reactive Mandala', true, (value) => {
+    notifyHUDUpdate({ mandala: { mandalaAudioReactive: value } });
+    console.log(`📟 HUD → Mandala audioReactive = ${value ? 'ON' : 'OFF'}`);
+  });
+  mandalaAudioReactiveToggle.title = 'Mandala pulses and expands with audio';
+  tabContainers['Visual'].appendChild(mandalaAudioReactiveToggle);
+
+  // Phase 11.7.27/11.7.29: Mandala sensitivity slider
+  const mandalaSensitivityControl = createSliderControl('Mandala Sensitivity', 1.0, 0, 2.0, 0.1, (value) => {
+    notifyHUDUpdate({ mandala: { mandalaSensitivity: value } });
+    console.log(`📟 HUD → Mandala sensitivity = ${value.toFixed(1)}`);
+  });
+  mandalaSensitivityControl.title = 'Audio reactivity strength (0-200%)';
+  tabContainers['Visual'].appendChild(mandalaSensitivityControl);
+
+  // Phase 11.7.29: Emoji Picker (radio buttons)
+  const emojiPickerLabel = document.createElement("label");
+  emojiPickerLabel.textContent = "Mandala Emoji";
+  emojiPickerLabel.style.cssText = 'display: block; font-size: 11px; margin-top: 10px; margin-bottom: 6px; color: #ff66ff;';
+  tabContainers['Visual'].appendChild(emojiPickerLabel);
+
+  const emojiPickerContainer = document.createElement("div");
+  emojiPickerContainer.style.cssText = 'display: flex; gap: 8px; margin-bottom: 10px; padding: 8px; background: rgba(0,0,0,0.3); border-radius: 4px;';
+
+  const emojiOptions = ['🍕', '🌶️', '🍄', '⭐'];
+  emojiOptions.forEach((emoji, index) => {
+    const radioLabel = document.createElement("label");
+    radioLabel.style.cssText = 'display: flex; align-items: center; gap: 4px; cursor: pointer; padding: 4px 8px; border-radius: 4px; background: rgba(255,255,255,0.1); transition: background 0.2s;';
+
+    const radio = document.createElement("input");
+    radio.type = "radio";
+    radio.name = "mandalaEmoji";
+    radio.value = emoji;
+    radio.checked = index === 0; // Default to 🍕
+    radio.style.cssText = 'cursor: pointer;';
+
+    const emojiSpan = document.createElement("span");
+    emojiSpan.textContent = emoji;
+    emojiSpan.style.cssText = 'font-size: 20px;';
+
+    radio.addEventListener("change", () => {
+      if (radio.checked) {
+        notifyHUDUpdate({ mandala: { emoji: emoji } });
+        console.log(`📟 HUD → Mandala emoji set to ${emoji}`);
+      }
+    });
+
+    radioLabel.appendChild(radio);
+    radioLabel.appendChild(emojiSpan);
+    emojiPickerContainer.appendChild(radioLabel);
+  });
+
+  tabContainers['Visual'].appendChild(emojiPickerContainer);
+
+  // Per-ring emoji layout editor
+  const ringLayoutLabel = document.createElement("label");
+  ringLayoutLabel.textContent = "Ring Emoji Layout (center → outer)";
+  ringLayoutLabel.style.cssText = 'display: block; font-size: 11px; margin-top: 10px; margin-bottom: 4px; color: #ff66ff;';
+  tabContainers['Visual'].appendChild(ringLayoutLabel);
+
+  const ringLayoutInput = document.createElement("input");
+  ringLayoutInput.type = "text";
+  ringLayoutInput.value = state.emojiMandala.layout.join(' ');
+  ringLayoutInput.placeholder = "🍕 🌶️ 🍄";
+  ringLayoutInput.style.cssText = 'width: 100%; padding: 6px; background: rgba(0,0,0,0.5); border: 1px solid #ff66ff; color: #ff66ff; border-radius: 4px; margin-bottom: 10px; font-size: 14px;';
+
+  ringLayoutInput.addEventListener("input", (e) => {
+    const emojis = e.target.value.split(/\s+/).filter(s => s.length > 0);
+    state.emojiMandala.layout = emojis;
+    console.log(`🌀 Mandala layout updated: ${emojis.join(' → ')}`);
+  });
+  ringLayoutInput.title = 'Space-separated emojis for each ring';
+  tabContainers['Visual'].appendChild(ringLayoutInput);
+
+  // Phase 11.7.22: Musical Scale Mode
+  const musicalModeLabel = document.createElement("h4");
+  musicalModeLabel.textContent = "🎼 Musical Scale Mode";
+  musicalModeLabel.style.cssText = 'margin: 15px 0 10px 0; color: #ffdd66; font-size: 12px;';
+  tabContainers['Visual'].appendChild(musicalModeLabel);
+
+  // Musical mode toggle
+  const musicalModeToggle = createToggleControl('Enable Musical Mode', false, (value) => {
+    // Phase 11.7.25: Route through HUD update system to MandalaController
+    notifyHUDUpdate({ mandala: { musicalMode: value } });
+  });
+  musicalModeToggle.title = 'Emojis arranged by musical scale intervals';
+  tabContainers['Visual'].appendChild(musicalModeToggle);
+
+  // Scale selector
+  const scaleLabel = document.createElement("label");
+  scaleLabel.textContent = "Scale/Mode";
+  scaleLabel.style.cssText = 'display: block; font-size: 11px; margin-bottom: 4px; color: #ffdd66;';
+  tabContainers['Visual'].appendChild(scaleLabel);
+
+  const scaleDropdown = document.createElement("select");
+  scaleDropdown.style.cssText = 'width: 100%; padding: 6px; background: rgba(0,0,0,0.5); border: 1px solid #ffdd66; color: #ffdd66; border-radius: 4px; margin-bottom: 10px; font-size: 11px;';
+
+  const scales = ['Major', 'Minor', 'Pentatonic', 'Dorian', 'Phrygian', 'Lydian', 'Mixolydian', 'Chromatic'];
+  scales.forEach(scale => {
+    const option = document.createElement("option");
+    option.value = scale;
+    option.textContent = scale;
+    if (scale === 'Major') option.selected = true;
+    scaleDropdown.appendChild(option);
+  });
+
+  scaleDropdown.addEventListener("change", () => {
+    // Phase 11.7.25: Route through HUD update system to MandalaController
+    const scale = scaleDropdown.value;
+    notifyHUDUpdate({ mandala: { scale, mode: scale } }); // Mode defaults to scale name
+  });
+  tabContainers['Visual'].appendChild(scaleDropdown);
+
+  // Root note slider (MIDI 48-72 = C3-C5)
+  const rootNoteControl = createSliderControl('Root Note (MIDI)', 60, 48, 72, 1, (value) => {
+    state.emojiMandala.rootNote = value;
+    const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    const noteName = noteNames[value % 12];
+    const octave = Math.floor(value / 12) - 1;
+    console.log(`🎼 Root note: ${noteName}${octave} (MIDI ${value})`);
+  });
+  rootNoteControl.title = 'MIDI root note for scale (C4=60)';
+  tabContainers['Visual'].appendChild(rootNoteControl);
+
+  // Phase 11.7.23: Interactive Performance Controls
+  const performanceLabel = document.createElement("h4");
+  performanceLabel.textContent = "🎛️ Performance Controls";
+  performanceLabel.style.cssText = 'margin: 15px 0 10px 0; color: #ff9944; font-size: 12px;';
+  tabContainers['Visual'].appendChild(performanceLabel);
+
+  // Performance mode toggle
+  const performanceModeToggle = createToggleControl('Enable Performance Mode', false, (value) => {
+    // Phase 11.7.25: Route through HUD update system to MandalaController
+    notifyHUDUpdate({ mandala: { performanceMode: value } });
+  });
+  performanceModeToggle.title = 'Live manipulation controls enabled';
+  tabContainers['Visual'].appendChild(performanceModeToggle);
+
+  // Differential rotation toggle
+  const diffRotationToggle = createToggleControl('Differential Ring Rotation', true, (value) => {
+    state.emojiMandala.differentialRotation = value;
+    console.log(`🎛️ Differential rotation: ${value ? 'ON (each ring independent)' : 'OFF (unified)'}`);
+  });
+  diffRotationToggle.title = 'Each ring rotates at different speed';
+  tabContainers['Visual'].appendChild(diffRotationToggle);
+
+  // Extended ring count slider (up to 8 for performance mode)
+  const extendedRingCountControl = createSliderControl('Ring Count (Performance)', 3, 1, 8, 1, (value) => {
+    state.emojiMandala.rings = value;
+    console.log(`🎛️ Mandala rings: ${value}`);
+  });
+  extendedRingCountControl.title = 'Number of rings (1-8 in performance mode)';
+  tabContainers['Visual'].appendChild(extendedRingCountControl);
+
+  // Extended symmetry slider (up to 12)
+  const extendedSymmetryControl = createSliderControl('Symmetry (Performance)', 6, 2, 12, 1, (value) => {
+    state.emojiMandala.symmetry = value;
+    console.log(`🎛️ Mandala symmetry: ${value}-fold`);
+  });
+  extendedSymmetryControl.title = 'Radial symmetry spokes (2-12)';
+  tabContainers['Visual'].appendChild(extendedSymmetryControl);
+
+  // Scale sequence toggle
+  const scaleSequenceToggle = createToggleControl('Auto Scale Sequence', false, (value) => {
+    state.emojiMandala.scaleSequenceEnabled = value;
+    if (value) {
+      state.emojiMandala.lastScaleChange = performance.now();
+      console.log(`🎛️ Scale sequencing ON: ${state.emojiMandala.scaleSequence.join(' → ')}`);
+    } else {
+      console.log("🎛️ Scale sequencing OFF");
+    }
+  });
+  scaleSequenceToggle.title = 'Auto-advance through scale progression';
+  tabContainers['Visual'].appendChild(scaleSequenceToggle);
+
+  // Scale sequence interval slider
+  const scaleIntervalControl = createSliderControl('Scale Change Interval (s)', 4, 1, 10, 0.5, (value) => {
+    state.emojiMandala.scaleSequenceInterval = value * 1000;
+    console.log(`🎛️ Scale interval: ${value}s`);
+  });
+  scaleIntervalControl.title = 'Seconds between scale changes';
+  tabContainers['Visual'].appendChild(scaleIntervalControl);
+
+  // Scale sequence editor (text input)
+  const scaleSeqLabel = document.createElement("label");
+  scaleSeqLabel.textContent = "Scale Sequence";
+  scaleSeqLabel.style.cssText = 'display: block; font-size: 11px; margin-top: 10px; margin-bottom: 4px; color: #ff9944;';
+  tabContainers['Visual'].appendChild(scaleSeqLabel);
+
+  const scaleSeqInput = document.createElement("input");
+  scaleSeqInput.type = "text";
+  scaleSeqInput.value = state.emojiMandala.scaleSequence.join(' ');
+  scaleSeqInput.placeholder = "Major Dorian Mixolydian";
+  scaleSeqInput.style.cssText = 'width: 100%; padding: 6px; background: rgba(0,0,0,0.5); border: 1px solid #ff9944; color: #ff9944; border-radius: 4px; margin-bottom: 10px; font-size: 11px;';
+
+  scaleSeqInput.addEventListener("input", (e) => {
+    const scales = e.target.value.split(/\s+/).filter(s => s.length > 0);
+    state.emojiMandala.scaleSequence = scales;
+    console.log(`🎛️ Scale sequence updated: ${scales.join(' → ')}`);
+  });
+  scaleSeqInput.title = 'Space-separated scale names';
+  tabContainers['Visual'].appendChild(scaleSeqInput);
+
   // === Phase 2.3.2A: Particle Trails ===
   const trailsLabel = document.createElement("h4");
   trailsLabel.textContent = "🌊 Particle Trails (Line Segments)";

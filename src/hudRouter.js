@@ -5,6 +5,15 @@ import { initParticles, destroyParticles } from './particles.js';
 
 console.log("📟 hudRouter.js loaded");
 
+// Phase 11.7.24: Import mandala controller getter
+let getMandalaController;
+setTimeout(() => {
+  // Lazy import to avoid circular dependency
+  import('./main.js').then(module => {
+    getMandalaController = module.getMandalaController;
+  });
+}, 0);
+
 // HUD updates to state routing
 onHUDUpdate((update) => {
   // Phase 11.4.1: Handle reset action
@@ -588,6 +597,89 @@ onHUDUpdate((update) => {
       console.log("📟 Preset action:", update.presetAction, update.presetName);
     }
   }
+  // Phase 11.7.31: Mandala HUD controls (simple toggles/sliders)
+  if (update.mandalaEnabled !== undefined) {
+    state.mandala.enabled = update.mandalaEnabled;
+    state.emojiMandala.enabled = update.mandalaEnabled;
+    console.log(`🎛️ Mandala HUD: ${update.mandalaEnabled ? 'ON' : 'OFF'}`);
+  }
+  if (update.mandalaRings !== undefined) {
+    state.mandala.ringCount = update.mandalaRings;
+    state.emojiMandala.rings = update.mandalaRings;
+    // Route to controller if available
+    const controller = getMandalaController?.();
+    if (controller) {
+      controller.setRings(update.mandalaRings);
+    }
+  }
+  if (update.mandalaSymmetry !== undefined) {
+    state.mandala.symmetry = update.mandalaSymmetry;
+    state.emojiMandala.symmetry = update.mandalaSymmetry;
+    // Route to controller if available
+    const controller = getMandalaController?.();
+    if (controller) {
+      controller.setSymmetry(update.mandalaSymmetry);
+    }
+  }
+
+  // Phase 11.7.24/11.7.26: Mandala Controller HUD routing
+  if (update.mandala) {
+    const mandala = update.mandala;
+    const controller = getMandalaController?.();
+
+    if (controller) {
+      if (mandala.rings !== undefined) {
+        controller.setRings(mandala.rings);
+      }
+      if (mandala.symmetry !== undefined) {
+        controller.setSymmetry(mandala.symmetry);
+      }
+      if (mandala.scale !== undefined) {
+        controller.setScale(mandala.scale, mandala.mode);
+      }
+      if (mandala.emoji !== undefined) {
+        controller.swapEmoji(mandala.emoji, mandala.ringIndex);
+      }
+      if (mandala.rotationSpeed !== undefined) {
+        controller.setRotationSpeed(mandala.rotationSpeed);
+      }
+      if (mandala.musicalMode !== undefined) {
+        controller.setMusicalMode(mandala.musicalMode);
+      }
+      if (mandala.rootNote !== undefined) {
+        controller.setRootNote(mandala.rootNote);
+      }
+      if (mandala.audioModulation !== undefined) {
+        controller.setAudioModulation(mandala.audioModulation);
+      }
+      if (mandala.layeredAudio !== undefined) {
+        controller.setLayeredAudio(mandala.layeredAudio);
+      }
+      if (mandala.differentialRotation !== undefined) {
+        controller.setDifferentialRotation(mandala.differentialRotation);
+      }
+      if (mandala.scaleSequencing !== undefined) {
+        controller.setScaleSequencing(mandala.scaleSequencing);
+      }
+      if (mandala.scaleSequence !== undefined) {
+        controller.setScaleSequence(mandala.scaleSequence);
+      }
+      if (mandala.performanceMode !== undefined) {
+        controller.setPerformanceMode(mandala.performanceMode);
+      }
+      // Phase 11.7.26: Layout mode routing
+      if (mandala.layoutMode !== undefined) {
+        controller.setLayout(mandala.layoutMode);
+      }
+      // Phase 11.7.27: Audio-reactive mandala routing
+      if (mandala.mandalaAudioReactive !== undefined) {
+        controller.setMandalaAudioReactive(mandala.mandalaAudioReactive);
+      }
+      if (mandala.mandalaSensitivity !== undefined) {
+        controller.setMandalaSensitivity(mandala.mandalaSensitivity);
+      }
+    }
+  }
 });
 
-console.log("📟 HUD routing configured");
+console.log("📟 HUD routing configured (Phase 11.7.24: MandalaController integration)");

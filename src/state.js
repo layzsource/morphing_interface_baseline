@@ -120,6 +120,117 @@ export const state = {
     spread: 1.0,     // spatial spread multiplier (HUD slider: 0.1–2.0)
   },
 
+  // Phase 11.7: Particle motion debug controls
+  particleDensity: 2000,
+  particleSize: 0.1,
+  particleMotionStrength: 0.5,
+  useAudioJitter: true,
+
+  // Phase 11.7.1: Emoji particles toggle
+  useEmojiParticles: false,
+
+  // Phase 11.7.15: Emoji Mixer streams
+  emojiStreams: [],
+
+  // Phase 11.7.16: Emoji Sequencer & Timeline
+  emojiSequencer: {
+    enabled: false,
+    bpm: 120,
+    currentBeat: 0,
+    patterns: {
+      // Example: { "🍕": [1,0,1,0,1,0,1,0], "🌶️": [0,1,0,1,0,1,0,1] }
+    },
+    timelineLength: 16 // beats
+  },
+
+  // Phase 11.7.17: Emoji Pattern Banks
+  emojiBanks: [
+    // Array of 8 banks: { name: "Pizza Storm", streams: [...], patterns: {...}, bpm: 120, timelineLength: 16 }
+    null, null, null, null, null, null, null, null
+  ],
+  currentBank: null, // Currently loaded bank index (0-7)
+
+  // Phase 11.7.18: Emoji Physics & Interaction
+  emojiPhysics: {
+    mode: 'none', // 'none', 'gravity', 'orbit', 'repulsion'
+    gravityStrength: 0.01,
+    orbitStrength: 0.005,
+    repulsionStrength: 0.02,
+    collisionEnabled: true,
+    audioModulation: true,
+    mouseInteraction: false
+  },
+
+  // Phase 11.7.19: Emoji Particle Fusion & Clusters
+  emojiFusion: {
+    enabled: false,
+    threshold: 1.0 // distance threshold for fusion trigger
+  },
+
+  // Phase 11.7.20: Emoji Constellations & Symbolic Geometry
+  emojiConstellations: {
+    type: 'None', // 'None', 'Line', 'Triangle', 'Star', 'Spiral', 'CircleOf5ths', 'Platonic', 'Custom'
+    customPattern: null, // Custom JSON pattern data
+    scale: 5.0, // Constellation scale factor
+    rotation: 0, // Current rotation angle (radians)
+    rotationSpeed: 0.01, // Rotation speed
+    audioSync: true, // Sync rotation/pulse with audio
+    beatSync: false // Sync with sequencer beats
+  },
+
+  // Phase 11.7.31: Mandala HUD controls (alias for emojiMandala)
+  mandala: {
+    enabled: false,
+    ringCount: 6,     // HUD-friendly alias for rings (3-12)
+    symmetry: 6,      // Fold symmetry (2-12)
+    audioReactive: false  // Audio reactivity toggle
+  },
+
+  // Phase 11.7.21: Emoji Mandalas & Layered Symmetry
+  emojiMandala: {
+    enabled: false,
+    rings: 3, // Number of concentric rings (1-12) - Phase 11.7.29: expanded range
+    symmetry: 6, // Fold symmetry (3-24) - Phase 11.7.29: expanded range
+    layout: ['🍕', '🌶️', '🍄'], // Emoji per ring (center → outer)
+    emoji: '🍕', // Phase 11.7.29: Current primary emoji for mandala
+    ringRadii: [0, 2, 4, 6, 8, 10], // Base radius for each ring
+    rotation: 0, // Global rotation angle
+    rotationSpeed: 0.02, // Base rotation speed
+    audioModulation: true, // Audio affects rotation speed
+    layeredAudio: true, // Different rings react to different bands (bass/mid/treble)
+    layoutMode: 'radial', // Phase 11.7.26: 'radial' | 'spiral' | 'grid'
+
+    // Phase 11.7.27: Audio-reactive mandala
+    mandalaAudioReactive: true, // Mandala pulses with audio
+    mandalaSensitivity: 1.0, // Audio sensitivity (0-2.0, default 1.0 = 100%)
+    radiusPulse: 0, // Current radius pulse amount (calculated)
+    anglePulse: 0, // Current angle twist amount (calculated)
+
+    // Phase 11.7.22: Musical Scale Integration
+    musicalMode: false, // Enable musical scale mapping
+    scale: 'Major', // 'Major', 'Minor', 'Pentatonic', 'Dorian', 'Phrygian', 'Lydian', 'Mixolydian'
+    rootNote: 60, // MIDI note number for root (C4 = 60)
+    noteToEmoji: {}, // Maps MIDI note → emoji (dynamically populated)
+    activeNotes: new Set(), // Currently playing MIDI notes
+    notePulse: {}, // Maps note number → pulse intensity (0-1)
+
+    // Phase 11.7.23: Interactive Performance Controls
+    performanceMode: false, // Enable live performance controls
+    ringRotationSpeeds: [0, 0.01, 0.015, 0.02, 0.025, 0.03], // Per-ring rotation speeds
+    differentialRotation: true, // Each ring rotates independently
+    scaleSequence: ['Major', 'Dorian', 'Mixolydian', 'Phrygian'], // Scale progression
+    scaleSequenceIndex: 0, // Current scale in sequence
+    scaleSequenceEnabled: false, // Auto-advance through scales
+    scaleSequenceInterval: 4000, // Ms between scale changes
+    lastScaleChange: 0, // Timestamp of last scale change
+    midiMappings: {
+      symmetry: 20, // CC20 → symmetry (2-12)
+      ringCount: 21, // CC21 → ring count (1-8)
+      rotationSpeed: 22, // CC22 → global rotation speed
+      scaleSequence: 23 // CC23 → advance scale sequence
+    }
+  },
+
   // Lighting system
   lighting: {
     ambientIntensity: 0.4,

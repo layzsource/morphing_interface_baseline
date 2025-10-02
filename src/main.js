@@ -10,13 +10,29 @@ var shadowBox = {
 
 console.log("📦 ShadowBox safe stub active (Phase 2.3.3SS) - prevents initialization errors");
 
+// Phase 11.7.1: Emoji particles global reference
+let emojiParticles = null;
+
+// Phase 11.7.15: Emoji stream manager global reference
+let emojiStreamManager = null;
+
+// Phase 11.7.16: Emoji sequencer global reference
+let emojiSequencer = null;
+
+// Phase 11.7.17: Emoji pattern bank manager global reference
+let emojiBankManager = null;
+
+// Phase 11.7.24: Mandala controller global reference
+let mandalaController = null;
+
 import * as THREE from 'three';
 import { initHUD, updatePresetList } from './hud.js';
 import { initMIDI, getMIDIDeviceCount } from './midi.js';
 import { getHUDIdleSpin, getVisualData, getMorphState, scene, renderer, camera } from './geometry.js';
 import { initShadows } from './shadows.js';
 import { initSprites } from './sprites.js';
-import { initParticles, getParticleSystemInstance } from './particles.js';
+import { initParticles, getParticleSystemInstance, EmojiParticles, EmojiStreamManager, EmojiSequencer, EmojiPatternBankManager } from './particles.js'; // Phase 11.7.1, 11.7.15, 11.7.16, 11.7.17
+import { MandalaController } from './mandalaController.js'; // Phase 11.7.24
 import { initVessel, updateVessel, getVesselGroup } from './vessel.js';
 import { initTelemetry } from './telemetry.js';
 import { initPresets, createDefaultPresets, listPresets, getCurrentPresetName } from './presets.js';
@@ -116,6 +132,61 @@ if (state.particlesEnabled) {
   }
 }
 
+// Phase 11.7.15: Initialize emoji stream manager
+emojiStreamManager = new EmojiStreamManager(scene);
+window.emojiStreamManager = emojiStreamManager;
+
+// Phase 11.7.16: Initialize emoji sequencer
+emojiSequencer = new EmojiSequencer(emojiStreamManager);
+window.emojiSequencer = emojiSequencer;
+
+// Phase 11.7.17: Initialize emoji pattern bank manager
+emojiBankManager = new EmojiPatternBankManager(emojiStreamManager, emojiSequencer);
+window.emojiBankManager = emojiBankManager;
+
+// Phase 11.7.24/11.7.25: Initialize mandala controller
+mandalaController = new MandalaController(scene, {
+  rings: state.emojiMandala.rings,
+  symmetry: state.emojiMandala.symmetry,
+  scale: state.emojiMandala.scale,
+  rotationSpeed: state.emojiMandala.rotationSpeed,
+  emojiLayout: state.emojiMandala.layout
+});
+window.mandalaController = mandalaController;
+console.log("🎛️ MandalaController initialized and exposed globally");
+
+// Phase 11.7.25: Integration trace
+const mandalaState = mandalaController.getState();
+console.log(`🔗 Mandala bound to HUD + MIDI (rings=${mandalaState.rings}, symmetry=${mandalaState.symmetry}, scale=${mandalaState.scale}, mode=${mandalaState.mode})`);
+console.log(`🔗 Mandala → Animation Loop: ✅ | HUD Routing: ✅ | MIDI Routing: ✅`);
+
+// Phase 11.7.18: Mouse interaction for emoji swirl forces
+let isMouseDown = false;
+let mouseX = 0;
+let mouseY = 0;
+
+window.addEventListener('mousedown', () => { isMouseDown = true; });
+window.addEventListener('mouseup', () => { isMouseDown = false; });
+window.addEventListener('mousemove', (e) => {
+  mouseX = e.clientX;
+  mouseY = e.clientY;
+
+  // Apply swirl force to all active emoji streams
+  if (isMouseDown && state.emojiPhysics?.mouseInteraction) {
+    if (window.emojiStreamManager) {
+      window.emojiStreamManager.streams.forEach((stream, emoji) => {
+        if (stream.enabled) {
+          stream.applySwirlForce(mouseX, mouseY);
+        }
+      });
+    }
+    // Also apply to single emoji particles if active
+    if (window.emojiParticles) {
+      window.emojiParticles.applySwirlForce(mouseX, mouseY);
+    }
+  }
+});
+
 initTelemetry(() => ({
   midiDevices: getMIDIDeviceCount(),
   hudIdle: state.idleSpin,
@@ -175,6 +246,11 @@ console.log("✅ main.js loaded – all modules imported");
 // Phase 2.3.3: Export shadowBox for HUD access
 export function getShadowBox() {
   return shadowBox;
+}
+
+// Phase 11.7.24: Export mandalaController for router access
+export function getMandalaController() {
+  return mandalaController;
 }
 
 // 🔎 Debug: list all objects in the scene

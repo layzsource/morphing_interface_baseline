@@ -171,7 +171,15 @@ function handlePresetAction(action, presetName, category, tags) {
         audio: { ...state.audio },
 
         // Phase 11.2.1+: Color layers
-        colorLayers: JSON.parse(JSON.stringify(state.colorLayers))
+        colorLayers: JSON.parse(JSON.stringify(state.colorLayers)),
+
+        // Phase 11.7.33: Mandala parameters
+        mandala: {
+          enabled: state.mandala.enabled,
+          ringCount: state.mandala.ringCount,
+          symmetry: state.mandala.symmetry,
+          audioReactive: state.mandala.audioReactive
+        }
       };
 
       console.log("💾 [PresetRouter] Calling savePreset with:", { presetName, category, tags, stateKeys: Object.keys(currentState) });
@@ -261,6 +269,23 @@ function handlePresetAction(action, presetName, category, tags) {
           });
         }
 
+        // Phase 11.7.33: Apply Mandala settings
+        if (preset.state.mandala) {
+          state.mandala.enabled = preset.state.mandala.enabled ?? false;
+          state.mandala.ringCount = preset.state.mandala.ringCount ?? 6;
+          state.mandala.symmetry = preset.state.mandala.symmetry ?? 6;
+          state.mandala.audioReactive = preset.state.mandala.audioReactive ?? false;
+
+          // Sync emojiMandala state
+          state.emojiMandala.enabled = state.mandala.enabled;
+          state.emojiMandala.rings = state.mandala.ringCount;
+          state.emojiMandala.symmetry = state.mandala.symmetry;
+
+          const onOff = state.mandala.enabled ? 'ON' : 'OFF';
+          const audioStatus = state.mandala.audioReactive ? 'ON' : 'OFF';
+          console.log(`💾 Preset → Mandala restored: ${onOff} | rings=${state.mandala.ringCount} | symmetry=${state.mandala.symmetry} | audioReactive=${audioStatus}`);
+        }
+
         state.presets.currentPresetName = presetName;
         console.log(`✅ Preset "${presetName}" loaded via unified binding system`);
       }
@@ -293,7 +318,15 @@ function handlePresetAction(action, presetName, category, tags) {
         audio: { ...state.audio },
 
         // Phase 11.2.1+: Color layers
-        colorLayers: JSON.parse(JSON.stringify(state.colorLayers))
+        colorLayers: JSON.parse(JSON.stringify(state.colorLayers)),
+
+        // Phase 11.7.33: Mandala parameters
+        mandala: {
+          enabled: state.mandala.enabled,
+          ringCount: state.mandala.ringCount,
+          symmetry: state.mandala.symmetry,
+          audioReactive: state.mandala.audioReactive
+        }
       };
 
       if (savePreset(presetName, currentStateUpdate, updateCategory, updateTags)) {
