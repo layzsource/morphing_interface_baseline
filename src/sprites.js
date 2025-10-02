@@ -1,7 +1,6 @@
 // src/sprites.js
 import * as THREE from 'three';
-import { state } from './state.js';
-import { getEffectiveAudio } from './audio.js'; // Audio Gating Fix
+import { getEffectiveAudio, state } from './state.js';
 
 let spriteGroup;
 let spriteScene;
@@ -42,13 +41,15 @@ export function updateSprites() {
 
   if (!state.sprites.enabled) return;
 
-  // Audio Gating Fix: Get audio data through centralized gating
-  const audioData = getEffectiveAudio();
+  // Phase 11.4.2S: Use stable audio gate
+  const { bass, mid, treble, level } = getEffectiveAudio();
+  const audioLevel = (bass + mid + treble) / 3;
 
-  // Audio-reactive opacity (only when audio reactive enabled)
-  const audioBoost = state.audioReactive
-    ? (audioData.bass + audioData.mid + audioData.treble) / 3
-    : 0;
+  // One-time log
+  if (!state.__spritesAudioGateNotified) {
+    console.log("🎵 Sprites now use getEffectiveAudio() gate");
+    state.__spritesAudioGateNotified = true;
+  }
 
   spriteGroup.children.forEach((sprite, i) => {
     const angle = Date.now() * 0.001 + i;
@@ -57,7 +58,7 @@ export function updateSprites() {
     sprite.position.z = Math.sin(angle * 0.5) * (2 + state.morphWeights.pyramid * 3);
 
     sprite.material.color.set(state.color);
-    sprite.material.opacity = 0.2 + audioBoost * 0.8;
+    sprite.material.opacity = 0.2 + audioLevel * 0.8;
   });
 }
 

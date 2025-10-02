@@ -367,4 +367,62 @@ export function easeInOutCubic(t) {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
+// Phase 11.4.1: Baseline snapshot + reset
+export const BASELINE = {
+  rotationX: 0.01,
+  rotationY: 0.01,
+  scale: 1.0,
+  morphBaseWeights: [0.0, 1.0, 0.0, 0.0], // [sphere, cube, pyramid, torus] - default cube
+  colorLayers: JSON.parse(JSON.stringify(state.colorLayers)),
+  vessel: { opacity: state.vessel?.opacity ?? 0.5 },
+  shadows: { opacity: state.shadows?.opacity ?? 0.25 },
+  particles: { opacity: state.particles?.opacity ?? 0.5 }
+};
+
+export function resetToBaseline() {
+  // Stop any active interpolation/chain
+  state.interpolation.active = false;
+  morphChain.active = false;
+  morphChain.paused = false;
+
+  // Reset transform values
+  state.rotationX = BASELINE.rotationX;
+  state.rotationY = BASELINE.rotationY;
+  state.scale = BASELINE.scale;
+
+  // Reset morph weights
+  state.morphBaseWeights = [...BASELINE.morphBaseWeights];
+
+  // Reset color layers
+  state.colorLayers = JSON.parse(JSON.stringify(BASELINE.colorLayers));
+
+  // Reset opacities
+  state.vessel.opacity = BASELINE.vessel.opacity;
+  state.shadows.opacity = BASELINE.shadows.opacity;
+  state.particles.opacity = BASELINE.particles.opacity;
+
+  console.log("♻️ State reset to baseline");
+}
+
+// ---- Phase 11.4.2S: stable audio gate -------------------------------
+export function getEffectiveAudio() {
+  const { audioReactive, audio } = state;
+
+  if (!audioReactive) {
+    return { bass: 0, mid: 0, treble: 0, level: 0 };
+  }
+
+  if (!audio || Number.isNaN(audio.bass) || Number.isNaN(audio.mid) || Number.isNaN(audio.treble)) {
+    return { bass: 0, mid: 0, treble: 0, level: 0 };
+  }
+
+  return {
+    bass: audio.bass ?? 0,
+    mid: audio.mid ?? 0,
+    treble: audio.treble ?? 0,
+    level: audio.level ?? ((audio.bass ?? 0) + (audio.mid ?? 0) + (audio.treble ?? 0)) / 3,
+  };
+}
+// ---------------------------------------------------------------------
+
 console.log("🎯 State initialized:", state);

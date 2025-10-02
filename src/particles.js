@@ -20,6 +20,17 @@ export class ParticleSystem {
     this.opacity         = 1.0;
     this.organicStrength = 0.2;
 
+    // Phase 11.4.2S: Per-particle drift with speed modulation
+    this.driftOffsets = [];
+    for (let i = 0; i < this.count; i++) {
+      this.driftOffsets.push({
+        x: Math.random() * Math.PI * 2,
+        y: Math.random() * Math.PI * 2,
+        z: Math.random() * Math.PI * 2,
+        s: 0.6 + Math.random() * 0.8
+      });
+    }
+
     this.hueShift      = 0.0;
     this.audioReactive = true;
     this.audioLevel    = 0.0;
@@ -174,6 +185,9 @@ export class ParticleSystem {
 
     this._initParticles();
     this.setLayout('orbit');
+
+    // Phase 11.4.2S: Log per-axis drift initialization
+    console.log(`✨ Particle drift initialized for ${this.count} particles`);
   }
 
   _initParticles() {
@@ -330,6 +344,25 @@ export class ParticleSystem {
       let ty = this.targets[ti + 1];
       let tz = this.targets[ti + 2];
 
+      // Phase 11.4.2S: Per-axis organic drift with independent frequencies
+      if (this.organicStrength > 0 && this.driftOffsets.length) {
+        const driftScale = this.organicStrength * 0.02;
+        const off = this.driftOffsets[i];
+        const fx = 0.18 * off.s;
+        const fy = 0.23 * off.s;
+        const fz = 0.15 * off.s;
+
+        tx += Math.sin(t * fx + off.x) * driftScale;
+        ty += Math.sin(t * fy + off.y) * driftScale;
+        tz += Math.sin(t * fz + off.z) * driftScale;
+
+        // Phase 11.4.2S: One-time drift active log
+        if (!this._driftNotified) {
+          this._driftNotified = true;
+          console.log(`✨ Particle drift per-axis active (organic=${this.organicStrength.toFixed(2)})`);
+        }
+      }
+
       // Phase 2.3.1: Apply Vessel rotation to vesselPlanes layout
       if (this.currentLayout === 'vesselPlanes' && this.vesselGroup) {
         const v = new THREE.Vector3(tx, ty, tz);
@@ -470,8 +503,10 @@ export class ParticleSystem {
       const trailStatus = this.trailEnabled
         ? ` | trails: enabled length=${this.trailLength} opacity=${this.trailOpacity.toFixed(2)} fade=${this.trailFade.toFixed(2)} ${audioReactiveLen} perf=OK`
         : '';
+      // Phase 11.4.2: Log organic drift status
+      const organicStatus = this.organicStrength > 0 ? ` ✨ Particle drift active (organic=${this.organicStrength.toFixed(2)})` : '';
       console.log(
-        `✨ Layout: ${this.currentLayout}${coupled} | count: ${this.count} | size: ${this.sizeWorld.toFixed(2)} | speed: ${this.orbitalSpeed.toFixed(2)} | organic: ${this.organicStrength.toFixed(2)}${trailStatus}`
+        `✨ Layout: ${this.currentLayout}${coupled} | count: ${this.count} | size: ${this.sizeWorld.toFixed(2)} | speed: ${this.orbitalSpeed.toFixed(2)} | organic: ${this.organicStrength.toFixed(2)}${organicStatus}${trailStatus}`
       );
     }
   }
