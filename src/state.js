@@ -200,6 +200,9 @@ export const morphChain = {
   pausedProgress: 0  // progress (0-1) when paused
 };
 
+// Phase 11.5.0: Flag to suppress redundant normalize logs
+let normalizeLogged = false;
+
 // Utility function to normalize morph weights
 export function normalizeMorphWeights() {
   const weights = state.morphWeights;
@@ -210,7 +213,14 @@ export function normalizeMorphWeights() {
     Object.keys(weights).forEach(target => {
       weights[target] = weights[target] / total;
     });
-    console.log("🎯 Morph weights auto-normalized");
+    // Phase 11.5.0: Log only once when normalization starts
+    if (!normalizeLogged) {
+      console.log("🎯 Morph weights auto-normalized (sum exceeded 1.0)");
+      normalizeLogged = true;
+    }
+  } else {
+    // Reset flag when weights are back in valid range
+    normalizeLogged = false;
   }
 }
 

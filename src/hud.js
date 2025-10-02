@@ -50,82 +50,175 @@ function createHUDPanel() {
   `;
   document.head.appendChild(style);
 
+  // Phase 11.5.0: HUD collapse state
+  let hudCollapsed = false;
+
+  // Header container with title + collapse button
+  const header = document.createElement('div');
+  header.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;';
+
   const title = document.createElement('h3');
   title.textContent = '🔺 Geometry Controls';
-  title.style.cssText = 'margin: 0 0 15px 0; color: #00ff00;';
-  panel.appendChild(title);
+  title.style.cssText = 'margin: 0; color: #00ff00;';
+
+  // Phase 11.5.0: Collapse/Expand toggle button
+  const collapseBtn = document.createElement('button');
+  collapseBtn.textContent = '−';
+  collapseBtn.style.cssText = `
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: bold;
+  `;
+
+  // Container for all controls (will be hidden when collapsed)
+  const controlsContainer = document.createElement('div');
+  controlsContainer.id = 'hud-controls-container';
+
+  collapseBtn.addEventListener('click', () => {
+    hudCollapsed = !hudCollapsed;
+    if (hudCollapsed) {
+      controlsContainer.style.display = 'none';
+      collapseBtn.textContent = '+';
+      console.log("📟 HUD collapsed (minimal mode)");
+    } else {
+      controlsContainer.style.display = 'block';
+      collapseBtn.textContent = '−';
+      console.log("📟 HUD expanded (full mode)");
+    }
+  });
+
+  header.appendChild(title);
+  header.appendChild(collapseBtn);
+  panel.appendChild(header);
+
+  // Phase 11.5.0: Tab navigation
+  const tabNav = document.createElement('div');
+  tabNav.style.cssText = `
+    display: flex;
+    gap: 5px;
+    margin-bottom: 10px;
+    border-bottom: 2px solid #333;
+    padding-bottom: 5px;
+  `;
+
+  const tabs = ['Morph', 'Presets', 'Audio', 'Visual', 'Advanced'];
+  let activeTab = 'Morph';
+  const tabButtons = {};
+  const tabContainers = {};
+
+  tabs.forEach(tabName => {
+    const btn = document.createElement('button');
+    btn.textContent = tabName;
+    btn.style.cssText = `
+      background: #222;
+      color: #aaa;
+      border: 1px solid #444;
+      padding: 5px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11px;
+    `;
+    btn.addEventListener('click', () => {
+      activeTab = tabName;
+      tabs.forEach(t => {
+        tabButtons[t].style.background = t === tabName ? '#555' : '#222';
+        tabButtons[t].style.color = t === tabName ? 'white' : '#aaa';
+        tabContainers[t].style.display = t === tabName ? 'block' : 'none';
+      });
+      console.log(`📟 Tab switched to: ${tabName}`);
+    });
+    tabNav.appendChild(btn);
+    tabButtons[tabName] = btn;
+
+    const container = document.createElement('div');
+    container.id = `tab-${tabName.toLowerCase()}`;
+    container.style.display = tabName === 'Morph' ? 'block' : 'none';
+    controlsContainer.appendChild(container);
+    tabContainers[tabName] = container;
+  });
+
+  // Set initial active state
+  tabButtons['Morph'].style.background = '#555';
+  tabButtons['Morph'].style.color = 'white';
+
+  controlsContainer.insertBefore(tabNav, controlsContainer.firstChild);
 
   const idleSpinControl = createToggleControl('Idle Spin', true, (value) => {
     notifyHUDUpdate({ idleSpin: value });
   });
-  panel.appendChild(idleSpinControl);
+  tabContainers['Morph'].appendChild(idleSpinControl);
 
   const xRotControl = createSliderControl('X Rotation', 0, 0, 0.2, 0.001, (value) => {
     notifyHUDUpdate({ rotX: value });
   });
-  panel.appendChild(xRotControl);
+  tabContainers['Morph'].appendChild(xRotControl);
 
   const yRotControl = createSliderControl('Y Rotation', 0, 0, 0.2, 0.001, (value) => {
     notifyHUDUpdate({ rotY: value });
   });
-  panel.appendChild(yRotControl);
+  tabContainers['Morph'].appendChild(yRotControl);
 
   const scaleControl = createSliderControl('Scale', 1.0, 0.5, 2.0, 0.1, (value) => {
     notifyHUDUpdate({ scale: value });
   });
-  panel.appendChild(scaleControl);
+  tabContainers['Morph'].appendChild(scaleControl);
 
   const morphControl = createDropdownControl('Morph Target', 'cube',
     ['cube', 'sphere', 'pyramid', 'torus'], (value) => {
     notifyHUDUpdate({ morphTarget: value });
   });
-  panel.appendChild(morphControl);
+  tabContainers['Morph'].appendChild(morphControl);
 
   const morphIntensityControl = createSliderControl('Morph Intensity', 0.0, 0.0, 1.0, 0.01, (value) => {
     notifyHUDUpdate({ morphBlend: value });
   });
-  panel.appendChild(morphIntensityControl);
+  tabContainers['Morph'].appendChild(morphIntensityControl);
 
   // Add separator for Phase 4 controls
   const separator = document.createElement('hr');
   separator.style.cssText = 'border: 1px solid #555; margin: 15px 0;';
-  panel.appendChild(separator);
+  tabContainers['Morph'].appendChild(separator);
 
   const phase4Title = document.createElement('h4');
   phase4Title.textContent = '🌀 Multi-Target Blends';
   phase4Title.style.cssText = 'margin: 0 0 10px 0; color: #ffff00; font-size: 12px;';
-  panel.appendChild(phase4Title);
+  tabContainers['Morph'].appendChild(phase4Title);
 
   // Per-target weight sliders
   const cubeWeightControl = createSliderControl('Cube Weight', 1.0, 0.0, 1.0, 0.01, (value) => {
     notifyHUDUpdate({ targetWeight: { target: 'cube', weight: value } });
   });
-  panel.appendChild(cubeWeightControl);
+  tabContainers['Morph'].appendChild(cubeWeightControl);
 
   const sphereWeightControl = createSliderControl('Sphere Weight', 0.0, 0.0, 1.0, 0.01, (value) => {
     notifyHUDUpdate({ targetWeight: { target: 'sphere', weight: value } });
   });
-  panel.appendChild(sphereWeightControl);
+  tabContainers['Morph'].appendChild(sphereWeightControl);
 
   const pyramidWeightControl = createSliderControl('Pyramid Weight', 0.0, 0.0, 1.0, 0.01, (value) => {
     notifyHUDUpdate({ targetWeight: { target: 'pyramid', weight: value } });
   });
-  panel.appendChild(pyramidWeightControl);
+  tabContainers['Morph'].appendChild(pyramidWeightControl);
 
   const torusWeightControl = createSliderControl('Torus Weight', 0.0, 0.0, 1.0, 0.01, (value) => {
     notifyHUDUpdate({ targetWeight: { target: 'torus', weight: value } });
   });
-  panel.appendChild(torusWeightControl);
+  tabContainers['Morph'].appendChild(torusWeightControl);
 
   // Phase 11.2.4: Enhanced Preset Editor UI
   const presetSeparator = document.createElement('hr');
   presetSeparator.style.cssText = 'border: 1px solid #555; margin: 15px 0;';
-  panel.appendChild(presetSeparator);
+  tabContainers['Presets'].appendChild(presetSeparator);
 
   const presetTitle = document.createElement('h4');
   presetTitle.textContent = '💾 Preset Manager (Phase 11.2.4)';
   presetTitle.style.cssText = 'margin: 0 0 10px 0; color: #00ffff; font-size: 12px;';
-  panel.appendChild(presetTitle);
+  tabContainers['Presets'].appendChild(presetTitle);
 
   // Preset save controls (new preset)
   const saveContainer = document.createElement('div');
@@ -172,7 +265,7 @@ function createHUDPanel() {
   saveContainer.appendChild(saveButton);
   saveContainer.appendChild(categoryInput);
   saveContainer.appendChild(tagsInput);
-  panel.appendChild(saveContainer);
+  tabContainers['Presets'].appendChild(saveContainer);
 
   // Phase 11.2.6: Filter controls (category dropdown + tag filter)
   const filterContainer = document.createElement('div');
@@ -210,13 +303,13 @@ function createHUDPanel() {
   filterContainer.appendChild(categoryFilter);
   filterContainer.appendChild(tagFilterLabel);
   filterContainer.appendChild(tagFilter);
-  panel.appendChild(filterContainer);
+  tabContainers['Presets'].appendChild(filterContainer);
 
   // Phase 11.2.4: Preset list view (improved from dropdown)
   const presetListLabel = document.createElement('div');
   presetListLabel.textContent = 'Saved Presets:';
   presetListLabel.style.cssText = 'margin-bottom: 5px; color: #aaa; font-size: 11px;';
-  panel.appendChild(presetListLabel);
+  tabContainers['Presets'].appendChild(presetListLabel);
 
   const presetListContainer = document.createElement('div');
   presetListContainer.id = 'preset-list-container';
@@ -229,7 +322,7 @@ function createHUDPanel() {
     margin-bottom: 10px;
     padding: 5px;
   `;
-  panel.appendChild(presetListContainer);
+  tabContainers['Presets'].appendChild(presetListContainer);
 
   // Preset action buttons (load/update/delete)
   const actionContainer = document.createElement('div');
@@ -281,7 +374,7 @@ function createHUDPanel() {
   actionContainer.appendChild(loadButton);
   actionContainer.appendChild(updateButton);
   actionContainer.appendChild(deleteButton);
-  panel.appendChild(actionContainer);
+  tabContainers['Presets'].appendChild(actionContainer);
 
   // Phase 11.2.8: Interpolation controls
   const interpolationContainer = document.createElement('div');
@@ -335,12 +428,12 @@ function createHUDPanel() {
   interpolationContainer.appendChild(interpolationToggleLabel);
   interpolationContainer.appendChild(durationLabel);
   interpolationContainer.appendChild(durationSlider);
-  panel.appendChild(interpolationContainer);
+  tabContainers['Presets'].appendChild(interpolationContainer);
 
   // ---- Phase 11.3.0: Morph Chain UI ----
   const chainSeparator = document.createElement('hr');
   chainSeparator.style.cssText = 'border: 1px solid #555; margin: 15px 0;';
-  panel.appendChild(chainSeparator);
+  tabContainers['Presets'].appendChild(chainSeparator);
 
   const chainSection = document.createElement("div");
   chainSection.className = "panel-section";
@@ -604,7 +697,7 @@ function createHUDPanel() {
   });
   chainSection.appendChild(resetBtn);
 
-  panel.appendChild(chainSection);
+  tabContainers['Presets'].appendChild(chainSection);
 
   // Populate the checkbox list from current presets
   function refreshChainList() {
@@ -874,7 +967,8 @@ function createHUDPanel() {
   toastContainer.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 10px; pointer-events: none;';
   document.body.appendChild(toastContainer);
 
-  function showToast(message, duration = 3000) {
+  // Phase 11.5.0: Reduced toast duration to 1.5s
+  function showToast(message, duration = 1500) {
     const toast = document.createElement("div");
     toast.style.cssText = 'background: rgba(0, 0, 0, 0.9); color: white; padding: 12px 16px; border-radius: 4px; border-left: 4px solid #ff9900; font-size: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); max-width: 300px; pointer-events: auto; animation: slideInRight 0.3s ease;';
     toast.textContent = message;
@@ -1167,8 +1261,8 @@ function createHUDPanel() {
 
   importExportContainer.appendChild(exportButton);
   importExportContainer.appendChild(importButton);
-  panel.appendChild(importExportContainer);
-  panel.appendChild(fileInput);
+  tabContainers['Advanced'].appendChild(importExportContainer);
+  tabContainers['Advanced'].appendChild(fileInput);
 
   // Store references for updating preset list
   panel.presetListContainer = presetListContainer;
@@ -1209,34 +1303,34 @@ function createHUDPanel() {
   // Add separator for Phase 6 audio controls
   const audioSeparator = document.createElement('hr');
   audioSeparator.style.cssText = 'border: 1px solid #555; margin: 15px 0;';
-  panel.appendChild(audioSeparator);
+  tabContainers['Audio'].appendChild(audioSeparator);
 
   const audioTitle = document.createElement('h4');
   audioTitle.textContent = '🎶 Audio-Reactive';
   audioTitle.style.cssText = 'margin: 0 0 10px 0; color: #ff9900; font-size: 12px;';
-  panel.appendChild(audioTitle);
+  tabContainers['Audio'].appendChild(audioTitle);
 
   // Audio enable toggle
   const audioEnableControl = createToggleControl('Audio-Reactive Morphing', false, (value) => {
     notifyHUDUpdate({ audioEnabled: value });
   });
-  panel.appendChild(audioEnableControl);
+  tabContainers['Audio'].appendChild(audioEnableControl);
 
   // Audio sensitivity slider
   const audioSensitivityControl = createSliderControl('Audio Sensitivity', 1.0, 0.5, 2.0, 0.1, (value) => {
     notifyHUDUpdate({ audioSensitivity: value });
   });
-  panel.appendChild(audioSensitivityControl);
+  tabContainers['Audio'].appendChild(audioSensitivityControl);
 
   // Add separator for particle controls
   const particleSeparator = document.createElement('hr');
   particleSeparator.style.cssText = 'border: 1px solid #555; margin: 15px 0;';
-  panel.appendChild(particleSeparator);
+  tabContainers['Visual'].appendChild(particleSeparator);
 
   const particleTitle = document.createElement('h4');
   particleTitle.textContent = '✨ Particles';
   particleTitle.style.cssText = 'margin: 0 0 10px 0; color: #00ffff; font-size: 12px;';
-  panel.appendChild(particleTitle);
+  tabContainers['Visual'].appendChild(particleTitle);
 
   // === Phase 4.8.1: Performance HUD ===
   const perfDiv = document.createElement('div');
@@ -1252,20 +1346,20 @@ function createHUDPanel() {
   drawCallsLabel.style.cssText = 'font-size: 12px;';
   perfDiv.appendChild(drawCallsLabel);
 
-  panel.appendChild(perfDiv);
+  tabContainers['Visual'].appendChild(perfDiv);
 
   // Particles enable toggle
   const particlesEnableControl = createToggleControl('Enable Particles', true, (value) => {
     notifyHUDUpdate({ particlesEnabled: value });
   });
-  panel.appendChild(particlesEnableControl);
+  tabContainers['Visual'].appendChild(particlesEnableControl);
 
   // Particle density slider (Phase 4.4: expanded to 10,000)
   const particleDensityControl = createSliderControl('Particle Density', 5000, 1000, 10000, 100, (value) => {
     notifyHUDUpdate({ particlesCount: value });
   });
   particleDensityControl.title = 'Number of particles (1000-10000, requires reinit)';
-  panel.appendChild(particleDensityControl);
+  tabContainers['Visual'].appendChild(particleDensityControl);
 
   // Particle layout dropdown
   const particleLayoutDiv = document.createElement('div');
@@ -1299,143 +1393,143 @@ function createHUDPanel() {
   });
 
   particleLayoutDiv.appendChild(particleLayoutSelect);
-  panel.appendChild(particleLayoutDiv);
+  tabContainers['Visual'].appendChild(particleLayoutDiv);
 
   // ✨ Particle Polish section
   const particlePolishLabel = document.createElement("h4");
   particlePolishLabel.textContent = "✨ Particle Polish";
   particlePolishLabel.style.cssText = 'margin: 15px 0 10px 0; color: #ffff00; font-size: 12px;';
-  panel.appendChild(particlePolishLabel);
+  tabContainers['Visual'].appendChild(particlePolishLabel);
 
   // Hue shift slider (0-360)
   const hueShiftControl = createSliderControl('Hue Shift', 0, 0, 360, 5, (value) => {
     notifyHUDUpdate({ particlesHue: value });
   });
-  panel.appendChild(hueShiftControl);
+  tabContainers['Visual'].appendChild(hueShiftControl);
 
   // Size slider (Phase 4.8: true world-unit sizing, 0.05-2.0)
   const sizeControl = createSliderControl('Size', 0.5, 0.05, 2.0, 0.05, (value) => {
     notifyHUDUpdate({ particlesSize: value });
   });
   sizeControl.title = 'True 3D world-unit size (0.05 = tiny, 2.0 = large)';
-  panel.appendChild(sizeControl);
+  tabContainers['Visual'].appendChild(sizeControl);
 
   // Opacity slider (0.0-1.0)
   const opacityControl = createSliderControl('Opacity', 0.5, 0.0, 1.0, 0.05, (value) => {
     notifyHUDUpdate({ particlesOpacity: value });
   });
-  panel.appendChild(opacityControl);
+  tabContainers['Visual'].appendChild(opacityControl);
 
   // Organic motion toggle
   const organicMotionControl = createToggleControl('Organic Motion', false, (value) => {
     notifyHUDUpdate({ particlesOrganicMotion: value });
   });
-  panel.appendChild(organicMotionControl);
+  tabContainers['Visual'].appendChild(organicMotionControl);
 
   // Organic strength slider (Phase 4.8.1.7)
   const organicStrengthControl = createSliderControl('Organic Strength', 0.2, 0.0, 1.0, 0.05, (value) => {
     notifyHUDUpdate({ particlesOrganicStrength: value });
   });
   organicStrengthControl.title = 'Controls wander strength (0 = clean orbit, 1 = chaotic swarm)';
-  panel.appendChild(organicStrengthControl);
+  tabContainers['Visual'].appendChild(organicStrengthControl);
 
   // Audio-reactive hue toggle
   const audioHueControl = createToggleControl('Audio-Reactive Hue', false, (value) => {
     notifyHUDUpdate({ particlesAudioReactiveHue: value });
   });
-  panel.appendChild(audioHueControl);
+  tabContainers['Visual'].appendChild(audioHueControl);
 
   // Audio Gain slider (Phase 4.8)
   const audioGainControl = createSliderControl('Audio Gain', 2.0, 0.5, 5.0, 0.1, (value) => {
     notifyHUDUpdate({ particlesAudioGain: value });
   });
   audioGainControl.title = 'Amplifies per-particle audio hue variation';
-  panel.appendChild(audioGainControl);
+  tabContainers['Visual'].appendChild(audioGainControl);
 
   // Orbital Speed slider (Phase 4.9.0)
   const velocityControl = createSliderControl('Orbital Speed', 0.05, 0.01, 2.0, 0.01, (value) => {
     notifyHUDUpdate({ particlesVelocity: value });
   });
   velocityControl.title = 'Controls particle orbital speed around vessel (min: 0.01)';
-  panel.appendChild(velocityControl);
+  tabContainers['Visual'].appendChild(velocityControl);
 
   // Motion Smoothness slider
   const motionSmoothnessControl = createSliderControl('Motion Smoothness', 0.5, 0.0, 1.0, 0.1, (value) => {
     notifyHUDUpdate({ particlesMotionSmoothness: value });
   });
-  panel.appendChild(motionSmoothnessControl);
+  tabContainers['Visual'].appendChild(motionSmoothnessControl);
 
   // === Phase 2.3.2A: Particle Trails ===
   const trailsLabel = document.createElement("h4");
   trailsLabel.textContent = "🌊 Particle Trails (Line Segments)";
   trailsLabel.style.cssText = 'margin: 15px 0 10px 0; color: #00ffff; font-size: 12px;';
-  panel.appendChild(trailsLabel);
+  tabContainers['Visual'].appendChild(trailsLabel);
 
   // Trail enabled toggle (line trails)
   const trailEnabledControl = createToggleControl('Enable Line Trails', false, (value) => {
     notifyHUDUpdate({ particlesTrailEnabled: value });
   });
-  panel.appendChild(trailEnabledControl);
+  tabContainers['Visual'].appendChild(trailEnabledControl);
 
   // Trail length slider
   const trailLengthControl = createSliderControl('Trail Length', 0, 0, 10, 1, (value) => {
     notifyHUDUpdate({ particlesTrailLength: value });
   });
   trailLengthControl.title = 'Number of frames to persist (0-10)';
-  panel.appendChild(trailLengthControl);
+  tabContainers['Visual'].appendChild(trailLengthControl);
 
   // Trail opacity slider
   const trailOpacityControl = createSliderControl('Trail Opacity', 0.3, 0.0, 1.0, 0.05, (value) => {
     notifyHUDUpdate({ particlesTrailOpacity: value });
   });
   trailOpacityControl.title = 'Transparency of trail lines (0.0-1.0)';
-  panel.appendChild(trailOpacityControl);
+  tabContainers['Visual'].appendChild(trailOpacityControl);
 
   // Trail fade slider (Phase 2.3.2C)
   const trailFadeControl = createSliderControl('Trail Fade', 1.0, 0.0, 1.0, 0.05, (value) => {
     notifyHUDUpdate({ particlesTrailFade: value });
   });
   trailFadeControl.title = 'Strength of fading (0=no fade, 1=full taper)';
-  panel.appendChild(trailFadeControl);
+  tabContainers['Visual'].appendChild(trailFadeControl);
 
   // Phase 2.3.2D: Audio-reactive trail length controls
   const trailAudioReactiveControl = createToggleControl('Audio Reactive Length', false, (value) => {
     notifyHUDUpdate({ particlesTrailAudioReactive: value });
   });
   trailAudioReactiveControl.title = 'Trail length follows audio level';
-  panel.appendChild(trailAudioReactiveControl);
+  tabContainers['Visual'].appendChild(trailAudioReactiveControl);
 
   const trailLengthMinControl = createSliderControl('Min Length', 2, 1, 10, 1, (value) => {
     notifyHUDUpdate({ particlesTrailLengthMin: value });
   });
   trailLengthMinControl.title = 'Shortest trail when audio is quiet';
-  panel.appendChild(trailLengthMinControl);
+  tabContainers['Visual'].appendChild(trailLengthMinControl);
 
   const trailLengthMaxControl = createSliderControl('Max Length', 10, 1, 20, 1, (value) => {
     notifyHUDUpdate({ particlesTrailLengthMax: value });
   });
   trailLengthMaxControl.title = 'Longest trail when audio is loud';
-  panel.appendChild(trailLengthMaxControl);
+  tabContainers['Visual'].appendChild(trailLengthMaxControl);
 
   // === Dual Trail System: Motion Trails (postprocessing blur) ===
   const motionTrailsLabel = document.createElement("h4");
   motionTrailsLabel.textContent = "🎞️ Motion Trails (Postprocessing)";
   motionTrailsLabel.style.cssText = 'margin: 15px 0 10px 0; color: #ffcc00; font-size: 12px;';
-  panel.appendChild(motionTrailsLabel);
+  tabContainers['Visual'].appendChild(motionTrailsLabel);
 
   // Motion trails toggle
   const motionTrailsControl = createToggleControl('Enable Motion Trails', false, (value) => {
     notifyHUDUpdate({ motionTrailsEnabled: value });
   });
   motionTrailsControl.title = 'AfterimagePass blur effect (works independently of line trails)';
-  panel.appendChild(motionTrailsControl);
+  tabContainers['Visual'].appendChild(motionTrailsControl);
 
   // Motion trail intensity slider
   const motionTrailIntensityControl = createSliderControl('Trail Intensity', 0.96, 0.85, 0.99, 0.01, (value) => {
     notifyHUDUpdate({ motionTrailIntensity: value });
   });
   motionTrailIntensityControl.title = 'Blur damp value (higher = longer trails)';
-  panel.appendChild(motionTrailIntensityControl);
+  tabContainers['Visual'].appendChild(motionTrailIntensityControl);
 
   // === Phase 4.8.1: Reset to Defaults Button ===
   const resetButton = document.createElement('button');
@@ -1444,163 +1538,163 @@ function createHUDPanel() {
   resetButton.addEventListener('click', () => {
     notifyHUDUpdate({ particlesResetDefaults: true });
   });
-  panel.appendChild(resetButton);
+  tabContainers['Visual'].appendChild(resetButton);
 
   // Add separator for Phase 7 visual controls
   const visualSeparator = document.createElement('hr');
   visualSeparator.style.cssText = 'border: 1px solid #555; margin: 15px 0;';
-  panel.appendChild(visualSeparator);
+  tabContainers['Visual'].appendChild(visualSeparator);
 
   const visualTitle = document.createElement('h4');
   visualTitle.textContent = '🎨 Visual Polish';
   visualTitle.style.cssText = 'margin: 0 0 10px 0; color: #ff66ff; font-size: 12px;';
-  panel.appendChild(visualTitle);
+  tabContainers['Visual'].appendChild(visualTitle);
 
   // Ambient light intensity
   const ambientLightControl = createSliderControl('Ambient Intensity', 0.4, 0.0, 2.0, 0.1, (value) => {
     notifyHUDUpdate({ ambientIntensity: value });
   });
-  panel.appendChild(ambientLightControl);
+  tabContainers['Visual'].appendChild(ambientLightControl);
 
   // Directional light intensity
   const directionalLightControl = createSliderControl('Directional Intensity', 1.0, 0.0, 2.0, 0.1, (value) => {
     notifyHUDUpdate({ directionalIntensity: value });
   });
-  panel.appendChild(directionalLightControl);
+  tabContainers['Visual'].appendChild(directionalLightControl);
 
   // Directional light angle X
   const directionalAngleXControl = createSliderControl('Light Angle X', -45, -90, 90, 5, (value) => {
     notifyHUDUpdate({ directionalAngleX: value });
   });
-  panel.appendChild(directionalAngleXControl);
+  tabContainers['Visual'].appendChild(directionalAngleXControl);
 
   // Directional light angle Y
   const directionalAngleYControl = createSliderControl('Light Angle Y', 45, -90, 90, 5, (value) => {
     notifyHUDUpdate({ directionalAngleY: value });
   });
-  panel.appendChild(directionalAngleYControl);
+  tabContainers['Visual'].appendChild(directionalAngleYControl);
 
   // Color picker
   const colorPickerControl = createColorPickerControl('Geometry Color', '#00ff00', (value) => {
     notifyHUDUpdate({ color: value });
   });
-  panel.appendChild(colorPickerControl);
+  tabContainers['Visual'].appendChild(colorPickerControl);
 
   // Phase 11.2.2: Per-Layer Color System
   const colorLayersSeparator = document.createElement('hr');
   colorLayersSeparator.style.cssText = 'border: 1px solid #555; margin: 15px 0;';
-  panel.appendChild(colorLayersSeparator);
+  tabContainers['Visual'].appendChild(colorLayersSeparator);
 
   const colorLayersTitle = document.createElement('h4');
   colorLayersTitle.textContent = '🎨 Color Layers (Phase 11.2.2)';
   colorLayersTitle.style.cssText = 'margin: 0 0 10px 0; color: #ff00ff; font-size: 12px;';
-  panel.appendChild(colorLayersTitle);
+  tabContainers['Visual'].appendChild(colorLayersTitle);
 
   // Geometry Layer
   const geometryLayerLabel = document.createElement('h5');
   geometryLayerLabel.textContent = '🔺 Geometry';
   geometryLayerLabel.style.cssText = 'margin: 10px 0 5px 0; color: #00ff00; font-size: 11px;';
-  panel.appendChild(geometryLayerLabel);
+  tabContainers['Visual'].appendChild(geometryLayerLabel);
 
   const geometryBaseColorControl = createColorPickerControl('Base Color', '#00ff00', (value) => {
     notifyHUDUpdate({ colorLayer: 'geometry', property: 'baseColor', value });
   });
-  panel.appendChild(geometryBaseColorControl);
+  tabContainers['Visual'].appendChild(geometryBaseColorControl);
 
   const geometryAudioColorControl = createColorPickerControl('Audio Color', '#ff0000', (value) => {
     notifyHUDUpdate({ colorLayer: 'geometry', property: 'audioColor', value });
   });
-  panel.appendChild(geometryAudioColorControl);
+  tabContainers['Visual'].appendChild(geometryAudioColorControl);
 
   const geometryIntensityControl = createSliderControl('Audio Intensity', 0.5, 0.0, 1.0, 0.05, (value) => {
     notifyHUDUpdate({ colorLayer: 'geometry', property: 'audioIntensity', value });
   });
   geometryIntensityControl.title = 'Controls audio color contribution (0 = none, 1 = full)';
-  panel.appendChild(geometryIntensityControl);
+  tabContainers['Visual'].appendChild(geometryIntensityControl);
 
   // Vessel Layer
   const vesselLayerLabel = document.createElement('h5');
   vesselLayerLabel.textContent = '🚢 Vessel';
   vesselLayerLabel.style.cssText = 'margin: 10px 0 5px 0; color: #00ffff; font-size: 11px;';
-  panel.appendChild(vesselLayerLabel);
+  tabContainers['Visual'].appendChild(vesselLayerLabel);
 
   const vesselBaseColorControl = createColorPickerControl('Base Color', '#00ff00', (value) => {
     notifyHUDUpdate({ colorLayer: 'vessel', property: 'baseColor', value });
   });
-  panel.appendChild(vesselBaseColorControl);
+  tabContainers['Visual'].appendChild(vesselBaseColorControl);
 
   const vesselAudioColorControl = createColorPickerControl('Audio Color', '#00ffff', (value) => {
     notifyHUDUpdate({ colorLayer: 'vessel', property: 'audioColor', value });
   });
-  panel.appendChild(vesselAudioColorControl);
+  tabContainers['Visual'].appendChild(vesselAudioColorControl);
 
   const vesselIntensityControl = createSliderControl('Audio Intensity', 0.3, 0.0, 1.0, 0.05, (value) => {
     notifyHUDUpdate({ colorLayer: 'vessel', property: 'audioIntensity', value });
   });
   vesselIntensityControl.title = 'Controls audio color contribution (0 = none, 1 = full)';
-  panel.appendChild(vesselIntensityControl);
+  tabContainers['Visual'].appendChild(vesselIntensityControl);
 
   // Shadows Layer
   const shadowsLayerLabel = document.createElement('h5');
   shadowsLayerLabel.textContent = '🌑 Shadows';
   shadowsLayerLabel.style.cssText = 'margin: 10px 0 5px 0; color: #888; font-size: 11px;';
-  panel.appendChild(shadowsLayerLabel);
+  tabContainers['Visual'].appendChild(shadowsLayerLabel);
 
   const shadowsBaseColorControl = createColorPickerControl('Base Color', '#000000', (value) => {
     notifyHUDUpdate({ colorLayer: 'shadows', property: 'baseColor', value });
   });
-  panel.appendChild(shadowsBaseColorControl);
+  tabContainers['Visual'].appendChild(shadowsBaseColorControl);
 
   const shadowsAudioColorControl = createColorPickerControl('Audio Color', '#333333', (value) => {
     notifyHUDUpdate({ colorLayer: 'shadows', property: 'audioColor', value });
   });
-  panel.appendChild(shadowsAudioColorControl);
+  tabContainers['Visual'].appendChild(shadowsAudioColorControl);
 
   const shadowsIntensityControl = createSliderControl('Audio Intensity', 0.2, 0.0, 1.0, 0.05, (value) => {
     notifyHUDUpdate({ colorLayer: 'shadows', property: 'audioIntensity', value });
   });
   shadowsIntensityControl.title = 'Controls audio color contribution (0 = none, 1 = full)';
-  panel.appendChild(shadowsIntensityControl);
+  tabContainers['Visual'].appendChild(shadowsIntensityControl);
 
   // Particles Layer
   const particlesLayerLabel = document.createElement('h5');
   particlesLayerLabel.textContent = '✨ Particles (Shader - Infra Only)';
   particlesLayerLabel.style.cssText = 'margin: 10px 0 5px 0; color: #ffff00; font-size: 11px;';
-  panel.appendChild(particlesLayerLabel);
+  tabContainers['Visual'].appendChild(particlesLayerLabel);
 
   const particlesBaseColorControl = createColorPickerControl('Base Color', '#ffff00', (value) => {
     notifyHUDUpdate({ colorLayer: 'particles', property: 'baseColor', value });
   });
   particlesBaseColorControl.title = 'Ready but requires shader update (future phase)';
-  panel.appendChild(particlesBaseColorControl);
+  tabContainers['Visual'].appendChild(particlesBaseColorControl);
 
   const particlesAudioColorControl = createColorPickerControl('Audio Color', '#ff00ff', (value) => {
     notifyHUDUpdate({ colorLayer: 'particles', property: 'audioColor', value });
   });
   particlesAudioColorControl.title = 'Ready but requires shader update (future phase)';
-  panel.appendChild(particlesAudioColorControl);
+  tabContainers['Visual'].appendChild(particlesAudioColorControl);
 
   const particlesIntensityControl = createSliderControl('Audio Intensity', 0.7, 0.0, 1.0, 0.05, (value) => {
     notifyHUDUpdate({ colorLayer: 'particles', property: 'audioIntensity', value });
   });
   particlesIntensityControl.title = 'Ready but requires shader update (future phase)';
-  panel.appendChild(particlesIntensityControl);
+  tabContainers['Visual'].appendChild(particlesIntensityControl);
 
   // Add separator for Vessel controls
   const vesselSeparator = document.createElement('hr');
   vesselSeparator.style.cssText = 'border: 1px solid #555; margin: 15px 0;';
-  panel.appendChild(vesselSeparator);
+  tabContainers['Visual'].appendChild(vesselSeparator);
 
   const vesselTitle = document.createElement('h4');
   vesselTitle.textContent = '🚢 Vessel';
   vesselTitle.style.cssText = 'margin: 0 0 10px 0; color: #00ff00; font-size: 12px;';
-  panel.appendChild(vesselTitle);
+  tabContainers['Visual'].appendChild(vesselTitle);
 
   // Vessel enable toggle
   const vesselEnableControl = createToggleControl('Enable Vessel', true, (value) => {
     notifyHUDUpdate({ vesselEnabled: value });
   });
-  panel.appendChild(vesselEnableControl);
+  tabContainers['Visual'].appendChild(vesselEnableControl);
 
   // Vessel mode dropdown (Phase 2.x)
   const vesselModeControl = createDropdownControl('Vessel Mode', 'gyre',
@@ -1608,78 +1702,78 @@ function createHUDPanel() {
     notifyHUDUpdate({ vesselMode: value });
   });
   vesselModeControl.title = 'Switch between Gyre (torus rings) and Conflat 6 (cube-sphere circles)';
-  panel.appendChild(vesselModeControl);
+  tabContainers['Visual'].appendChild(vesselModeControl);
 
   // Vessel opacity slider
   const vesselOpacityControl = createSliderControl('Vessel Opacity', 0.5, 0.0, 1.0, 0.01, (value) => {
     notifyHUDUpdate({ vesselOpacity: value });
   });
-  panel.appendChild(vesselOpacityControl);
+  tabContainers['Visual'].appendChild(vesselOpacityControl);
 
   // Vessel scale slider
   const vesselScaleControl = createSliderControl('Vessel Scale', 1.0, 0.5, 2.0, 0.1, (value) => {
     notifyHUDUpdate({ vesselScale: value });
   });
-  panel.appendChild(vesselScaleControl);
+  tabContainers['Visual'].appendChild(vesselScaleControl);
 
   // Vessel color picker
   const vesselColorPickerControl = createColorPickerControl('Vessel Color', '#00ff00', (value) => {
     notifyHUDUpdate({ vesselColor: value });
   });
-  panel.appendChild(vesselColorPickerControl);
+  tabContainers['Visual'].appendChild(vesselColorPickerControl);
 
   // Vessel spin toggle
   const vesselSpinControl = createToggleControl('Vessel Spin', false, (value) => {
     notifyHUDUpdate({ vesselSpinEnabled: value });
   });
-  panel.appendChild(vesselSpinControl);
+  tabContainers['Visual'].appendChild(vesselSpinControl);
 
   // Vessel spin speed slider
   const vesselSpinSpeedControl = createSliderControl('Spin Speed', 0.0035, 0, 0.02, 0.0005, (value) => {
     notifyHUDUpdate({ vesselSpinSpeed: value });
   });
-  panel.appendChild(vesselSpinSpeedControl);
+  tabContainers['Visual'].appendChild(vesselSpinSpeedControl);
 
   // Vessel layout dropdown
   const vesselLayoutControl = createDropdownControl('Vessel Layout', 'lattice',
     ['lattice', 'hoops', 'shells'], (value) => {
     notifyHUDUpdate({ vesselLayout: value });
   });
-  panel.appendChild(vesselLayoutControl);
+  tabContainers['Visual'].appendChild(vesselLayoutControl);
 
   // Audio smoothing slider
   const vesselAudioSmoothingControl = createSliderControl('Audio Smoothing', 0.7, 0.1, 0.9, 0.05, (value) => {
     notifyHUDUpdate({ vesselAudioSmoothing: value });
   });
-  panel.appendChild(vesselAudioSmoothingControl);
+  tabContainers['Visual'].appendChild(vesselAudioSmoothingControl);
 
   // Hue shift range slider
   const vesselHueShiftControl = createSliderControl('Hue Shift Range', 20, 0, 60, 5, (value) => {
     notifyHUDUpdate({ vesselHueShiftRange: value });
   });
-  panel.appendChild(vesselHueShiftControl);
+  tabContainers['Visual'].appendChild(vesselHueShiftControl);
 
   // Vessel debug display
   const vesselDebugDiv = document.createElement('div');
   vesselDebugDiv.style.cssText = 'margin-top: 15px; font-size: 12px; color: #888;';
   vesselDebugDiv.innerHTML = '<p id="vessel-debug">Radius: --</p>';
-  panel.appendChild(vesselDebugDiv);
+  tabContainers['Visual'].appendChild(vesselDebugDiv);
 
   // Add separator for Shadow Box controls
   const shadowBoxSeparator = document.createElement('hr');
   shadowBoxSeparator.style.cssText = 'border: 1px solid #555; margin: 15px 0;';
-  panel.appendChild(shadowBoxSeparator);
+  tabContainers['Visual'].appendChild(shadowBoxSeparator);
 
   const shadowBoxTitle = document.createElement('h4');
   shadowBoxTitle.textContent = '📦 Shadow Box';
   shadowBoxTitle.style.cssText = 'margin: 0 0 10px 0; color: #888; font-size: 12px;';
-  panel.appendChild(shadowBoxTitle);
+  tabContainers['Visual'].appendChild(shadowBoxTitle);
 
   // Phase 2.3.3: Shadow Box controls
   const projectParticlesToShadowControl = createToggleControl('Project Particles', false, (value) => {
     notifyHUDUpdate({ shadowBoxProjectParticles: value });
   });
-  panel.appendChild(projectParticlesToShadowControl);
+  tabContainers['Visual'].appendChild(projectParticlesToShadowControl);
 
   // Phase 2.3.6: Shadow Box palette selector
   const shadowPaletteControl = createDropdownControl('Palette', 'Manual',
@@ -1687,105 +1781,108 @@ function createHUDPanel() {
     notifyHUDUpdate({ shadowBoxPalette: value });
   });
   shadowPaletteControl.title = 'Quick palette presets or manual color selection';
-  panel.appendChild(shadowPaletteControl);
+  tabContainers['Visual'].appendChild(shadowPaletteControl);
 
   // Phase 2.3.4: Shadow Box shader controls
   const shadowThresholdControl = createSliderControl('Threshold', 0.5, 0.0, 1.0, 0.01, (value) => {
     notifyHUDUpdate({ shadowBoxThreshold: value });
   });
   shadowThresholdControl.title = 'Cutoff point: below = background, above = foreground';
-  panel.appendChild(shadowThresholdControl);
+  tabContainers['Visual'].appendChild(shadowThresholdControl);
 
   const shadowBleachGainControl = createSliderControl('Bleach Gain', 1.0, 0.5, 3.0, 0.1, (value) => {
     notifyHUDUpdate({ shadowBoxBleachGain: value });
   });
   shadowBleachGainControl.title = 'Luminance amplification before threshold';
-  panel.appendChild(shadowBleachGainControl);
+  tabContainers['Visual'].appendChild(shadowBleachGainControl);
 
   // Phase 2.3.5: Two-tone color controls
   const shadowBgColorControl = createColorPickerControl('Background Color', '#000000', (value) => {
     notifyHUDUpdate({ shadowBoxBgColor: value });
   });
   shadowBgColorControl.title = 'Color for pixels below threshold';
-  panel.appendChild(shadowBgColorControl);
+  tabContainers['Visual'].appendChild(shadowBgColorControl);
 
   const shadowFgColorControl = createColorPickerControl('Foreground Color', '#ffffff', (value) => {
     notifyHUDUpdate({ shadowBoxFgColor: value });
   });
   shadowFgColorControl.title = 'Color for pixels above threshold';
-  panel.appendChild(shadowFgColorControl);
+  tabContainers['Visual'].appendChild(shadowFgColorControl);
 
   // Add separator for Shadows controls
   const shadowsSeparator = document.createElement('hr');
   shadowsSeparator.style.cssText = 'border: 1px solid #555; margin: 15px 0;';
-  panel.appendChild(shadowsSeparator);
+  tabContainers['Visual'].appendChild(shadowsSeparator);
 
   const shadowsTitle = document.createElement('h4');
   shadowsTitle.textContent = '🌑 Shadows';
   shadowsTitle.style.cssText = 'margin: 0 0 10px 0; color: #555; font-size: 12px;';
-  panel.appendChild(shadowsTitle);
+  tabContainers['Visual'].appendChild(shadowsTitle);
 
   // Shadows enable toggle
   const shadowsEnableControl = createToggleControl('Enable Shadows', true, (value) => {
     notifyHUDUpdate({ shadowsEnabled: value });
   });
-  panel.appendChild(shadowsEnableControl);
+  tabContainers['Visual'].appendChild(shadowsEnableControl);
 
   // Ground shadow checkbox
   const groundShadowControl = createToggleControl('Ground Shadow', true, (value) => {
     notifyHUDUpdate({ shadowsGround: value });
   });
-  panel.appendChild(groundShadowControl);
+  tabContainers['Visual'].appendChild(groundShadowControl);
 
   // Backdrop shadow checkbox
   const backdropShadowControl = createToggleControl('Backdrop Shadow', true, (value) => {
     notifyHUDUpdate({ shadowsBackdrop: value });
   });
-  panel.appendChild(backdropShadowControl);
+  tabContainers['Visual'].appendChild(backdropShadowControl);
 
   // Shadow opacity slider
   const shadowOpacityControl = createSliderControl('Shadow Opacity', 0.25, 0.0, 1.0, 0.05, (value) => {
     notifyHUDUpdate({ shadowsOpacity: value });
   });
-  panel.appendChild(shadowOpacityControl);
+  tabContainers['Visual'].appendChild(shadowOpacityControl);
 
   // Shadow color picker
   const shadowColorControl = createColorPickerControl('Shadow Color', '#000000', (value) => {
     notifyHUDUpdate({ shadowsColor: value });
   });
-  panel.appendChild(shadowColorControl);
+  tabContainers['Visual'].appendChild(shadowColorControl);
 
   // Add separator for Sprites controls
   const spritesSeparator = document.createElement('hr');
   spritesSeparator.style.cssText = 'border: 1px solid #555; margin: 15px 0;';
-  panel.appendChild(spritesSeparator);
+  tabContainers['Visual'].appendChild(spritesSeparator);
 
   const spritesTitle = document.createElement('h4');
   spritesTitle.textContent = '✨ Sprites';
   spritesTitle.style.cssText = 'margin: 0 0 10px 0; color: #ffff00; font-size: 12px;';
-  panel.appendChild(spritesTitle);
+  tabContainers['Visual'].appendChild(spritesTitle);
 
   // Sprites enable toggle
   const spritesEnableControl = createToggleControl('Enable Sprites', true, (value) => {
     notifyHUDUpdate({ spritesEnabled: value });
   });
-  panel.appendChild(spritesEnableControl);
+  tabContainers['Visual'].appendChild(spritesEnableControl);
 
   // Sprites count slider
   const spritesCountControl = createSliderControl('Sprite Count', 200, 50, 500, 10, (value) => {
     notifyHUDUpdate({ spritesCount: value });
   });
-  panel.appendChild(spritesCountControl);
+  tabContainers['Visual'].appendChild(spritesCountControl);
 
   // Add separator for Debug controls
   const debugSeparator = document.createElement('hr');
   debugSeparator.style.cssText = 'border: 1px solid #555; margin: 15px 0;';
-  panel.appendChild(debugSeparator);
+  tabContainers['Advanced'].appendChild(debugSeparator);
 
   const debugTitle = document.createElement('h4');
   debugTitle.textContent = '📐 Debug';
   debugTitle.style.cssText = 'margin: 0 0 10px 0; color: #ff9900; font-size: 12px;';
-  panel.appendChild(debugTitle);
+  tabContainers['Advanced'].appendChild(debugTitle);
+
+  // Phase 11.5.0: Attach controls container to panel
+  panel.appendChild(controlsContainer);
 
   return panel;
 }
