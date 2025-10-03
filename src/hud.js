@@ -2617,6 +2617,56 @@ function createHUDPanel() {
   paletteDropdown.title = 'Apply predefined color palette to all rings';
   tabContainers['Visual'].appendChild(paletteDropdown);
 
+  // Phase 11.7.37: Target Palette dropdown (for blending)
+  const targetPaletteLabel = document.createElement("label");
+  targetPaletteLabel.textContent = "Target Palette (Blend To)";
+  targetPaletteLabel.style.cssText = 'display: block; font-size: 11px; margin-top: 10px; margin-bottom: 4px; color: #ff66ff;';
+  tabContainers['Visual'].appendChild(targetPaletteLabel);
+
+  const targetPaletteDropdown = document.createElement("select");
+  targetPaletteDropdown.style.cssText = 'width: 100%; padding: 6px; background: rgba(0,0,0,0.5); border: 1px solid #ff66ff; color: #ff66ff; border-radius: 4px; margin-bottom: 10px; font-size: 11px;';
+
+  palettes.forEach(palette => {
+    const option = document.createElement("option");
+    option.value = palette.value;
+    option.textContent = palette.label;
+    if (palette.value === 'Classic') option.selected = true;
+    targetPaletteDropdown.appendChild(option);
+  });
+
+  targetPaletteDropdown.addEventListener("change", () => {
+    const targetPalette = targetPaletteDropdown.value;
+    notifyHUDUpdate({ mandala: { targetPalette: targetPalette } });
+    console.log(`📟 HUD → Target palette: ${targetPalette}`);
+  });
+  targetPaletteDropdown.title = 'Select target palette for blending';
+  tabContainers['Visual'].appendChild(targetPaletteDropdown);
+
+  // Phase 11.7.37: Palette Blend slider
+  const blendProgressControl = createSliderControl('Palette Blend', 0, 0, 1.0, 0.05, (value) => {
+    notifyHUDUpdate({ mandala: { blendProgress: value } });
+    console.log(`📟 HUD → Blend progress: ${(value * 100).toFixed(0)}%`);
+  });
+  blendProgressControl.title = 'Manual blend progress (0-100%)';
+  tabContainers['Visual'].appendChild(blendProgressControl);
+
+  // Phase 11.7.37: Blend Now button
+  const blendButton = document.createElement("button");
+  blendButton.textContent = "Blend Now (Animate)";
+  blendButton.style.cssText = 'width: 100%; padding: 8px; background: rgba(255,102,255,0.3); border: 1px solid #ff66ff; color: #ff66ff; border-radius: 4px; margin-bottom: 10px; font-size: 11px; cursor: pointer; transition: background 0.2s;';
+  blendButton.addEventListener("mouseenter", () => {
+    blendButton.style.background = "rgba(255,102,255,0.5)";
+  });
+  blendButton.addEventListener("mouseleave", () => {
+    blendButton.style.background = "rgba(255,102,255,0.3)";
+  });
+  blendButton.addEventListener("click", () => {
+    notifyHUDUpdate({ mandala: { blendNow: true } });
+    console.log(`📟 HUD → Blend animation triggered`);
+  });
+  blendButton.title = 'Start animated blend to target palette';
+  tabContainers['Visual'].appendChild(blendButton);
+
   // Phase 11.7.35: Interactive Mode toggle
   const interactiveModeToggle = createToggleControl('Interactive Mode', false, (value) => {
     notifyHUDUpdate({ mandala: { interactiveMode: value } });
@@ -2664,6 +2714,327 @@ function createHUDPanel() {
   });
   ringSelectDropdown.title = 'Select ring for interaction';
   tabContainers['Visual'].appendChild(ringSelectDropdown);
+
+  // Phase 11.7.38: Animation Mode dropdown
+  const animationModeLabel = document.createElement("label");
+  animationModeLabel.textContent = "Animation Mode";
+  animationModeLabel.style.cssText = 'display: block; font-size: 11px; margin-top: 10px; margin-bottom: 4px; color: #ff66ff;';
+  tabContainers['Visual'].appendChild(animationModeLabel);
+
+  const animationModeDropdown = document.createElement("select");
+  animationModeDropdown.style.cssText = 'width: 100%; padding: 6px; background: rgba(0,0,0,0.5); border: 1px solid #ff66ff; color: #ff66ff; border-radius: 4px; margin-bottom: 10px; font-size: 11px;';
+
+  const animationModes = ['None', 'Pulse', 'Rotate', 'Oscillate'];
+  animationModes.forEach(mode => {
+    const option = document.createElement("option");
+    option.value = mode;
+    option.textContent = mode;
+    if (mode === 'None') option.selected = true;
+    animationModeDropdown.appendChild(option);
+  });
+
+  animationModeDropdown.addEventListener("change", () => {
+    const mode = animationModeDropdown.value;
+    notifyHUDUpdate({ mandala: { animationMode: mode } });
+    console.log(`📟 HUD → Animation mode: ${mode}`);
+  });
+  animationModeDropdown.title = 'Select mandala animation mode';
+  tabContainers['Visual'].appendChild(animationModeDropdown);
+
+  // Phase 11.7.38: Animation Speed slider
+  const animationSpeedControl = createSliderControl('Animation Speed', 1.0, 0.1, 3.0, 0.1, (value) => {
+    notifyHUDUpdate({ mandala: { animationSpeed: value } });
+    console.log(`📟 HUD → Animation speed: ${value.toFixed(2)}`);
+  });
+  animationSpeedControl.title = 'Animation speed multiplier (0.1-3.0)';
+  tabContainers['Visual'].appendChild(animationSpeedControl);
+
+  // Phase 11.7.39: Animation Preset dropdown
+  const animationPresetLabel = document.createElement("label");
+  animationPresetLabel.textContent = "Animation Preset";
+  animationPresetLabel.style.cssText = 'display: block; font-size: 11px; margin-top: 10px; margin-bottom: 4px; color: #ff66ff;';
+  tabContainers['Visual'].appendChild(animationPresetLabel);
+
+  const animationPresetDropdown = document.createElement("select");
+  animationPresetDropdown.style.cssText = 'width: 100%; padding: 6px; background: rgba(0,0,0,0.5); border: 1px solid #ff66ff; color: #ff66ff; border-radius: 4px; margin-bottom: 10px; font-size: 11px;';
+
+  const animationPresets = ['Calm', 'Energetic', 'Spin'];
+  animationPresets.forEach(preset => {
+    const option = document.createElement("option");
+    option.value = preset;
+    option.textContent = preset;
+    animationPresetDropdown.appendChild(option);
+  });
+
+  animationPresetDropdown.addEventListener("change", () => {
+    const preset = animationPresetDropdown.value;
+    notifyHUDUpdate({ mandala: { animationPreset: preset } });
+    console.log(`📟 HUD → Animation preset: ${preset}`);
+  });
+  animationPresetDropdown.title = 'Apply animation preset (mode + speed)';
+  tabContainers['Visual'].appendChild(animationPresetDropdown);
+
+  // Phase 11.7.39: Randomize Animation button
+  const randomizeAnimationButton = document.createElement("button");
+  randomizeAnimationButton.textContent = "🎲 Randomize Animation";
+  randomizeAnimationButton.style.cssText = 'width: 100%; padding: 8px; background: rgba(255,102,255,0.3); border: 1px solid #ff66ff; color: #ff66ff; border-radius: 4px; margin-bottom: 10px; font-size: 11px; cursor: pointer; transition: background 0.2s;';
+  randomizeAnimationButton.addEventListener("mouseenter", () => {
+    randomizeAnimationButton.style.background = "rgba(255,102,255,0.5)";
+  });
+  randomizeAnimationButton.addEventListener("mouseleave", () => {
+    randomizeAnimationButton.style.background = "rgba(255,102,255,0.3)";
+  });
+  randomizeAnimationButton.addEventListener("click", () => {
+    notifyHUDUpdate({ mandala: { randomizeAnimation: true } });
+    console.log(`📟 HUD → Randomize animation triggered`);
+  });
+  randomizeAnimationButton.title = 'Randomize animation mode and speed';
+  tabContainers['Visual'].appendChild(randomizeAnimationButton);
+
+  // Phase 11.7.40: Depth slider
+  const depthControl = createSliderControl('Depth', 0.0, 0.0, 3.0, 0.1, (value) => {
+    notifyHUDUpdate({ mandala: { depth: value } });
+    console.log(`📟 HUD → Depth: ${value.toFixed(2)}`);
+  });
+  depthControl.title = 'Mandala extrusion depth (0.0-3.0)';
+  tabContainers['Visual'].appendChild(depthControl);
+
+  // Phase 11.7.40: Thickness slider
+  const thicknessControl = createSliderControl('Thickness', 0.1, 0.05, 1.0, 0.05, (value) => {
+    notifyHUDUpdate({ mandala: { thickness: value } });
+    console.log(`📟 HUD → Thickness: ${value.toFixed(2)}`);
+  });
+  thicknessControl.title = 'Ring thickness (0.05-1.0)';
+  tabContainers['Visual'].appendChild(thicknessControl);
+
+  // Phase 11.7.40: Z-Spacing slider
+  const zSpacingControl = createSliderControl('Z-Spacing', 0.2, 0.0, 1.0, 0.05, (value) => {
+    notifyHUDUpdate({ mandala: { zSpacing: value } });
+    console.log(`📟 HUD → Z-Spacing: ${value.toFixed(2)}`);
+  });
+  zSpacingControl.title = 'Distance between extruded layers (0.0-1.0)';
+  tabContainers['Visual'].appendChild(zSpacingControl);
+
+  // Phase 11.7.40: Extrusion Mode dropdown
+  const extrusionModeLabel = document.createElement("label");
+  extrusionModeLabel.textContent = "Extrusion Mode";
+  extrusionModeLabel.style.cssText = 'display: block; font-size: 11px; margin-top: 10px; margin-bottom: 4px; color: #ff66ff;';
+  tabContainers['Visual'].appendChild(extrusionModeLabel);
+
+  const extrusionModeDropdown = document.createElement("select");
+  extrusionModeDropdown.style.cssText = 'width: 100%; padding: 6px; background: rgba(0,0,0,0.5); border: 1px solid #ff66ff; color: #ff66ff; border-radius: 4px; margin-bottom: 10px; font-size: 11px;';
+
+  const extrusionModes = ['Flat', 'Stack', 'Spiral'];
+  extrusionModes.forEach(mode => {
+    const option = document.createElement("option");
+    option.value = mode;
+    option.textContent = mode;
+    if (mode === 'Flat') option.selected = true;
+    extrusionModeDropdown.appendChild(option);
+  });
+
+  extrusionModeDropdown.addEventListener("change", () => {
+    const mode = extrusionModeDropdown.value;
+    notifyHUDUpdate({ mandala: { extrusionMode: mode } });
+    console.log(`📟 HUD → Extrusion mode: ${mode}`);
+  });
+  extrusionModeDropdown.title = 'Select mandala extrusion mode';
+  tabContainers['Visual'].appendChild(extrusionModeDropdown);
+
+  // Phase 11.7.41: Particle Fusion checkbox
+  const particleFusionToggle = createToggleControl('Enable Particle Fusion', false, (value) => {
+    notifyHUDUpdate({ mandala: { particleFusion: value } });
+    console.log(`📟 HUD → Particle Fusion: ${value ? 'ON' : 'OFF'}`);
+  });
+  particleFusionToggle.title = 'Enable emoji particle fusion on mandala rings';
+  tabContainers['Visual'].appendChild(particleFusionToggle);
+
+  // Phase 11.7.41: Particle Emoji dropdown
+  const particleEmojiLabel = document.createElement("label");
+  particleEmojiLabel.textContent = "Particle Emoji";
+  particleEmojiLabel.style.cssText = 'display: block; font-size: 11px; margin-top: 10px; margin-bottom: 4px; color: #ff66ff;';
+  tabContainers['Visual'].appendChild(particleEmojiLabel);
+
+  const particleEmojiDropdown = document.createElement("select");
+  particleEmojiDropdown.style.cssText = 'width: 100%; padding: 6px; background: rgba(0,0,0,0.5); border: 1px solid #ff66ff; color: #ff66ff; border-radius: 4px; margin-bottom: 10px; font-size: 11px;';
+
+  const particleEmojis = ['🍕', '🌶️', '🍄', '⭐', '💎', '🔥', '💧', '🌈'];
+  particleEmojis.forEach(emoji => {
+    const option = document.createElement("option");
+    option.value = emoji;
+    option.textContent = emoji;
+    if (emoji === '🍕') option.selected = true;
+    particleEmojiDropdown.appendChild(option);
+  });
+
+  particleEmojiDropdown.addEventListener("change", () => {
+    const emoji = particleEmojiDropdown.value;
+    notifyHUDUpdate({ mandala: { particleEmoji: emoji } });
+    console.log(`📟 HUD → Particle emoji: ${emoji}`);
+  });
+  particleEmojiDropdown.title = 'Select emoji for particle fusion';
+  tabContainers['Visual'].appendChild(particleEmojiDropdown);
+
+  // Phase 11.7.41: Particle Count slider
+  const particleCountControl = createSliderControl('Particle Count', 200, 50, 1000, 10, (value) => {
+    notifyHUDUpdate({ mandala: { particleCount: value } });
+    console.log(`📟 HUD → Particle count: ${value}`);
+  });
+  particleCountControl.title = 'Number of particles per ring (50-1000)';
+  tabContainers['Visual'].appendChild(particleCountControl);
+
+  // Phase 11.7.41: Particle Size slider
+  const particleSizeControl = createSliderControl('Particle Size', 0.4, 0.1, 1.0, 0.05, (value) => {
+    notifyHUDUpdate({ mandala: { particleSize: value } });
+    console.log(`📟 HUD → Particle size: ${value.toFixed(2)}`);
+  });
+  particleSizeControl.title = 'Scale multiplier for particles (0.1-1.0)';
+  tabContainers['Visual'].appendChild(particleSizeControl);
+
+  // Phase 11.7.44: Audio Reactive Mode dropdown
+  const audioReactiveModeLabel = document.createElement("label");
+  audioReactiveModeLabel.textContent = "Audio Reactive Mode";
+  audioReactiveModeLabel.style.cssText = 'display: block; font-size: 11px; margin-top: 10px; margin-bottom: 4px; color: #ff66ff;';
+  tabContainers['Visual'].appendChild(audioReactiveModeLabel);
+
+  const audioReactiveModeDropdown = document.createElement("select");
+  audioReactiveModeDropdown.style.cssText = 'width: 100%; padding: 6px; background: rgba(0,0,0,0.5); border: 1px solid #ff66ff; color: #ff66ff; border-radius: 4px; margin-bottom: 10px; font-size: 11px;';
+
+  const audioReactiveModes = ['Global', 'PerRing'];
+  audioReactiveModes.forEach(mode => {
+    const option = document.createElement("option");
+    option.value = mode;
+    option.textContent = mode;
+    if (mode === 'Global') option.selected = true;
+    audioReactiveModeDropdown.appendChild(option);
+  });
+
+  audioReactiveModeDropdown.addEventListener("change", () => {
+    const mode = audioReactiveModeDropdown.value;
+    notifyHUDUpdate({ mandala: { audioReactiveMode: mode } });
+    console.log(`📟 HUD → Audio Reactive Mode: ${mode}`);
+  });
+  audioReactiveModeDropdown.title = 'Select audio reactivity mode';
+  tabContainers['Visual'].appendChild(audioReactiveModeDropdown);
+
+  // Phase 11.7.44: Band Intensity slider
+  const bandIntensityControl = createSliderControl('Band Intensity', 1.0, 0.1, 3.0, 0.1, (value) => {
+    notifyHUDUpdate({ mandala: { bandIntensity: value } });
+    console.log(`📟 HUD → Band Intensity: ${value.toFixed(2)}`);
+  });
+  bandIntensityControl.title = 'Audio band intensity multiplier (0.1-3.0)';
+  tabContainers['Visual'].appendChild(bandIntensityControl);
+
+  // Phase 11.7.44: Per-ring band assignment dropdowns (initially create for 6 rings)
+  const bandAssignmentContainer = document.createElement("div");
+  bandAssignmentContainer.style.cssText = 'margin-top: 10px; margin-bottom: 10px;';
+  bandAssignmentContainer.id = 'bandAssignmentContainer';
+
+  const bandAssignmentLabel = document.createElement("label");
+  bandAssignmentLabel.textContent = "Per-Ring Band Assignments";
+  bandAssignmentLabel.style.cssText = 'display: block; font-size: 11px; margin-bottom: 6px; color: #ff66ff;';
+  bandAssignmentContainer.appendChild(bandAssignmentLabel);
+
+  const bands = ['bass', 'mid', 'treble', 'presence'];
+  const defaultBandAssignments = []; // Auto-assigned in controller
+
+  for (let i = 0; i < 6; i++) { // Create controls for 6 rings initially
+    const ringContainer = document.createElement("div");
+    ringContainer.style.cssText = 'display: flex; gap: 8px; align-items: center; margin-bottom: 4px;';
+
+    const ringLabel = document.createElement("span");
+    ringLabel.textContent = `Ring ${i}:`;
+    ringLabel.style.cssText = 'font-size: 10px; color: #ff66ff; width: 50px;';
+    ringContainer.appendChild(ringLabel);
+
+    const bandDropdown = document.createElement("select");
+    bandDropdown.style.cssText = 'flex: 1; padding: 4px; background: rgba(0,0,0,0.5); border: 1px solid #ff66ff; color: #ff66ff; border-radius: 4px; font-size: 10px;';
+    bandDropdown.dataset.ringIndex = i;
+
+    bands.forEach((band, idx) => {
+      const option = document.createElement("option");
+      option.value = band;
+      option.textContent = band.charAt(0).toUpperCase() + band.slice(1);
+      // Auto-assign default band in sequence
+      if (idx === (i % bands.length)) option.selected = true;
+      bandDropdown.appendChild(option);
+    });
+
+    bandDropdown.addEventListener("change", () => {
+      const ringIndex = parseInt(bandDropdown.dataset.ringIndex);
+      const band = bandDropdown.value;
+      notifyHUDUpdate({ mandala: { bandAssignment: { ringIndex, band } } });
+      console.log(`📟 HUD → Ring ${ringIndex} → ${band}`);
+    });
+
+    ringContainer.appendChild(bandDropdown);
+    bandAssignmentContainer.appendChild(ringContainer);
+  }
+
+  tabContainers['Visual'].appendChild(bandAssignmentContainer);
+
+  // Phase 11.7.45: Morph Fusion toggle
+  const morphFusionToggle = createToggleControl('Enable Morph Fusion', false, (value) => {
+    notifyHUDUpdate({ mandala: { morphFusion: value } });
+    console.log(`📟 HUD → Morph Fusion: ${value ? 'ON' : 'OFF'}`);
+  });
+  morphFusionToggle.title = 'Enable mandala fusion with morph weights';
+  tabContainers['Visual'].appendChild(morphFusionToggle);
+
+  // Phase 11.7.45: Morph Influence slider
+  const morphInfluenceControl = createSliderControl('Morph Influence', 0.5, 0.0, 1.0, 0.05, (value) => {
+    notifyHUDUpdate({ mandala: { morphInfluence: value } });
+    console.log(`📟 HUD → Morph Influence: ${value.toFixed(2)}`);
+  });
+  morphInfluenceControl.title = 'Morph weight influence strength (0.0-1.0)';
+  tabContainers['Visual'].appendChild(morphInfluenceControl);
+
+  // Phase 11.7.45: Per-ring morph target assignment dropdowns
+  const morphTargetContainer = document.createElement("div");
+  morphTargetContainer.style.cssText = 'margin-top: 10px; margin-bottom: 10px;';
+  morphTargetContainer.id = 'morphTargetContainer';
+
+  const morphTargetLabel = document.createElement("label");
+  morphTargetLabel.textContent = "Per-Ring Morph Targets";
+  morphTargetLabel.style.cssText = 'display: block; font-size: 11px; margin-bottom: 6px; color: #ff66ff;';
+  morphTargetContainer.appendChild(morphTargetLabel);
+
+  const morphTargets = ['sphere', 'cube', 'pyramid', 'torus'];
+
+  for (let i = 0; i < 6; i++) { // Create controls for 6 rings initially
+    const ringContainer = document.createElement("div");
+    ringContainer.style.cssText = 'display: flex; gap: 8px; align-items: center; margin-bottom: 4px;';
+
+    const ringLabel = document.createElement("span");
+    ringLabel.textContent = `Ring ${i}:`;
+    ringLabel.style.cssText = 'font-size: 10px; color: #ff66ff; width: 50px;';
+    ringContainer.appendChild(ringLabel);
+
+    const morphDropdown = document.createElement("select");
+    morphDropdown.style.cssText = 'flex: 1; padding: 4px; background: rgba(0,0,0,0.5); border: 1px solid #ff66ff; color: #ff66ff; border-radius: 4px; font-size: 10px;';
+    morphDropdown.dataset.ringIndex = i;
+
+    morphTargets.forEach((target, idx) => {
+      const option = document.createElement("option");
+      option.value = target;
+      option.textContent = target.charAt(0).toUpperCase() + target.slice(1);
+      // Auto-assign default target in sequence
+      if (idx === (i % morphTargets.length)) option.selected = true;
+      morphDropdown.appendChild(option);
+    });
+
+    morphDropdown.addEventListener("change", () => {
+      const ringIndex = parseInt(morphDropdown.dataset.ringIndex);
+      const target = morphDropdown.value;
+      notifyHUDUpdate({ mandala: { morphTarget: { ringIndex, target } } });
+      console.log(`📟 HUD → Ring ${ringIndex} → ${target}`);
+    });
+
+    ringContainer.appendChild(morphDropdown);
+    morphTargetContainer.appendChild(ringContainer);
+  }
+
+  tabContainers['Visual'].appendChild(morphTargetContainer);
 
   // Phase 11.7.29: Emoji Picker (radio buttons)
   const emojiPickerLabel = document.createElement("label");

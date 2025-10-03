@@ -73,6 +73,57 @@ export class MandalaController {
     this.palette = options.palette ?? 'Classic'; // Color palette name
     this.ringColors = [...COLOR_PALETTES.Classic]; // Current ring colors (up to 8)
 
+    // Phase 11.7.37: Palette blending
+    this.paletteBlend = options.paletteBlend ?? 0.0; // Blend factor (0-1)
+    this.targetPalette = options.targetPalette ?? 'Classic'; // Target palette for blending
+    this.blendActive = options.blendActive ?? false; // Blend animation active
+    this.sourcePalette = this.palette; // Source palette for blend
+
+    // Phase 11.7.38: Animation modes
+    this.animationMode = options.animationMode ?? 'None'; // None | Pulse | Rotate | Wave | Orbit
+    this.animationSpeed = options.animationSpeed ?? 1.0; // 0.1-3.0 multiplier
+    this.animationPhase = 0.0; // Animation phase accumulator
+
+    // Phase 11.7.39: Animation preset tracking
+    this.animationPreset = options.animationPreset ?? null; // Track current preset name
+
+    // Phase 11.7.40: Depth & 3D Extrusion
+    this.depth = options.depth ?? 0.0; // Extrusion depth (0 = flat, 0-3.0)
+    this.thickness = options.thickness ?? 0.1; // Thickness of each ring (0.05-1.0)
+    this.zSpacing = options.zSpacing ?? 0.2; // Distance between extruded layers (0-1.0)
+    this.extrusionMode = options.extrusionMode ?? 'Flat'; // Flat | Stack | Spiral
+
+    // Phase 11.7.41: Particle Fusion
+    this.particleFusion = options.particleFusion ?? false; // Enable/disable emoji fusion
+    this.particleEmoji = options.particleEmoji ?? '🍕'; // Default emoji
+    this.particleCount = options.particleCount ?? 200; // Per-ring particle count
+    this.particleSize = options.particleSize ?? 0.4; // Scale multiplier
+    this.particleSystem = null; // Handle to EmojiParticles
+
+    // Phase 11.7.44: Advanced Audio Reactivity
+    this.audioReactiveMode = options.audioReactiveMode ?? 'Global'; // Global | PerRing
+    this.audioBands = ['bass', 'mid', 'treble', 'presence'];
+    this.bandIntensity = options.bandIntensity ?? 1.0; // 0.1-3.0 multiplier
+    // Auto-assign bands to rings in sequence
+    this.bandAssignments = options.bandAssignments ?? [];
+    if (this.bandAssignments.length === 0) {
+      for (let i = 0; i < this.rings; i++) {
+        this.bandAssignments[i] = this.audioBands[i % this.audioBands.length];
+      }
+    }
+
+    // Phase 11.7.45: Morph Fusion
+    this.morphFusion = options.morphFusion ?? false; // Toggle morph fusion
+    this.morphInfluence = options.morphInfluence ?? 0.5; // 0-1 strength
+    this.morphMap = options.morphMap ?? ['sphere', 'cube', 'pyramid', 'torus']; // Per ring
+    // Auto-assign morph targets if needed
+    if (this.morphMap.length < this.rings) {
+      const targets = ['sphere', 'cube', 'pyramid', 'torus'];
+      for (let i = this.morphMap.length; i < this.rings; i++) {
+        this.morphMap[i] = targets[i % targets.length];
+      }
+    }
+
     // Ring-specific settings
     this.ringRadii = options.ringRadii ?? [0, 2, 4, 6, 8, 10, 12, 14]; // Up to 8 rings
     this.ringRotationSpeeds = options.ringRotationSpeeds ?? [0, 0.01, 0.015, 0.02, 0.025, 0.03, 0.035, 0.04];
@@ -151,6 +202,34 @@ export class MandalaController {
     // Phase 11.7.36: Color palette
     state.emojiMandala.palette = this.palette;
     state.emojiMandala.ringColors = this.ringColors;
+    // Phase 11.7.37: Palette blending
+    state.emojiMandala.paletteBlend = this.paletteBlend;
+    state.emojiMandala.targetPalette = this.targetPalette;
+    state.emojiMandala.blendActive = this.blendActive;
+    // Phase 11.7.38: Animation modes
+    state.emojiMandala.animationMode = this.animationMode;
+    state.emojiMandala.animationSpeed = this.animationSpeed;
+    state.emojiMandala.animationPhase = this.animationPhase;
+    // Phase 11.7.39: Animation preset
+    state.emojiMandala.animationPreset = this.animationPreset;
+    // Phase 11.7.40: Depth & 3D Extrusion
+    state.emojiMandala.depth = this.depth;
+    state.emojiMandala.thickness = this.thickness;
+    state.emojiMandala.zSpacing = this.zSpacing;
+    state.emojiMandala.extrusionMode = this.extrusionMode;
+    // Phase 11.7.41: Particle Fusion
+    state.emojiMandala.particleFusion = this.particleFusion;
+    state.emojiMandala.particleEmoji = this.particleEmoji;
+    state.emojiMandala.particleCount = this.particleCount;
+    state.emojiMandala.particleSize = this.particleSize;
+    // Phase 11.7.44: Advanced Audio Reactivity
+    state.emojiMandala.audioReactiveMode = this.audioReactiveMode;
+    state.emojiMandala.bandIntensity = this.bandIntensity;
+    state.emojiMandala.bandAssignments = this.bandAssignments;
+    // Phase 11.7.45: Morph Fusion
+    state.emojiMandala.morphFusion = this.morphFusion;
+    state.emojiMandala.morphInfluence = this.morphInfluence;
+    state.emojiMandala.morphMap = this.morphMap;
   }
 
   // Update mandala (called every frame from particle system or main loop)
@@ -252,6 +331,56 @@ export class MandalaController {
 
     // Sync rotation back to state
     state.emojiMandala.rotation = this.rotation;
+
+    // Phase 11.7.44: Advanced Audio Reactivity
+    if (this.mandalaAudioReactive && state.audioReactive) {
+      const audioBands = {
+        bass: bass,
+        mid: mid,
+        treble: treble,
+        presence: audioData.presence ?? treble // Use treble as fallback for presence
+      };
+
+      if (this.audioReactiveMode === 'PerRing') {
+        // Per-ring audio reactivity
+        const ringScales = [];
+        for (let i = 0; i < this.rings; i++) {
+          const band = this.bandAssignments[i % this.audioBands.length];
+          const value = audioBands[band] ?? 0;
+          const scale = 1 + value * this.bandIntensity;
+          ringScales.push(scale);
+        }
+        state.emojiMandala.ringScales = ringScales;
+      } else if (this.audioReactiveMode === 'Global') {
+        // Global audio reactivity
+        const avgLevel = (audioBands.bass + audioBands.mid + audioBands.treble) / 3;
+        const globalScale = 1 + avgLevel * 0.5 * this.bandIntensity;
+        this.globalScale = globalScale;
+        state.emojiMandala.globalScale = globalScale;
+      }
+    }
+
+    // Phase 11.7.45: Morph Fusion
+    if (this.morphFusion && state?.morphWeights) {
+      const morphScales = [];
+      for (let i = 0; i < this.rings; i++) {
+        const target = this.morphMap[i % this.morphMap.length];
+        const weight = state.morphWeights[target] ?? 0;
+        const factor = 1 + weight * this.morphInfluence;
+        morphScales.push(factor);
+
+        // Optional: Log per-ring morph influence (sampling)
+        if (Math.random() < 0.01 && weight > 0.01) {
+          console.log(`🔗 Ring ${i} → ${target.charAt(0).toUpperCase() + target.slice(1)} weight (${weight.toFixed(2)}) | factor=${factor.toFixed(2)}`);
+        }
+      }
+      state.emojiMandala.morphScales = morphScales;
+    }
+
+    // Phase 11.7.41: Update particle system if fusion is enabled
+    if (this.particleFusion && this.particleSystem) {
+      this.particleSystem.update(level);
+    }
   }
 
   // Set number of rings (1-8)
@@ -572,9 +701,406 @@ export class MandalaController {
     const oldPalette = this.palette;
     this.palette = paletteName;
     this.ringColors = [...COLOR_PALETTES[paletteName]];
+    this.blendActive = false; // Stop any active blend
+    this.paletteBlend = 0.0;
     this.syncToState();
 
     console.log(`🎨 Mandala palette applied → ${paletteName} (was ${oldPalette})`);
+  }
+
+  // Phase 11.7.37: Set target palette for blending
+  setTargetPalette(paletteName) {
+    if (!COLOR_PALETTES[paletteName]) {
+      console.warn(`🎨 Unknown target palette: ${paletteName}`);
+      return;
+    }
+
+    this.targetPalette = paletteName;
+    this.sourcePalette = this.palette;
+    this.blendActive = true;
+    this.paletteBlend = 0.0;
+    this.syncToState();
+
+    console.log(`🎨 Mandala palette blending → ${this.sourcePalette} → ${this.targetPalette} (started)`);
+  }
+
+  // Phase 11.7.37: Update blend progress (call from animation loop)
+  updateBlend(delta = 0.01) {
+    if (!this.blendActive) return;
+
+    this.paletteBlend = Math.min(this.paletteBlend + delta, 1.0);
+
+    // Lerp colors using THREE.Color
+    const sourceColors = COLOR_PALETTES[this.sourcePalette];
+    const targetColors = COLOR_PALETTES[this.targetPalette];
+
+    for (let i = 0; i < 8; i++) {
+      const sourceColor = new THREE.Color(sourceColors[i]);
+      const targetColor = new THREE.Color(targetColors[i]);
+      sourceColor.lerp(targetColor, this.paletteBlend);
+      this.ringColors[i] = '#' + sourceColor.getHexString();
+    }
+
+    // Log progress every 20%
+    const progressPercent = Math.floor(this.paletteBlend * 100);
+    if (progressPercent % 20 === 0 && progressPercent > 0) {
+      console.log(`🎨 Mandala palette blending → ${this.targetPalette} (progress ${(this.paletteBlend).toFixed(2)})`);
+    }
+
+    // Complete blend
+    if (this.paletteBlend >= 1.0) {
+      this.completeBlend();
+    }
+
+    this.syncToState();
+  }
+
+  // Phase 11.7.37: Complete blend and snap to target
+  completeBlend() {
+    if (!this.blendActive) return;
+
+    this.palette = this.targetPalette;
+    this.ringColors = [...COLOR_PALETTES[this.targetPalette]];
+    this.blendActive = false;
+    this.paletteBlend = 0.0;
+    this.syncToState();
+
+    console.log(`🎨 Mandala palette applied → ${this.palette} (blend complete)`);
+  }
+
+  // Phase 11.7.37: Set blend progress manually (for HUD slider)
+  setBlendProgress(progress) {
+    this.paletteBlend = Math.max(0, Math.min(1.0, progress));
+
+    if (this.targetPalette !== this.palette) {
+      const sourceColors = COLOR_PALETTES[this.sourcePalette || this.palette];
+      const targetColors = COLOR_PALETTES[this.targetPalette];
+
+      for (let i = 0; i < 8; i++) {
+        const sourceColor = new THREE.Color(sourceColors[i]);
+        const targetColor = new THREE.Color(targetColors[i]);
+        sourceColor.lerp(targetColor, this.paletteBlend);
+        this.ringColors[i] = '#' + sourceColor.getHexString();
+      }
+    }
+
+    this.syncToState();
+  }
+
+  // Phase 11.7.37: Cycle to next palette in sequence
+  cyclePalette() {
+    const paletteNames = Object.keys(COLOR_PALETTES);
+    const currentIndex = paletteNames.indexOf(this.palette);
+    const nextIndex = (currentIndex + 1) % paletteNames.length;
+    const nextPalette = paletteNames[nextIndex];
+
+    this.setTargetPalette(nextPalette);
+    console.log(`🎨 Mandala palette cycle → ${nextPalette}`);
+  }
+
+  // Phase 11.7.38/11.7.43: Set animation mode
+  setAnimationMode(mode) {
+    const validModes = ['None', 'Pulse', 'Rotate', 'Oscillate'];
+    if (!validModes.includes(mode)) {
+      console.warn(`🎞️ Invalid animation mode: ${mode}, keeping current mode ${this.animationMode}`);
+      return;
+    }
+
+    const oldMode = this.animationMode;
+    this.animationMode = mode;
+    this.animationPhase = 0.0; // Reset phase on mode change
+    this.syncToState();
+
+    console.log(`🎞️ Mandala animation mode: ${mode}${mode !== 'None' ? ` | speed=${this.animationSpeed.toFixed(1)}` : ''}`);
+  }
+
+  // Phase 11.7.38: Set animation speed
+  setAnimationSpeed(speed) {
+    const oldSpeed = this.animationSpeed;
+    this.animationSpeed = Math.max(0.1, Math.min(3.0, speed));
+    this.syncToState();
+    console.log(`🔄 Mandala animation speed: ${this.animationSpeed.toFixed(2)} (was ${oldSpeed.toFixed(2)})`);
+  }
+
+  // Phase 11.7.38/11.7.43: Update animation (called every frame with delta time)
+  updateAnimation(delta = 0.016, audioLevel = 0) {
+    if (this.animationMode === 'None') return;
+
+    // Update phase (frame rate independent)
+    this.animationPhase += delta * this.animationSpeed;
+
+    switch (this.animationMode) {
+      case 'Pulse':
+        // Scale rings with sine wave
+        const scale = 1 + Math.sin(this.animationPhase) * 0.2;
+        this.globalScale = scale;
+        state.emojiMandala.globalScale = scale;
+        break;
+
+      case 'Rotate':
+        // Continuous rotation
+        this.adjustManualRotation(0.01 * this.animationSpeed);
+        break;
+
+      case 'Oscillate':
+        // Oscillate rotation back and forth
+        const offset = Math.sin(this.animationPhase) * Math.PI / 6;
+        this.setManualRotation(offset);
+        break;
+    }
+
+    this.syncToState();
+  }
+
+  // Phase 11.7.39/11.7.43: Apply animation preset
+  applyAnimationPreset(presetName) {
+    switch (presetName) {
+      case 'Calm':
+        this.setAnimationMode('Oscillate');
+        this.animationSpeed = 0.5;
+        break;
+      case 'Energetic':
+        this.setAnimationMode('Pulse');
+        this.animationSpeed = 2.0;
+        break;
+      case 'Spin':
+        this.setAnimationMode('Rotate');
+        this.animationSpeed = 1.2;
+        break;
+      default:
+        console.warn(`🎬 Unknown animation preset: ${presetName}`);
+        return;
+    }
+    this.animationPreset = presetName; // Track which preset is active
+    this.syncToState();
+    console.log(`🎬 Mandala animation preset applied → ${presetName}`);
+  }
+
+  // Phase 11.7.39/11.7.43: Randomize animation
+  randomizeAnimation() {
+    const modes = ['Pulse', 'Rotate', 'Oscillate'];
+    const randMode = modes[Math.floor(Math.random() * modes.length)];
+    const randSpeed = parseFloat((Math.random() * 2.9 + 0.1).toFixed(1)); // 0.1–3.0
+
+    this.setAnimationMode(randMode);
+    this.animationSpeed = randSpeed;
+    this.animationPreset = null; // Clear preset name since it's randomized
+    this.syncToState();
+
+    console.log(`🎲 Mandala animation randomized → ${randMode} @ ${randSpeed}`);
+  }
+
+  // Phase 11.7.40: Set depth
+  setDepth(value) {
+    const oldDepth = this.depth;
+    this.depth = Math.max(0.0, Math.min(3.0, value));
+    this.updateExtrusion();
+    console.log(`🌀 Mandala depth: ${this.depth.toFixed(2)} (was ${oldDepth.toFixed(2)})`);
+  }
+
+  // Phase 11.7.40: Set thickness
+  setThickness(value) {
+    const oldThickness = this.thickness;
+    this.thickness = Math.max(0.05, Math.min(1.0, value));
+    this.updateExtrusion();
+    console.log(`🌀 Mandala thickness: ${this.thickness.toFixed(2)} (was ${oldThickness.toFixed(2)})`);
+  }
+
+  // Phase 11.7.40: Set z-spacing
+  setZSpacing(value) {
+    const oldSpacing = this.zSpacing;
+    this.zSpacing = Math.max(0.0, Math.min(1.0, value));
+    this.updateExtrusion();
+    console.log(`🌀 Mandala z-spacing: ${this.zSpacing.toFixed(2)} (was ${oldSpacing.toFixed(2)})`);
+  }
+
+  // Phase 11.7.40: Set extrusion mode
+  setExtrusionMode(mode) {
+    const validModes = ['Flat', 'Stack', 'Spiral'];
+    if (!validModes.includes(mode)) {
+      console.warn(`🌀 Invalid extrusion mode: ${mode}, keeping current mode ${this.extrusionMode}`);
+      return;
+    }
+
+    const oldMode = this.extrusionMode;
+    this.extrusionMode = mode;
+    this.updateExtrusion();
+    console.log(`🌀 Mandala extrusion mode: ${mode} (was ${oldMode})`);
+  }
+
+  // Phase 11.7.40: Update extrusion (compute Z offsets per ring)
+  updateExtrusion() {
+    // Store Z offsets in state for rendering system to use
+    const zOffsets = [];
+
+    for (let i = 0; i < this.rings; i++) {
+      let zOffset = 0;
+
+      switch (this.extrusionMode) {
+        case 'Flat':
+          zOffset = 0;
+          break;
+        case 'Stack':
+          zOffset = i * this.zSpacing;
+          break;
+        case 'Spiral':
+          zOffset = i * this.zSpacing + (i * 0.1 * this.depth);
+          break;
+      }
+
+      zOffsets.push(zOffset * this.depth);
+    }
+
+    state.emojiMandala.ringZOffsets = zOffsets;
+    state.emojiMandala.ringThickness = this.thickness;
+
+    this.syncToState();
+    console.log(`🌀 Mandala extrusion updated → mode=${this.extrusionMode}, depth=${this.depth.toFixed(2)}`);
+  }
+
+  // Phase 11.7.41: Enable/disable particle fusion
+  enableParticleFusion(enabled) {
+    this.particleFusion = enabled;
+
+    if (enabled) {
+      // Dynamically import EmojiParticles
+      import('./particles.js').then(({ EmojiParticles }) => {
+        this.particleSystem = new EmojiParticles(this.scene, this.particleCount, this.particleEmoji);
+        console.log(`✨ Mandala particle fusion: ON (${this.particleCount} x ${this.particleEmoji})`);
+      }).catch(err => {
+        console.error('Failed to load EmojiParticles:', err);
+        this.particleFusion = false;
+      });
+    } else {
+      if (this.particleSystem) {
+        this.particleSystem.dispose();
+        this.particleSystem = null;
+      }
+      console.log('✨ Mandala particle fusion: OFF');
+    }
+
+    this.syncToState();
+  }
+
+  // Phase 11.7.41: Set particle emoji
+  setParticleEmoji(emoji) {
+    this.particleEmoji = emoji;
+    if (this.particleSystem) {
+      this.particleSystem.swapEmoji(emoji);
+      console.log(`🍕 Emoji swapped to: ${emoji}`);
+    }
+    this.syncToState();
+  }
+
+  // Phase 11.7.41: Set particle count
+  setParticleCount(count) {
+    const oldCount = this.particleCount;
+    this.particleCount = Math.max(50, Math.min(1000, Math.floor(count)));
+
+    if (this.particleSystem) {
+      // Recreate particle system with new count
+      this.particleSystem.dispose();
+      import('./particles.js').then(({ EmojiParticles }) => {
+        this.particleSystem = new EmojiParticles(this.scene, this.particleCount, this.particleEmoji);
+        console.log(`✨ Particle count: ${this.particleCount} (was ${oldCount})`);
+      });
+    }
+
+    this.syncToState();
+  }
+
+  // Phase 11.7.41: Set particle size
+  setParticleSize(size) {
+    const oldSize = this.particleSize;
+    this.particleSize = Math.max(0.1, Math.min(1.0, size));
+
+    if (this.particleSystem && this.particleSystem.sprites) {
+      this.particleSystem.sprites.forEach(sprite => {
+        sprite.scale.set(this.particleSize, this.particleSize, this.particleSize);
+      });
+      console.log(`✨ Particle size: ${this.particleSize.toFixed(2)} (was ${oldSize.toFixed(2)})`);
+    }
+
+    this.syncToState();
+  }
+
+  // Phase 11.7.44: Set audio reactive mode
+  setAudioReactiveMode(mode) {
+    const validModes = ['Global', 'PerRing'];
+    if (!validModes.includes(mode)) {
+      console.warn(`🎵 Invalid audio reactive mode: ${mode}, keeping current mode ${this.audioReactiveMode}`);
+      return;
+    }
+
+    const oldMode = this.audioReactiveMode;
+    this.audioReactiveMode = mode;
+    this.syncToState();
+
+    console.log(`🎵 Mandala audio mode: ${mode} (was ${oldMode})`);
+  }
+
+  // Phase 11.7.44: Set band intensity
+  setBandIntensity(intensity) {
+    const oldIntensity = this.bandIntensity;
+    this.bandIntensity = Math.max(0.1, Math.min(3.0, intensity));
+    this.syncToState();
+
+    console.log(`🎵 Band intensity: ${this.bandIntensity.toFixed(2)} (was ${oldIntensity.toFixed(2)})`);
+  }
+
+  // Phase 11.7.44: Set band assignment for a specific ring
+  setBandAssignment(ringIndex, band) {
+    if (ringIndex < 0 || ringIndex >= this.rings) {
+      console.warn(`🎵 Invalid ring index: ${ringIndex}`);
+      return;
+    }
+
+    if (!this.audioBands.includes(band)) {
+      console.warn(`🎵 Invalid band: ${band}`);
+      return;
+    }
+
+    this.bandAssignments[ringIndex] = band;
+    this.syncToState();
+
+    console.log(`🎵 Ring ${ringIndex} → ${band.charAt(0).toUpperCase() + band.slice(1)}`);
+  }
+
+  // Phase 11.7.45: Enable/disable morph fusion
+  enableMorphFusion(enabled) {
+    this.morphFusion = enabled;
+    this.syncToState();
+
+    console.log(`🔗 Mandala morph fusion: ${enabled ? 'ON' : 'OFF'}`);
+  }
+
+  // Phase 11.7.45: Set morph influence
+  setMorphInfluence(influence) {
+    const oldInfluence = this.morphInfluence;
+    this.morphInfluence = Math.max(0.0, Math.min(1.0, influence));
+    this.syncToState();
+
+    console.log(`🔗 Morph influence: ${this.morphInfluence.toFixed(2)} (was ${oldInfluence.toFixed(2)})`);
+  }
+
+  // Phase 11.7.45: Set morph target for a specific ring
+  setMorphTarget(ringIndex, target) {
+    const validTargets = ['sphere', 'cube', 'pyramid', 'torus'];
+
+    if (ringIndex < 0 || ringIndex >= this.rings) {
+      console.warn(`🔗 Invalid ring index: ${ringIndex}`);
+      return;
+    }
+
+    if (!validTargets.includes(target)) {
+      console.warn(`🔗 Invalid morph target: ${target}`);
+      return;
+    }
+
+    this.morphMap[ringIndex] = target;
+    this.syncToState();
+
+    console.log(`🔗 Ring ${ringIndex} → ${target.charAt(0).toUpperCase() + target.slice(1)}`);
   }
 
   // Get current state snapshot

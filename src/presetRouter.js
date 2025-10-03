@@ -190,7 +190,33 @@ function handlePresetAction(action, presetName, category, tags) {
           selectedRing: state.emojiMandala.selectedRing ?? -1,
           manualRotation: state.emojiMandala.manualRotation ?? 0,
           // Phase 11.7.36: Color palette
-          palette: state.emojiMandala.palette ?? 'Classic'
+          palette: state.emojiMandala.palette ?? 'Classic',
+          // Phase 11.7.37: Palette blending
+          targetPalette: state.emojiMandala.targetPalette ?? 'Classic',
+          paletteBlend: state.emojiMandala.paletteBlend ?? 0.0,
+          // Phase 11.7.38: Animation modes
+          animationMode: state.emojiMandala.animationMode ?? 'None',
+          animationSpeed: state.emojiMandala.animationSpeed ?? 1.0,
+          // Phase 11.7.39: Animation preset (track current preset name if set)
+          animationPreset: state.emojiMandala.animationPreset ?? null,
+          // Phase 11.7.40: Depth & 3D Extrusion
+          depth: state.emojiMandala.depth ?? 0.0,
+          thickness: state.emojiMandala.thickness ?? 0.1,
+          zSpacing: state.emojiMandala.zSpacing ?? 0.2,
+          extrusionMode: state.emojiMandala.extrusionMode ?? 'Flat',
+          // Phase 11.7.41: Particle Fusion
+          particleFusion: state.emojiMandala.particleFusion ?? false,
+          particleEmoji: state.emojiMandala.particleEmoji ?? '🍕',
+          particleCount: state.emojiMandala.particleCount ?? 200,
+          particleSize: state.emojiMandala.particleSize ?? 0.4,
+          // Phase 11.7.44: Advanced Audio Reactivity
+          audioReactiveMode: state.emojiMandala.audioReactiveMode ?? 'Global',
+          bandIntensity: state.emojiMandala.bandIntensity ?? 1.0,
+          bandAssignments: state.emojiMandala.bandAssignments ?? [],
+          // Phase 11.7.45: Morph Fusion
+          morphFusion: state.emojiMandala.morphFusion ?? false,
+          morphInfluence: state.emojiMandala.morphInfluence ?? 0.5,
+          morphMap: state.emojiMandala.morphMap ?? ['sphere', 'cube', 'pyramid', 'torus']
         }
       };
 
@@ -308,10 +334,58 @@ function handlePresetAction(action, presetName, category, tags) {
           // Phase 11.7.36: Restore color palette
           state.emojiMandala.palette = preset.state.mandala.palette ?? 'Classic';
 
+          // Phase 11.7.37: Restore palette blending
+          state.emojiMandala.targetPalette = preset.state.mandala.targetPalette ?? 'Classic';
+          state.emojiMandala.paletteBlend = preset.state.mandala.paletteBlend ?? 0.0;
+
+          // Phase 11.7.38: Restore animation modes
+          state.emojiMandala.animationMode = preset.state.mandala.animationMode ?? 'None';
+          state.emojiMandala.animationSpeed = preset.state.mandala.animationSpeed ?? 1.0;
+
+          // Phase 11.7.39: Restore animation preset (optional)
+          state.emojiMandala.animationPreset = preset.state.mandala.animationPreset ?? null;
+
+          // Phase 11.7.40: Restore depth & extrusion
+          state.emojiMandala.depth = preset.state.mandala.depth ?? 0.0;
+          state.emojiMandala.thickness = preset.state.mandala.thickness ?? 0.1;
+          state.emojiMandala.zSpacing = preset.state.mandala.zSpacing ?? 0.2;
+          state.emojiMandala.extrusionMode = preset.state.mandala.extrusionMode ?? 'Flat';
+
+          // Phase 11.7.41: Restore particle fusion
+          state.emojiMandala.particleFusion = preset.state.mandala.particleFusion ?? false;
+          state.emojiMandala.particleEmoji = preset.state.mandala.particleEmoji ?? '🍕';
+          state.emojiMandala.particleCount = preset.state.mandala.particleCount ?? 200;
+          state.emojiMandala.particleSize = preset.state.mandala.particleSize ?? 0.4;
+
+          // Phase 11.7.44: Restore advanced audio reactivity
+          state.emojiMandala.audioReactiveMode = preset.state.mandala.audioReactiveMode ?? 'Global';
+          state.emojiMandala.bandIntensity = preset.state.mandala.bandIntensity ?? 1.0;
+          state.emojiMandala.bandAssignments = preset.state.mandala.bandAssignments ?? [];
+
+          // Phase 11.7.45: Restore morph fusion
+          state.emojiMandala.morphFusion = preset.state.mandala.morphFusion ?? false;
+          state.emojiMandala.morphInfluence = preset.state.mandala.morphInfluence ?? 0.5;
+          state.emojiMandala.morphMap = preset.state.mandala.morphMap ?? ['sphere', 'cube', 'pyramid', 'torus'];
+
           const onOff = state.mandala.enabled ? 'ON' : 'OFF';
           const audioStatus = state.mandala.audioReactive ? 'ON' : 'OFF';
           const palette = state.emojiMandala.palette;
-          console.log(`💾 Preset → Mandala restored: ${onOff} | rings=${state.mandala.ringCount} | symmetry=${state.mandala.symmetry} | audioReactive=${audioStatus} | palette=${palette}`);
+          const blend = state.emojiMandala.paletteBlend;
+          const animation = state.emojiMandala.animationMode;
+          const speed = state.emojiMandala.animationSpeed;
+          const animPreset = state.emojiMandala.animationPreset;
+          const depth = state.emojiMandala.depth;
+          const extrusionMode = state.emojiMandala.extrusionMode;
+          const particleFusion = state.emojiMandala.particleFusion ? 'ON' : 'OFF';
+          const particleEmoji = state.emojiMandala.particleEmoji;
+          const particleCount = state.emojiMandala.particleCount;
+          const particleSize = state.emojiMandala.particleSize;
+          const audioReactiveMode = state.emojiMandala.audioReactiveMode;
+          const bandIntensity = state.emojiMandala.bandIntensity;
+          const morphFusion = state.emojiMandala.morphFusion ? 'ON' : 'OFF';
+          const morphInfluence = state.emojiMandala.morphInfluence;
+          const presetInfo = animPreset ? ` | animationPreset=${animPreset}` : '';
+          console.log(`💾 Preset → Mandala restored: ${onOff} | rings=${state.mandala.ringCount} | symmetry=${state.mandala.symmetry} | palette=${palette} | blend=${blend.toFixed(2)} | animation=${animation} | speed=${speed.toFixed(1)}${presetInfo} | depth=${depth.toFixed(1)} | extrusionMode=${extrusionMode} | particleFusion=${particleFusion} | emoji=${particleEmoji} | count=${particleCount} | size=${particleSize.toFixed(1)} | audioReactiveMode=${audioReactiveMode} | bandIntensity=${bandIntensity.toFixed(1)} | morphFusion=${morphFusion} | morphInfluence=${morphInfluence.toFixed(1)}`);
         }
 
         state.presets.currentPresetName = presetName;
@@ -365,7 +439,33 @@ function handlePresetAction(action, presetName, category, tags) {
           selectedRing: state.emojiMandala.selectedRing ?? -1,
           manualRotation: state.emojiMandala.manualRotation ?? 0,
           // Phase 11.7.36: Color palette
-          palette: state.emojiMandala.palette ?? 'Classic'
+          palette: state.emojiMandala.palette ?? 'Classic',
+          // Phase 11.7.37: Palette blending
+          targetPalette: state.emojiMandala.targetPalette ?? 'Classic',
+          paletteBlend: state.emojiMandala.paletteBlend ?? 0.0,
+          // Phase 11.7.38: Animation modes
+          animationMode: state.emojiMandala.animationMode ?? 'None',
+          animationSpeed: state.emojiMandala.animationSpeed ?? 1.0,
+          // Phase 11.7.39: Animation preset (track current preset name if set)
+          animationPreset: state.emojiMandala.animationPreset ?? null,
+          // Phase 11.7.40: Depth & 3D Extrusion
+          depth: state.emojiMandala.depth ?? 0.0,
+          thickness: state.emojiMandala.thickness ?? 0.1,
+          zSpacing: state.emojiMandala.zSpacing ?? 0.2,
+          extrusionMode: state.emojiMandala.extrusionMode ?? 'Flat',
+          // Phase 11.7.41: Particle Fusion
+          particleFusion: state.emojiMandala.particleFusion ?? false,
+          particleEmoji: state.emojiMandala.particleEmoji ?? '🍕',
+          particleCount: state.emojiMandala.particleCount ?? 200,
+          particleSize: state.emojiMandala.particleSize ?? 0.4,
+          // Phase 11.7.44: Advanced Audio Reactivity
+          audioReactiveMode: state.emojiMandala.audioReactiveMode ?? 'Global',
+          bandIntensity: state.emojiMandala.bandIntensity ?? 1.0,
+          bandAssignments: state.emojiMandala.bandAssignments ?? [],
+          // Phase 11.7.45: Morph Fusion
+          morphFusion: state.emojiMandala.morphFusion ?? false,
+          morphInfluence: state.emojiMandala.morphInfluence ?? 0.5,
+          morphMap: state.emojiMandala.morphMap ?? ['sphere', 'cube', 'pyramid', 'torus']
         }
       };
 

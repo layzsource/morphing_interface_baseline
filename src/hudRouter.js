@@ -713,6 +713,81 @@ onHUDUpdate((update) => {
       if (mandala.palette !== undefined) {
         controller.applyPalette(mandala.palette);
       }
+      // Phase 11.7.37: Palette blending routing
+      if (mandala.targetPalette !== undefined) {
+        controller.setTargetPalette(mandala.targetPalette);
+      }
+      if (mandala.blendProgress !== undefined) {
+        controller.setBlendProgress(mandala.blendProgress);
+      }
+      if (mandala.blendNow === true) {
+        // Start animated blend (updateBlend will be called from animation loop)
+        controller.blendActive = true;
+        controller.paletteBlend = 0.0;
+        controller.syncToState();
+      }
+      // Phase 11.7.38: Animation mode routing
+      if (mandala.animationMode !== undefined) {
+        controller.setAnimationMode(mandala.animationMode);
+      }
+      if (mandala.animationSpeed !== undefined) {
+        controller.setAnimationSpeed(mandala.animationSpeed);
+      }
+      // Phase 11.7.39: Animation preset routing
+      if (mandala.animationPreset !== undefined) {
+        controller.applyAnimationPreset(mandala.animationPreset);
+      }
+      if (mandala.randomizeAnimation === true) {
+        controller.randomizeAnimation();
+      }
+      // Phase 11.7.40: Depth & 3D Extrusion routing
+      if (mandala.depth !== undefined) {
+        controller.setDepth(mandala.depth);
+      }
+      if (mandala.thickness !== undefined) {
+        controller.setThickness(mandala.thickness);
+      }
+      if (mandala.zSpacing !== undefined) {
+        controller.setZSpacing(mandala.zSpacing);
+      }
+      if (mandala.extrusionMode !== undefined) {
+        controller.setExtrusionMode(mandala.extrusionMode);
+      }
+      // Phase 11.7.41: Particle Fusion routing
+      if (mandala.particleFusion !== undefined) {
+        controller.enableParticleFusion(mandala.particleFusion);
+      }
+      if (mandala.particleEmoji !== undefined) {
+        controller.setParticleEmoji(mandala.particleEmoji);
+      }
+      if (mandala.particleCount !== undefined) {
+        controller.setParticleCount(mandala.particleCount);
+      }
+      if (mandala.particleSize !== undefined) {
+        controller.setParticleSize(mandala.particleSize);
+      }
+      // Phase 11.7.44: Advanced Audio Reactivity routing
+      if (mandala.audioReactiveMode !== undefined) {
+        controller.setAudioReactiveMode(mandala.audioReactiveMode);
+      }
+      if (mandala.bandIntensity !== undefined) {
+        controller.setBandIntensity(mandala.bandIntensity);
+      }
+      if (mandala.bandAssignment !== undefined) {
+        const { ringIndex, band } = mandala.bandAssignment;
+        controller.setBandAssignment(ringIndex, band);
+      }
+      // Phase 11.7.45: Morph Fusion routing
+      if (mandala.morphFusion !== undefined) {
+        controller.enableMorphFusion(mandala.morphFusion);
+      }
+      if (mandala.morphInfluence !== undefined) {
+        controller.setMorphInfluence(mandala.morphInfluence);
+      }
+      if (mandala.morphTarget !== undefined) {
+        const { ringIndex, target } = mandala.morphTarget;
+        controller.setMorphTarget(ringIndex, target);
+      }
     }
   }
 });

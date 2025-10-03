@@ -272,6 +272,63 @@ onCC(({ cc, value, device }) => {
   } else if (cc === 24) {
     // CC24 → Scale (0.5-2.0)
     state.scale = 0.5 + (value / 127) * 1.5;
+  } else if (cc === 25) {
+    // Phase 11.7.38: CC25 → Animation Mode cycle
+    if (value > 64) { // Detect knob turn or button press
+      const modes = ['None', 'Pulse', 'Rotate', 'Wave', 'Orbit'];
+      const currentMode = state.emojiMandala.animationMode || 'None';
+      const currentIndex = modes.indexOf(currentMode);
+      const nextIndex = (currentIndex + 1) % modes.length;
+      const nextMode = modes[nextIndex];
+
+      // Route through hudRouter for consistency
+      import('./hud.js').then(({ notifyHUDUpdate }) => {
+        notifyHUDUpdate({ mandala: { animationMode: nextMode } });
+      });
+
+      console.log(`🎛️ [MIDI Map] CC25 → mandala.animationMode`);
+      console.log(`🔄 Mandala animation mode: ${nextMode}`);
+    }
+  } else if (cc === 26) {
+    // Phase 11.7.38: CC26 → Animation Speed (0-127 → 0.1-3.0)
+    const speed = 0.1 + (value / 127) * 2.9;
+
+    // Route through hudRouter for consistency
+    import('./hud.js').then(({ notifyHUDUpdate }) => {
+      notifyHUDUpdate({ mandala: { animationSpeed: speed } });
+    });
+
+    console.log(`🎛️ [MIDI Map] CC26 → Animation Speed: ${speed.toFixed(2)}`);
+  } else if (cc === 27) {
+    // Phase 11.7.39: CC27 → Animation Preset (0-31 Calm, 32-63 Energetic, 64-95 Spin, 96-127 Orbit)
+    let preset;
+    if (value < 32) {
+      preset = 'Calm';
+    } else if (value < 64) {
+      preset = 'Energetic';
+    } else if (value < 96) {
+      preset = 'Spin';
+    } else {
+      preset = 'Orbit';
+    }
+
+    // Route through hudRouter for consistency
+    import('./hud.js').then(({ notifyHUDUpdate }) => {
+      notifyHUDUpdate({ mandala: { animationPreset: preset } });
+    });
+
+    console.log(`🎛️ [MIDI Map] CC27 → mandala.animationPreset`);
+    console.log(`🎬 Mandala animation preset applied → ${preset}`);
+  } else if (cc === 28) {
+    // Phase 11.7.39: CC28 → Randomize Animation (any value triggers)
+    if (value > 0) {
+      // Route through hudRouter for consistency
+      import('./hud.js').then(({ notifyHUDUpdate }) => {
+        notifyHUDUpdate({ mandala: { randomizeAnimation: true } });
+      });
+
+      console.log(`🎛️ [MIDI Map] CC28 → mandala.randomizeAnimation`);
+    }
   } else if (cc === window.emojiParticlesMIDI.cycleCC) {
     // Phase 11.7.12: CC30 (default) → Cycle emoji in set
     if (window.emojiParticles && value > 0) {
@@ -308,6 +365,15 @@ onCC(({ cc, value, device }) => {
       controller.setSymmetry(symmetry);
     }
     console.log(`🎛️ MIDI → Mandala symmetry: ${symmetry}`);
+  } else if (cc === 24) {
+    // Phase 11.7.37: CC24 → Palette cycle
+    console.log(`🎛️ [MIDI Map] CC24 → mandala.paletteCycle`);
+    if (value > 0) {
+      const controller = getMandalaController?.();
+      if (controller) {
+        controller.cyclePalette();
+      }
+    }
   } else if (cc >= window.emojiBankMIDI.startCC && cc <= window.emojiBankMIDI.endCC) {
     // Phase 11.7.17: CC40-47 → Load emoji pattern banks 1-8
     if (value > 0 && window.emojiBankManager) {
@@ -392,5 +458,5 @@ onPitchBend(({ value, rawValue, device }) => {
   }
 });
 
-console.log("🎹 MIDI routing configured (Phase 11.7.32: Mandala MIDI integration)");
-console.log("🔗 Mandala MIDI bindings: CC40=ON/OFF | CC41=Rings | CC42=Symmetry");
+console.log("🎹 MIDI routing configured (Phase 11.7.37: Mandala palette cycle)");
+console.log("🔗 Mandala MIDI bindings: CC40=ON/OFF | CC41=Rings | CC42=Symmetry | CC24=PaletteCycle");
