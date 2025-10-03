@@ -29,6 +29,7 @@ export const state = {
   texture: null,            // THREE.Texture loaded from image
   useTextureOnMorph: false,  // Toggle to apply texture to morph shape
   useBackgroundImage: false, // Phase 11.6.1: Toggle to show image as background
+  backgroundScale: 1.0,      // Phase 11.7.50: Background image scale (0.5-2.0)
 
   // Phase 11.2.1: Per-layer color system (base + audio additive)
   colorLayers: {
