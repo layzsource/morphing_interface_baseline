@@ -124,6 +124,24 @@ export class MandalaController {
       }
     }
 
+    // Phase 11.7.46: Vessel Feedback
+    this.feedbackEnabled = options.feedbackEnabled ?? false; // Toggle feedback
+    this.feedbackStrength = options.feedbackStrength ?? 0.25; // 0-1 blend into morph weights
+    this.feedbackMap = options.feedbackMap ?? ['sphere', 'cube', 'pyramid', 'torus']; // Per ring
+    // Auto-assign feedback targets if needed
+    if (this.feedbackMap.length < this.rings) {
+      const targets = ['sphere', 'cube', 'pyramid', 'torus'];
+      for (let i = this.feedbackMap.length; i < this.rings; i++) {
+        this.feedbackMap[i] = targets[i % targets.length];
+      }
+    }
+
+    // Phase 11.7.47: Motion Dynamics
+    this.motionEnabled = options.motionEnabled ?? false; // Toggle motion
+    this.motionMode = options.motionMode ?? 'drift'; // drift | oscillate | spin
+    this.motionSpeed = options.motionSpeed ?? 0.5; // 0.1-2.0
+    this.motionAmplitude = options.motionAmplitude ?? 0.25; // 0-1.0
+
     // Ring-specific settings
     this.ringRadii = options.ringRadii ?? [0, 2, 4, 6, 8, 10, 12, 14]; // Up to 8 rings
     this.ringRotationSpeeds = options.ringRotationSpeeds ?? [0, 0.01, 0.015, 0.02, 0.025, 0.03, 0.035, 0.04];
@@ -230,6 +248,15 @@ export class MandalaController {
     state.emojiMandala.morphFusion = this.morphFusion;
     state.emojiMandala.morphInfluence = this.morphInfluence;
     state.emojiMandala.morphMap = this.morphMap;
+    // Phase 11.7.46: Vessel Feedback
+    state.emojiMandala.feedbackEnabled = this.feedbackEnabled;
+    state.emojiMandala.feedbackStrength = this.feedbackStrength;
+    state.emojiMandala.feedbackMap = this.feedbackMap;
+    // Phase 11.7.47: Motion Dynamics
+    state.emojiMandala.motionEnabled = this.motionEnabled;
+    state.emojiMandala.motionMode = this.motionMode;
+    state.emojiMandala.motionSpeed = this.motionSpeed;
+    state.emojiMandala.motionAmplitude = this.motionAmplitude;
   }
 
   // Update mandala (called every frame from particle system or main loop)
@@ -380,6 +407,46 @@ export class MandalaController {
     // Phase 11.7.41: Update particle system if fusion is enabled
     if (this.particleFusion && this.particleSystem) {
       this.particleSystem.update(level);
+    }
+
+    // Phase 11.7.46: Vessel Feedback - mandala influences morph weights
+    if (this.feedbackEnabled && state?.morphWeights) {
+      for (let i = 0; i < this.rings; i++) {
+        const target = this.feedbackMap[i % this.feedbackMap.length];
+        const delta = (Math.sin(Date.now() * 0.001 + i) * 0.5 + 0.5) * this.feedbackStrength;
+        const newWeight = Math.min(1, Math.max(0, state.morphWeights[target] + delta * 0.01)); // Scaled for smooth feedback
+
+        // Optional: Log feedback influence (sampling)
+        if (Math.random() < 0.01 && delta > 0.01) {
+          console.log(`🔁 Ring ${i} influencing ${target.charAt(0).toUpperCase() + target.slice(1)} weight (+${delta.toFixed(2)})`);
+        }
+
+        state.morphWeights[target] = newWeight;
+      }
+    }
+
+    // Phase 11.7.47: Motion Dynamics - compute motion offsets
+    if (this.motionEnabled) {
+      const t = Date.now() * 0.001 * this.motionSpeed;
+      const motionOffsets = [];
+
+      for (let i = 0; i < this.rings; i++) {
+        if (this.motionMode === 'drift') {
+          const offsetX = Math.sin(t + i) * this.motionAmplitude * 0.5;
+          const offsetY = Math.cos(t + i) * this.motionAmplitude * 0.5;
+          motionOffsets.push({ x: offsetX, y: offsetY, scale: 1.0, rotation: 0 });
+        } else if (this.motionMode === 'oscillate') {
+          const scaleOffset = 1 + Math.sin(t + i) * this.motionAmplitude * 0.3;
+          motionOffsets.push({ x: 0, y: 0, scale: scaleOffset, rotation: 0 });
+        } else if (this.motionMode === 'spin') {
+          const rotationOffset = (t + i) * this.motionSpeed * 0.5;
+          motionOffsets.push({ x: 0, y: 0, scale: 1.0, rotation: rotationOffset });
+        }
+      }
+
+      state.emojiMandala.motionOffsets = motionOffsets;
+    } else {
+      state.emojiMandala.motionOffsets = null;
     }
   }
 
@@ -1101,6 +1168,84 @@ export class MandalaController {
     this.syncToState();
 
     console.log(`🔗 Ring ${ringIndex} → ${target.charAt(0).toUpperCase() + target.slice(1)}`);
+  }
+
+  // Phase 11.7.46: Enable/disable vessel feedback
+  enableFeedback(enabled) {
+    this.feedbackEnabled = enabled;
+    this.syncToState();
+
+    console.log(`🔁 Mandala feedback: ${enabled ? 'ON' : 'OFF'}`);
+  }
+
+  // Phase 11.7.46: Set feedback strength
+  setFeedbackStrength(strength) {
+    const oldStrength = this.feedbackStrength;
+    this.feedbackStrength = Math.max(0.0, Math.min(1.0, strength));
+    this.syncToState();
+
+    console.log(`🔁 Feedback strength: ${this.feedbackStrength.toFixed(2)} (was ${oldStrength.toFixed(2)})`);
+  }
+
+  // Phase 11.7.46: Set feedback target for a specific ring
+  setFeedbackTarget(ringIndex, target) {
+    const validTargets = ['sphere', 'cube', 'pyramid', 'torus'];
+
+    if (ringIndex < 0 || ringIndex >= this.rings) {
+      console.warn(`🔁 Invalid ring index: ${ringIndex}`);
+      return;
+    }
+
+    if (!validTargets.includes(target)) {
+      console.warn(`🔁 Invalid feedback target: ${target}`);
+      return;
+    }
+
+    this.feedbackMap[ringIndex] = target;
+    this.syncToState();
+
+    console.log(`🔁 Ring ${ringIndex} → ${target.charAt(0).toUpperCase() + target.slice(1)} feedback`);
+  }
+
+  // Phase 11.7.47: Enable/disable motion dynamics
+  enableMotion(enabled) {
+    this.motionEnabled = enabled;
+    this.syncToState();
+
+    console.log(`✨ Mandala motion: ${enabled ? 'ON' : 'OFF'}${enabled ? ` | mode=${this.motionMode} | speed=${this.motionSpeed.toFixed(1)} | amp=${this.motionAmplitude.toFixed(2)}` : ''}`);
+  }
+
+  // Phase 11.7.47: Set motion mode
+  setMotionMode(mode) {
+    const validModes = ['drift', 'oscillate', 'spin'];
+    if (!validModes.includes(mode)) {
+      console.warn(`✨ Invalid motion mode: ${mode}, keeping current mode ${this.motionMode}`);
+      return;
+    }
+
+    const oldMode = this.motionMode;
+    this.motionMode = mode;
+    this.syncToState();
+
+    console.log(`✨ Motion mode: ${mode} (was ${oldMode})`);
+  }
+
+  // Phase 11.7.47: Set motion speed
+  setMotionSpeed(speed) {
+    const oldSpeed = this.motionSpeed;
+    this.motionSpeed = Math.max(0.1, Math.min(2.0, speed));
+    this.syncToState();
+
+    console.log(`✨ Motion speed: ${this.motionSpeed.toFixed(2)} (was ${oldSpeed.toFixed(2)})`);
+  }
+
+  // Phase 11.7.47: Set motion amplitude
+  setMotionAmplitude(amplitude) {
+    const oldAmplitude = this.motionAmplitude;
+    this.motionAmplitude = Math.max(0.0, Math.min(1.0, amplitude));
+    this.syncToState();
+
+    console.log(`✨ Motion amplitude: ${this.motionAmplitude.toFixed(2)} (was ${oldAmplitude.toFixed(2)})`);
   }
 
   // Get current state snapshot

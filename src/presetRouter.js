@@ -216,7 +216,16 @@ function handlePresetAction(action, presetName, category, tags) {
           // Phase 11.7.45: Morph Fusion
           morphFusion: state.emojiMandala.morphFusion ?? false,
           morphInfluence: state.emojiMandala.morphInfluence ?? 0.5,
-          morphMap: state.emojiMandala.morphMap ?? ['sphere', 'cube', 'pyramid', 'torus']
+          morphMap: state.emojiMandala.morphMap ?? ['sphere', 'cube', 'pyramid', 'torus'],
+          // Phase 11.7.46: Vessel Feedback
+          feedbackEnabled: state.emojiMandala.feedbackEnabled ?? false,
+          feedbackStrength: state.emojiMandala.feedbackStrength ?? 0.25,
+          feedbackMap: state.emojiMandala.feedbackMap ?? ['sphere', 'cube', 'pyramid', 'torus'],
+          // Phase 11.7.47: Motion Dynamics
+          motionEnabled: state.emojiMandala.motionEnabled ?? false,
+          motionMode: state.emojiMandala.motionMode ?? 'drift',
+          motionSpeed: state.emojiMandala.motionSpeed ?? 0.5,
+          motionAmplitude: state.emojiMandala.motionAmplitude ?? 0.25
         }
       };
 
@@ -367,6 +376,17 @@ function handlePresetAction(action, presetName, category, tags) {
           state.emojiMandala.morphInfluence = preset.state.mandala.morphInfluence ?? 0.5;
           state.emojiMandala.morphMap = preset.state.mandala.morphMap ?? ['sphere', 'cube', 'pyramid', 'torus'];
 
+          // Phase 11.7.46: Restore vessel feedback
+          state.emojiMandala.feedbackEnabled = preset.state.mandala.feedbackEnabled ?? false;
+          state.emojiMandala.feedbackStrength = preset.state.mandala.feedbackStrength ?? 0.25;
+          state.emojiMandala.feedbackMap = preset.state.mandala.feedbackMap ?? ['sphere', 'cube', 'pyramid', 'torus'];
+
+          // Phase 11.7.47: Restore motion dynamics
+          state.emojiMandala.motionEnabled = preset.state.mandala.motionEnabled ?? false;
+          state.emojiMandala.motionMode = preset.state.mandala.motionMode ?? 'drift';
+          state.emojiMandala.motionSpeed = preset.state.mandala.motionSpeed ?? 0.5;
+          state.emojiMandala.motionAmplitude = preset.state.mandala.motionAmplitude ?? 0.25;
+
           const onOff = state.mandala.enabled ? 'ON' : 'OFF';
           const audioStatus = state.mandala.audioReactive ? 'ON' : 'OFF';
           const palette = state.emojiMandala.palette;
@@ -384,8 +404,14 @@ function handlePresetAction(action, presetName, category, tags) {
           const bandIntensity = state.emojiMandala.bandIntensity;
           const morphFusion = state.emojiMandala.morphFusion ? 'ON' : 'OFF';
           const morphInfluence = state.emojiMandala.morphInfluence;
+          const feedbackEnabled = state.emojiMandala.feedbackEnabled ? 'ON' : 'OFF';
+          const feedbackStrength = state.emojiMandala.feedbackStrength;
+          const motionEnabled = state.emojiMandala.motionEnabled ? 'ON' : 'OFF';
+          const motionMode = state.emojiMandala.motionMode;
+          const motionSpeed = state.emojiMandala.motionSpeed;
+          const motionAmplitude = state.emojiMandala.motionAmplitude;
           const presetInfo = animPreset ? ` | animationPreset=${animPreset}` : '';
-          console.log(`💾 Preset → Mandala restored: ${onOff} | rings=${state.mandala.ringCount} | symmetry=${state.mandala.symmetry} | palette=${palette} | blend=${blend.toFixed(2)} | animation=${animation} | speed=${speed.toFixed(1)}${presetInfo} | depth=${depth.toFixed(1)} | extrusionMode=${extrusionMode} | particleFusion=${particleFusion} | emoji=${particleEmoji} | count=${particleCount} | size=${particleSize.toFixed(1)} | audioReactiveMode=${audioReactiveMode} | bandIntensity=${bandIntensity.toFixed(1)} | morphFusion=${morphFusion} | morphInfluence=${morphInfluence.toFixed(1)}`);
+          console.log(`💾 Preset → Mandala restored: ${onOff} | rings=${state.mandala.ringCount} | symmetry=${state.mandala.symmetry} | palette=${palette} | blend=${blend.toFixed(2)} | animation=${animation} | speed=${speed.toFixed(1)}${presetInfo} | depth=${depth.toFixed(1)} | extrusionMode=${extrusionMode} | particleFusion=${particleFusion} | emoji=${particleEmoji} | count=${particleCount} | size=${particleSize.toFixed(1)} | audioReactiveMode=${audioReactiveMode} | bandIntensity=${bandIntensity.toFixed(1)} | morphFusion=${morphFusion} | morphInfluence=${morphInfluence.toFixed(1)} | feedbackEnabled=${feedbackEnabled} | feedbackStrength=${feedbackStrength.toFixed(2)} | motionEnabled=${motionEnabled} | motionMode=${motionMode} | motionSpeed=${motionSpeed.toFixed(1)} | motionAmp=${motionAmplitude.toFixed(2)}`);
         }
 
         state.presets.currentPresetName = presetName;
@@ -465,7 +491,16 @@ function handlePresetAction(action, presetName, category, tags) {
           // Phase 11.7.45: Morph Fusion
           morphFusion: state.emojiMandala.morphFusion ?? false,
           morphInfluence: state.emojiMandala.morphInfluence ?? 0.5,
-          morphMap: state.emojiMandala.morphMap ?? ['sphere', 'cube', 'pyramid', 'torus']
+          morphMap: state.emojiMandala.morphMap ?? ['sphere', 'cube', 'pyramid', 'torus'],
+          // Phase 11.7.46: Vessel Feedback
+          feedbackEnabled: state.emojiMandala.feedbackEnabled ?? false,
+          feedbackStrength: state.emojiMandala.feedbackStrength ?? 0.25,
+          feedbackMap: state.emojiMandala.feedbackMap ?? ['sphere', 'cube', 'pyramid', 'torus'],
+          // Phase 11.7.47: Motion Dynamics
+          motionEnabled: state.emojiMandala.motionEnabled ?? false,
+          motionMode: state.emojiMandala.motionMode ?? 'drift',
+          motionSpeed: state.emojiMandala.motionSpeed ?? 0.5,
+          motionAmplitude: state.emojiMandala.motionAmplitude ?? 0.25
         }
       };
 

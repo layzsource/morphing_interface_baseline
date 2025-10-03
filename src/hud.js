@@ -3036,6 +3036,122 @@ function createHUDPanel() {
 
   tabContainers['Visual'].appendChild(morphTargetContainer);
 
+  // Phase 11.7.46: Vessel Feedback toggle
+  const feedbackToggle = createToggleControl('Enable Vessel Feedback', false, (value) => {
+    notifyHUDUpdate({ mandala: { feedbackEnabled: value } });
+    console.log(`📟 HUD → Vessel Feedback: ${value ? 'ON' : 'OFF'}`);
+  });
+  feedbackToggle.title = 'Enable mandala rings to influence morph weights';
+  tabContainers['Visual'].appendChild(feedbackToggle);
+
+  // Phase 11.7.46: Feedback Strength slider
+  const feedbackStrengthControl = createSliderControl('Feedback Strength', 0.25, 0.0, 1.0, 0.05, (value) => {
+    notifyHUDUpdate({ mandala: { feedbackStrength: value } });
+    console.log(`📟 HUD → Feedback Strength: ${value.toFixed(2)}`);
+  });
+  feedbackStrengthControl.title = 'Feedback influence strength (0.0-1.0)';
+  tabContainers['Visual'].appendChild(feedbackStrengthControl);
+
+  // Phase 11.7.46: Per-ring feedback target assignment dropdowns
+  const feedbackTargetContainer = document.createElement("div");
+  feedbackTargetContainer.style.cssText = 'margin-top: 10px; margin-bottom: 10px;';
+  feedbackTargetContainer.id = 'feedbackTargetContainer';
+
+  const feedbackTargetLabel = document.createElement("label");
+  feedbackTargetLabel.textContent = "Per-Ring Feedback Targets";
+  feedbackTargetLabel.style.cssText = 'display: block; font-size: 11px; margin-bottom: 6px; color: #66ff66;';
+  feedbackTargetContainer.appendChild(feedbackTargetLabel);
+
+  const feedbackTargets = ['sphere', 'cube', 'pyramid', 'torus'];
+
+  for (let i = 0; i < 6; i++) { // Create controls for 6 rings initially
+    const ringContainer = document.createElement("div");
+    ringContainer.style.cssText = 'display: flex; gap: 8px; align-items: center; margin-bottom: 4px;';
+
+    const ringLabel = document.createElement("span");
+    ringLabel.textContent = `Ring ${i}:`;
+    ringLabel.style.cssText = 'font-size: 10px; color: #66ff66; width: 50px;';
+    ringContainer.appendChild(ringLabel);
+
+    const feedbackDropdown = document.createElement("select");
+    feedbackDropdown.style.cssText = 'flex: 1; padding: 4px; background: rgba(0,0,0,0.5); border: 1px solid #66ff66; color: #66ff66; border-radius: 4px; font-size: 10px;';
+    feedbackDropdown.dataset.ringIndex = i;
+
+    feedbackTargets.forEach((target, idx) => {
+      const option = document.createElement("option");
+      option.value = target;
+      option.textContent = target.charAt(0).toUpperCase() + target.slice(1);
+      // Auto-assign default target in sequence
+      if (idx === (i % feedbackTargets.length)) option.selected = true;
+      feedbackDropdown.appendChild(option);
+    });
+
+    feedbackDropdown.addEventListener("change", () => {
+      const ringIndex = parseInt(feedbackDropdown.dataset.ringIndex);
+      const target = feedbackDropdown.value;
+      notifyHUDUpdate({ mandala: { feedbackTarget: { ringIndex, target } } });
+      console.log(`📟 HUD → Ring ${ringIndex} feedback → ${target}`);
+    });
+
+    ringContainer.appendChild(feedbackDropdown);
+    feedbackTargetContainer.appendChild(ringContainer);
+  }
+
+  tabContainers['Visual'].appendChild(feedbackTargetContainer);
+
+  // Phase 11.7.47: Mandala Motion toggle
+  const motionToggle = createToggleControl('Enable Mandala Motion', false, (value) => {
+    notifyHUDUpdate({ mandala: { motionEnabled: value } });
+    console.log(`📟 HUD → Mandala Motion: ${value ? 'ON' : 'OFF'}`);
+  });
+  motionToggle.title = 'Enable kinetic motion dynamics for mandala rings';
+  tabContainers['Visual'].appendChild(motionToggle);
+
+  // Phase 11.7.47: Motion Mode dropdown
+  const motionModeContainer = document.createElement("div");
+  motionModeContainer.style.cssText = 'margin-top: 10px; margin-bottom: 10px;';
+
+  const motionModeLabel = document.createElement("label");
+  motionModeLabel.textContent = "Motion Mode";
+  motionModeLabel.style.cssText = 'display: block; font-size: 11px; margin-bottom: 6px; color: #ffaa00;';
+  motionModeContainer.appendChild(motionModeLabel);
+
+  const motionModeDropdown = document.createElement("select");
+  motionModeDropdown.style.cssText = 'width: 100%; padding: 6px; background: rgba(0,0,0,0.5); border: 1px solid #ffaa00; color: #ffaa00; border-radius: 4px; font-size: 11px;';
+
+  const motionModes = ['drift', 'oscillate', 'spin'];
+  motionModes.forEach((mode) => {
+    const option = document.createElement("option");
+    option.value = mode;
+    option.textContent = mode.charAt(0).toUpperCase() + mode.slice(1);
+    if (mode === 'drift') option.selected = true;
+    motionModeDropdown.appendChild(option);
+  });
+
+  motionModeDropdown.addEventListener("change", () => {
+    notifyHUDUpdate({ mandala: { motionMode: motionModeDropdown.value } });
+    console.log(`📟 HUD → Motion Mode: ${motionModeDropdown.value}`);
+  });
+
+  motionModeContainer.appendChild(motionModeDropdown);
+  tabContainers['Visual'].appendChild(motionModeContainer);
+
+  // Phase 11.7.47: Motion Speed slider
+  const motionSpeedControl = createSliderControl('Motion Speed', 0.5, 0.1, 2.0, 0.1, (value) => {
+    notifyHUDUpdate({ mandala: { motionSpeed: value } });
+    console.log(`📟 HUD → Motion Speed: ${value.toFixed(1)}`);
+  });
+  motionSpeedControl.title = 'Motion animation speed (0.1-2.0)';
+  tabContainers['Visual'].appendChild(motionSpeedControl);
+
+  // Phase 11.7.47: Motion Amplitude slider
+  const motionAmplitudeControl = createSliderControl('Motion Amplitude', 0.25, 0.0, 1.0, 0.05, (value) => {
+    notifyHUDUpdate({ mandala: { motionAmplitude: value } });
+    console.log(`📟 HUD → Motion Amplitude: ${value.toFixed(2)}`);
+  });
+  motionAmplitudeControl.title = 'Motion effect strength (0.0-1.0)';
+  tabContainers['Visual'].appendChild(motionAmplitudeControl);
+
   // Phase 11.7.29: Emoji Picker (radio buttons)
   const emojiPickerLabel = document.createElement("label");
   emojiPickerLabel.textContent = "Mandala Emoji";

@@ -788,6 +788,32 @@ onHUDUpdate((update) => {
         const { ringIndex, target } = mandala.morphTarget;
         controller.setMorphTarget(ringIndex, target);
       }
+
+      // Phase 11.7.46: Vessel Feedback routing
+      if (mandala.feedbackEnabled !== undefined) {
+        controller.enableFeedback(mandala.feedbackEnabled);
+      }
+      if (mandala.feedbackStrength !== undefined) {
+        controller.setFeedbackStrength(mandala.feedbackStrength);
+      }
+      if (mandala.feedbackTarget !== undefined) {
+        const { ringIndex, target } = mandala.feedbackTarget;
+        controller.setFeedbackTarget(ringIndex, target);
+      }
+
+      // Phase 11.7.47: Motion Dynamics routing
+      if (mandala.motionEnabled !== undefined) {
+        controller.enableMotion(mandala.motionEnabled);
+      }
+      if (mandala.motionMode !== undefined) {
+        controller.setMotionMode(mandala.motionMode);
+      }
+      if (mandala.motionSpeed !== undefined) {
+        controller.setMotionSpeed(mandala.motionSpeed);
+      }
+      if (mandala.motionAmplitude !== undefined) {
+        controller.setMotionAmplitude(mandala.motionAmplitude);
+      }
     }
   }
 });
