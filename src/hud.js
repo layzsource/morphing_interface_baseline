@@ -1,4 +1,5 @@
 import { state } from './state.js';
+import { createMorphHudSection } from './hudMorph.js'; // Phase 11.7.51: Modular Morph HUD
 import { createMandalaHudSection } from './hudMandala.js'; // Phase 11.7.50: Modular Mandala HUD
 import { createParticlesHudSection } from './hudParticles.js'; // Phase 11.7.50: Modular Particles HUD
 import { createBackgroundHudSection } from './hudBackground.js'; // Phase 11.7.50: Modular Background HUD
@@ -156,67 +157,8 @@ function createHUDPanel() {
 
   controlsContainer.insertBefore(tabNav, controlsContainer.firstChild);
 
-  const idleSpinControl = createToggleControl('Idle Spin', true, (value) => {
-    notifyHUDUpdate({ idleSpin: value });
-  });
-  tabContainers['Morph'].appendChild(idleSpinControl);
-
-  const xRotControl = createSliderControl('X Rotation', 0, 0, 0.2, 0.001, (value) => {
-    notifyHUDUpdate({ rotX: value });
-  });
-  tabContainers['Morph'].appendChild(xRotControl);
-
-  const yRotControl = createSliderControl('Y Rotation', 0, 0, 0.2, 0.001, (value) => {
-    notifyHUDUpdate({ rotY: value });
-  });
-  tabContainers['Morph'].appendChild(yRotControl);
-
-  const scaleControl = createSliderControl('Scale', 1.0, 0.5, 2.0, 0.1, (value) => {
-    notifyHUDUpdate({ scale: value });
-  });
-  tabContainers['Morph'].appendChild(scaleControl);
-
-  const morphControl = createDropdownControl('Morph Target', 'cube',
-    ['cube', 'sphere', 'pyramid', 'torus'], (value) => {
-    notifyHUDUpdate({ morphTarget: value });
-  });
-  tabContainers['Morph'].appendChild(morphControl);
-
-  const morphIntensityControl = createSliderControl('Morph Intensity', 0.0, 0.0, 1.0, 0.01, (value) => {
-    notifyHUDUpdate({ morphBlend: value });
-  });
-  tabContainers['Morph'].appendChild(morphIntensityControl);
-
-  // Add separator for Phase 4 controls
-  const separator = document.createElement('hr');
-  separator.style.cssText = 'border: 1px solid #555; margin: 15px 0;';
-  tabContainers['Morph'].appendChild(separator);
-
-  const phase4Title = document.createElement('h4');
-  phase4Title.textContent = '🌀 Multi-Target Blends';
-  phase4Title.style.cssText = 'margin: 0 0 10px 0; color: #ffff00; font-size: 12px;';
-  tabContainers['Morph'].appendChild(phase4Title);
-
-  // Per-target weight sliders
-  const cubeWeightControl = createSliderControl('Cube Weight', 1.0, 0.0, 1.0, 0.01, (value) => {
-    notifyHUDUpdate({ targetWeight: { target: 'cube', weight: value } });
-  });
-  tabContainers['Morph'].appendChild(cubeWeightControl);
-
-  const sphereWeightControl = createSliderControl('Sphere Weight', 0.0, 0.0, 1.0, 0.01, (value) => {
-    notifyHUDUpdate({ targetWeight: { target: 'sphere', weight: value } });
-  });
-  tabContainers['Morph'].appendChild(sphereWeightControl);
-
-  const pyramidWeightControl = createSliderControl('Pyramid Weight', 0.0, 0.0, 1.0, 0.01, (value) => {
-    notifyHUDUpdate({ targetWeight: { target: 'pyramid', weight: value } });
-  });
-  tabContainers['Morph'].appendChild(pyramidWeightControl);
-
-  const torusWeightControl = createSliderControl('Torus Weight', 0.0, 0.0, 1.0, 0.01, (value) => {
-    notifyHUDUpdate({ targetWeight: { target: 'torus', weight: value } });
-  });
-  tabContainers['Morph'].appendChild(torusWeightControl);
+  // Phase 11.7.51: Modular Morph HUD section
+  createMorphHudSection(tabContainers['Morph'], notifyHUDUpdate);
 
   // Phase 11.2.4: Enhanced Preset Editor UI
   const presetSeparator = document.createElement('hr');
