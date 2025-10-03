@@ -757,7 +757,20 @@ export class EmojiParticles {
     this.particleToCluster = new Map(); // Maps particle index → cluster ID
     this.nextClusterId = 0; // Cluster ID counter
 
-    const texture = this.createEmojiTexture(this.emoji, 128);
+    // Phase 11.7.50: Check for custom image, otherwise use emoji
+    let texture;
+    if (state.mandala?.useCustomImage && state.mandala?.customImage) {
+      const loader = new THREE.TextureLoader();
+      texture = loader.load(state.mandala.customImage,
+        () => console.log(`🖼️ Initial mandala texture: ${state.mandala.customImageName || 'custom image'}`),
+        undefined,
+        (error) => {
+          console.error('🖼️ Failed to load custom image, using emoji fallback:', error);
+        }
+      );
+    } else {
+      texture = this.createEmojiTexture(this.emoji, 128);
+    }
 
     try {
       // Phase 11.7.10: Create instanced mesh for performance
@@ -807,6 +820,22 @@ export class EmojiParticles {
       this.useInstancing = false;
       this.initSpriteFallback(texture);
     }
+
+    // Phase 11.7.50: Listen for mandala image upload/clear events
+    this.setupMandalaImageListeners();
+  }
+
+  // Phase 11.7.50: Setup event listeners for mandala image changes
+  setupMandalaImageListeners() {
+    window.addEventListener('mandala:imageSelected', () => {
+      // Refresh texture when custom image is uploaded
+      this.swapEmoji(this.emoji);
+    });
+
+    window.addEventListener('mandala:imageCleared', () => {
+      // Refresh texture when custom image is cleared (return to emoji)
+      this.swapEmoji(this.emoji);
+    });
   }
 
   // Phase 11.7.10: Fallback sprite mode for unsupported browsers
@@ -1903,11 +1932,46 @@ export class EmojiParticles {
     console.log(`📖 Story advanced → ${nextSet} set`);
   }
 
-  // Phase 11.7.10: Swap emoji texture (instanced or sprite mode)
+  // Phase 11.7.10/11.7.50: Swap emoji texture (instanced or sprite mode) with custom image support
   swapEmoji(newEmoji) {
     this.emoji = newEmoji;
-    const texture = this.createEmojiTexture(newEmoji, 128);
 
+    // Phase 11.7.50: Check if custom image should be used instead of emoji
+    let texture;
+    if (state.mandala?.useCustomImage && state.mandala?.customImage) {
+      // Load custom image texture from data URL
+      const loader = new THREE.TextureLoader();
+      texture = loader.load(state.mandala.customImage,
+        () => {
+          console.log(`🖼️ Custom mandala image loaded: ${state.mandala.customImageName || 'uploaded image'}`);
+          // Update material after texture loads
+          if (this.useInstancing && this.instancedMesh) {
+            this.instancedMesh.material.needsUpdate = true;
+          } else if (this.sprites) {
+            this.sprites.forEach(sprite => sprite.material.needsUpdate = true);
+          }
+        },
+        undefined,
+        (error) => {
+          console.error('🖼️ Failed to load custom mandala image, falling back to emoji:', error);
+          // Fallback to emoji on error
+          const fallbackTexture = this.createEmojiTexture(newEmoji, 128);
+          this.applyTexture(fallbackTexture);
+        }
+      );
+    } else {
+      // Use emoji texture
+      texture = this.createEmojiTexture(newEmoji, 128);
+    }
+
+    this.applyTexture(texture);
+
+    const sourceType = (state.mandala?.useCustomImage && state.mandala?.customImage) ? 'custom image' : 'emoji';
+    console.log(`🍕 Texture updated: ${sourceType} ${sourceType === 'emoji' ? newEmoji : '(' + (state.mandala?.customImageName || 'uploaded') + ')'}`);
+  }
+
+  // Phase 11.7.50: Helper to apply texture to instanced mesh or sprites
+  applyTexture(texture) {
     if (this.useInstancing && this.instancedMesh) {
       // Update instanced mesh material texture
       if (this.instancedMesh.material.map) {
@@ -1915,7 +1979,6 @@ export class EmojiParticles {
       }
       this.instancedMesh.material.map = texture;
       this.instancedMesh.material.needsUpdate = true;
-      console.log(`🍕 Instanced emoji texture updated: ${newEmoji}`);
     } else if (this.sprites) {
       // Fallback sprite mode
       this.sprites.forEach(sprite => {
@@ -1925,7 +1988,6 @@ export class EmojiParticles {
         sprite.material.map = texture;
         sprite.material.needsUpdate = true;
       });
-      console.log(`🍕 Emoji swapped to: ${newEmoji}`);
     }
   }
 

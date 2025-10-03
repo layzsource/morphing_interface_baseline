@@ -83,6 +83,13 @@ export class MandalaController {
     // Emoji layout (per ring)
     this.emojiLayout = options.emojiLayout ?? ['🍕', '🌶️', '🍄'];
 
+    // Phase 11.7.50: Custom texture support
+    this.customTexture = null;
+    this.textureLoader = new THREE.TextureLoader();
+
+    // Phase 11.7.50: Listen for texture upload/clear events
+    this.setupTextureListeners();
+
     // Sync with state.emojiMandala
     this.syncToState();
 
@@ -484,6 +491,74 @@ export class MandalaController {
     this.rainbowMode = enabled;
     this.syncToState();
     console.log(`🌈 Mandala rainbow mode: ${enabled ? 'ON' : 'OFF'}`);
+  }
+
+  // Phase 11.7.50: Setup texture event listeners
+  setupTextureListeners() {
+    window.addEventListener('mandala:imageSelected', (e) => {
+      const { url } = e.detail;
+      this.loadCustomTexture(url);
+    });
+
+    window.addEventListener('mandala:imageCleared', () => {
+      this.clearCustomTexture();
+    });
+  }
+
+  // Phase 11.7.50: Load custom texture from data URL
+  loadCustomTexture(dataUrl) {
+    this.textureLoader.load(
+      dataUrl,
+      (texture) => {
+        // Dispose old texture if exists
+        if (this.customTexture) {
+          this.customTexture.dispose();
+        }
+        this.customTexture = texture;
+        console.log('🖼️ MandalaController: Custom texture loaded');
+      },
+      undefined,
+      (error) => {
+        console.error('🖼️ MandalaController: Failed to load texture:', error);
+      }
+    );
+  }
+
+  // Phase 11.7.50: Clear custom texture and restore emoji
+  clearCustomTexture() {
+    if (this.customTexture) {
+      this.customTexture.dispose();
+      this.customTexture = null;
+    }
+    console.log('🖼️ MandalaController: Custom texture cleared, using emoji');
+  }
+
+  // Phase 11.7.50: Get active texture (custom or emoji fallback)
+  getActiveTexture() {
+    // Only use custom texture if useCustomImage flag is true AND texture exists
+    if (state.mandala.useCustomImage && this.customTexture) {
+      return this.customTexture;
+    }
+    // Otherwise return null (emoji rendering handles fallback)
+    return null;
+  }
+
+  // Phase 11.7.50: Set custom image texture for mandala (legacy compatibility)
+  setCustomImage(texture, filename = null) {
+    state.mandala.useCustomImage = true;
+    state.mandala.customImage = texture;
+    state.mandala.customImageName = filename;
+    this.syncToState();
+    console.log(`🖼️ Mandala custom image set${filename ? `: ${filename}` : ''} (exclusive mode ON)`);
+  }
+
+  // Phase 11.7.50: Clear custom image and restore emoji texture (legacy compatibility)
+  clearCustomImage() {
+    state.mandala.useCustomImage = false;
+    state.mandala.customImage = null;
+    state.mandala.customImageName = null;
+    this.syncToState();
+    console.log('🖼️ Mandala custom image cleared, restored to emoji texture');
   }
 
   // Get current state snapshot

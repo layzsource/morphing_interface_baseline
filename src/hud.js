@@ -1,5 +1,6 @@
 import { state } from './state.js';
 import * as THREE from 'three'; // Phase 11.6.0: for TextureLoader
+import { mountMandalaUploadAfter } from './mandalaUpload.js'; // Phase 11.7.50: PNG upload
 
 console.log("📟 hud.js loaded");
 
@@ -2621,6 +2622,9 @@ function createHUDPanel() {
   });
 
   tabContainers['Visual'].appendChild(emojiPickerContainer);
+
+  // Phase 11.7.50: Mount PNG upload UI after emoji picker
+  mountMandalaUploadAfter(emojiPickerContainer);
 
   // Per-ring emoji layout editor
   const ringLayoutLabel = document.createElement("label");

@@ -183,7 +183,10 @@ export const state = {
     enabled: false,
     ringCount: 6,     // HUD-friendly alias for rings (3-12)
     symmetry: 6,      // Fold symmetry (2-12)
-    audioReactive: false  // Audio reactivity toggle
+    audioReactive: false,  // Audio reactivity toggle
+    useCustomImage: false, // Phase 11.7.50: Toggle between emoji and custom image
+    customImage: null,     // Phase 11.7.50: Custom uploaded texture (data URL)
+    customImageName: null  // Phase 11.7.50: Filename of uploaded image
   },
 
   // Phase 11.7.21: Emoji Mandalas & Layered Symmetry
@@ -595,5 +598,21 @@ export function getEffectiveAudio() {
   };
 }
 // ---------------------------------------------------------------------
+
+// Phase 11.7.50: Listen for mandala image upload events
+window.addEventListener('mandala:imageSelected', (e) => {
+  const { url, name } = e.detail;
+  state.mandala.useCustomImage = true;
+  state.mandala.customImage = url;
+  state.mandala.customImageName = name;
+  console.log(`🎯 State updated: mandala custom image → ${name} (exclusive mode ON)`);
+});
+
+window.addEventListener('mandala:imageCleared', () => {
+  state.mandala.useCustomImage = false;
+  state.mandala.customImage = null;
+  state.mandala.customImageName = null;
+  console.log('🎯 State updated: mandala custom image cleared (returning to emoji)');
+});
 
 console.log("🎯 State initialized:", state);
